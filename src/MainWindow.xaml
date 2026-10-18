@@ -47,7 +47,7 @@
                     <ColumnDefinition Width="Auto"/> <!-- 5. Dikey Karıştır / Döngü -->
                 </Grid.ColumnDefinitions>
 
-                <!-- 1. Medya Kontrolleri (Dikeyde 32px yükseltildi, tıklama alanı büyütüldü) -->
+                <!-- 1. Medya Kontrolleri -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
                     <Button x:Name="BtnPrev" Style="{StaticResource TextButton}" Content="&#xE892;" Width="28" Height="32" FontSize="13"/>
                     <Button x:Name="BtnPlay" Style="{StaticResource TextButton}" Content="&#xE768;" Width="32" Height="32" FontSize="15" Margin="4,0,4,0"/>
@@ -69,7 +69,7 @@
                     <TextBlock x:Name="VolumeGlyph" Text="&#xE995;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- 5. Karıştır / Döngü (Dikey üst üste) -->
+                <!-- 5. Karıştır / Döngü -->
                 <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
                     <Button x:Name="BtnMix" Style="{StaticResource TextButton}" Content="&#xE8B1;" Width="18" Height="15" FontSize="10"/>
                     <Button x:Name="BtnLoop" Style="{StaticResource TextButton}" Content="&#xE8EE;" Width="18" Height="15" FontSize="10" Margin="0,2,0,0"/>
@@ -77,9 +77,9 @@
             </Grid>
         </Border>
 
-        <!-- Albüm Kapağı Butonu (Sağda) -->
+        <!-- Albüm Kapağı Butonu (Orijinal Müzik Notası &#xEC4F;) -->
         <Border x:Name="Cover" CornerRadius="8" ClipToBounds="True" Width="40" Height="40" Background="#333333" Cursor="Hand" HorizontalAlignment="Right">
-            <TextBlock x:Name="Glyph" Text="&#xE93C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <TextBlock x:Name="Glyph" Text="&#xEC4F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
     </Grid>
 </Window>

@@ -38,23 +38,6 @@ public partial class MainWindow : Window
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunName = "mey music player";
 
-    // --- Win32 Taskbar Ownership (Fixes always-on-top over games) ---
-    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
-    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
-
-    [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
-    private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
-
-    private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
-    {
-        if (IntPtr.Size == 8)
-            return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
-        else
-            return new IntPtr(SetWindowLong32(hWnd, nIndex, dwNewLong.ToInt32()));
-    }
-
-    private const int GWLP_HWNDPARENT = -8;
-
     enum Smtc { Props, Playback, Timeline }
     enum Side { Left, Right }   // which side the cover sits on; the player opens towards the other side
 
@@ -259,9 +242,6 @@ public partial class MainWindow : Window
 
         if (_taskbar != IntPtr.Zero)
         {
-            // Attach as owned window of Taskbar (hides player under full-screen games)
-            SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, _taskbar);
-
             GetWindowThreadProcessId(_taskbar, out uint pid);
             _locHook = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
                 IntPtr.Zero, _proc, pid, 0, WINEVENT_OUTOFCONTEXT);
@@ -1136,7 +1116,7 @@ public partial class MainWindow : Window
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将添加到此处。",
             "有可用更新", "版本 {0} 已发布。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新…", "无法安装更新。请稍后重试。" },
         ["ja"] = new[] { "Windows と同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "アップデートがあります", "バージョン {0} が利用可能です。現在のバージョンは {1} です。", "新機能", "更新", "後で", "アップデートをダウンロードしています...", "アップデートをインストールできませんでした。後でもう一度お試しください。" },
+            "アップデートがあります", "バージョン {0} が利用可能です。現在のバージョンは {1} です。", "新機能", "更新", "後で", "アップデートをダウンロードしています...", "アップデート tasting インストールできませんでした。後でもう一度お試しください。" },
         ["ar"] = new[] { "التشغيل مع Windows", "خيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "ستتم إضافة الإعدادات هنا.",
             "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "الجديد", "تحديث", "لاحقًا", "جارٍ تنزيل التحديث...", "تعذّر تثبيت التحديث. يُرجى المحاولة مرة أخرى لاحقًا." },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएँ", "बाएँ", "भाषा", "बंद करें", "सेटिंग्स यहाँ जोड़ी जाएँगी।",

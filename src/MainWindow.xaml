@@ -7,7 +7,6 @@
         Background="Transparent"
         ShowInTaskbar="False"
         ShowActivated="False"
-        Topmost="True"
         ResizeMode="NoResize"
         WindowStartupLocation="Manual"
         Left="-10000" Top="-10000"

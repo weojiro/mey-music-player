@@ -35,14 +35,17 @@ public partial class MainWindow : Window
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunName = "mey music player";
 
-    [DllImport("user32.dll")]
+    [DllImport("user32.dll", EntryPoint = "GetForegroundWindow")]
     private static extern IntPtr GetForegroundWindow();
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    [DllImport("user32.dll", CharSet = CharSet.Auto, EntryPoint = "GetClassName")]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
-    private const int GWL_STYLE_VAL = -16;
-    private const uint WS_MAXIMIZE_VAL = 0x01000000;
+    [DllImport("user32.dll", CharSet = CharSet.Auto, EntryPoint = "GetWindowLong")]
+    private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+    private const int GWL_STYLE = -16;
+    private const int WS_CAPTION = 0x00C00000;
 
     enum Smtc { Props, Playback, Timeline }
     enum Side { Left, Right }   // which side the cover sits on; the player opens towards the other side
@@ -299,26 +302,32 @@ public partial class MainWindow : Window
 
     bool IsFullScreenAppActive()
     {
-        IntPtr fg = GetForegroundWindow();
-        if (fg == IntPtr.Zero || fg == _hwnd || fg == _taskbar) return false;
-
-        StringBuilder sb = new StringBuilder(256);
-        GetClassName(fg, sb, sb.Capacity);
-        string cls = sb.ToString();
-        if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
-            return false;
-
-        // Normal büyütülmüş pencereler (Chrome, Klasörler vb.) tam ekran oyun değildir
-        int style = GetWindowLong(fg, GWL_STYLE_VAL);
-        if ((style & WS_MAXIMIZE_VAL) != 0) return false;
-
-        if (GetWindowRect(fg, out RECT r))
+        try
         {
-            if (r.Left <= 0 && r.Top <= 0 && r.Right >= _screenW && r.Bottom >= _screenH)
+            IntPtr fg = GetForegroundWindow();
+            if (fg == IntPtr.Zero || fg == _hwnd || fg == _taskbar) return false;
+
+            StringBuilder sb = new StringBuilder(256);
+            GetClassName(fg, sb, sb.Capacity);
+            string cls = sb.ToString();
+            if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
+                return false;
+
+            // Normal pencerelerin hepsinde WS_CAPTION (Başlık çubuğu) bulunur.
+            // Başlık çubuğu olan pencereler kesinlikle tam ekran oyun DEĞİLDİR.
+            int style = GetWindowLong(fg, GWL_STYLE);
+            if ((style & WS_CAPTION) == WS_CAPTION) return false;
+
+            // Başlık çubuğu olmayan ve tüm ekranı kaplayan pencereler gerçek tam ekran oyun/videodur.
+            if (GetWindowRect(fg, out RECT r) && _screenW > 0 && _screenH > 0)
             {
-                return true;
+                if (r.Left <= 0 && r.Top <= 0 && r.Right >= _screenW && r.Bottom >= _screenH)
+                {
+                    return true;
+                }
             }
         }
+        catch { }
         return false;
     }
 
@@ -476,6 +485,7 @@ public partial class MainWindow : Window
         Content.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         Content.RenderTransformOrigin = new Point(left ? 0 : 1, 0);
         Cover.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+        PlayerPanel.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         PlayerPanel.Margin = left ? new Thickness(44, 0, 0, 0) : new Thickness(0, 0, 44, 0);
     }
 
@@ -1072,9 +1082,28 @@ public partial class MainWindow : Window
     {
         try
         {
-            using var stream = typeof(MainWindow).Assembly.GetManifestResourceStream("app.ico");
-            if (stream == null) return;
-            var icon = new System.Drawing.Icon(stream, Forms.SystemInformation.SmallIconSize);
+            Forms.NotifyIcon tray = new Forms.NotifyIcon();
+            System.Drawing.Icon? icon = null;
+
+            try
+            {
+                var asm = typeof(MainWindow).Assembly;
+                string? resName = asm.GetManifestResourceNames()
+                    .FirstOrDefault(n => n.EndsWith("app.ico", StringComparison.OrdinalIgnoreCase));
+
+                if (resName != null)
+                {
+                    using var stream = asm.GetManifestResourceStream(resName);
+                    if (stream != null)
+                    {
+                        icon = new System.Drawing.Icon(stream, Forms.SystemInformation.SmallIconSize);
+                    }
+                }
+            }
+            catch { }
+
+            // Dosya yolu hatasında bile uygulamanın Tray ikonu mutlaka oluşsun:
+            tray.Icon = icon ?? System.Drawing.SystemIcons.Application;
 
             _miStartup.Click += (_, _) =>
             {
@@ -1103,18 +1132,16 @@ public partial class MainWindow : Window
             menu.Opening += (_, _) => UpdateTrayChecks();
             ApplyTrayTexts();
 
-            _tray = new Forms.NotifyIcon
-            {
-                Icon = icon,
-                Text = "mey music player",
-                ContextMenuStrip = menu,
-                Visible = true
-            };
-            _tray.MouseClick += (_, e) =>
+            tray.Text = "mey music player";
+            tray.ContextMenuStrip = menu;
+            tray.Visible = true;
+            tray.MouseClick += (_, e) =>
             {
                 if (e.Button == Forms.MouseButtons.Left) _ = _session?.TryTogglePlayPauseAsync();
             };
-            _tray.MouseMove += (_, _) => OnTrayHover();
+            tray.MouseMove += (_, _) => OnTrayHover();
+
+            _tray = tray;
             try { if (IsStartupEnabled()) SetStartup(true); } catch { }
         }
         catch (Exception ex) { _mediaStatus = "tray icon failed: " + ex.Message; }
@@ -1357,7 +1384,7 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    void SaveSettings()
+    SaveSettings()
     {
         try
         {

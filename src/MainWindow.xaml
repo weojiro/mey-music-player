@@ -36,8 +36,8 @@
             <ScaleTransform x:Name="Scale"/>
         </Grid.LayoutTransform>
 
-        <!-- Açılan Oynatıcı Paneli (Esnek Genişlik) -->
-        <Border x:Name="PlayerPanel" CornerRadius="8" ClipToBounds="True" Background="#2B2B2B" Height="40" HorizontalAlignment="Stretch">
+        <!-- Açılan Oynatıcı Paneli (Net 338px genişlik) -->
+        <Border x:Name="PlayerPanel" CornerRadius="8" ClipToBounds="True" Background="#2B2B2B" Height="40" Width="338" HorizontalAlignment="Left" Margin="44,0,0,0">
             <Grid Margin="10,0,10,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -78,7 +78,7 @@
         </Border>
 
         <!-- Albüm Kapağı Butonu -->
-        <Border x:Name="Cover" CornerRadius="8" ClipToBounds="True" Width="40" Height="40" Background="#333333" Cursor="Hand">
+        <Border x:Name="Cover" CornerRadius="8" ClipToBounds="True" Width="40" Height="40" Background="#333333" Cursor="Hand" HorizontalAlignment="Left">
             <TextBlock x:Name="Glyph" Text="&#xE93C;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
     </Grid>

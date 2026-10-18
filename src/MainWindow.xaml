@@ -40,39 +40,39 @@
         <Border x:Name="PlayerPanel" CornerRadius="8" ClipToBounds="True" Background="#2B2B2B" Height="40" Width="338" HorizontalAlignment="Left">
             <Grid Margin="10,0,10,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/> <!-- 1. Önceki, Oynat, Sonraki -->
+                    <ColumnDefinition Width="Auto"/> <!-- 1. Medya Kontrolleri -->
                     <ColumnDefinition Width="Auto"/> <!-- 2. Süre (0:10) -->
                     <ColumnDefinition Width="*"/>    <!-- 3. İlerleme Çubuğu -->
                     <ColumnDefinition Width="Auto"/> <!-- 4. Ses -->
                     <ColumnDefinition Width="Auto"/> <!-- 5. Dikey Karıştır / Döngü -->
                 </Grid.ColumnDefinitions>
 
-                <!-- 1. Medya Kontrolleri (Solda) -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="BtnPrev" Style="{StaticResource TextButton}" Content="&#xE892;" Width="22" Height="22" FontSize="12"/>
-                    <Button x:Name="BtnPlay" Style="{StaticResource TextButton}" Content="&#xE768;" Width="26" Height="26" FontSize="14" Margin="3,0,3,0"/>
-                    <Button x:Name="BtnNext" Style="{StaticResource TextButton}" Content="&#xE893;" Width="22" Height="22" FontSize="12"/>
+                <!-- 1. Medya Kontrolleri (Dikeyde 32px yükseltildi, tıklama alanı büyütüldü) -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <Button x:Name="BtnPrev" Style="{StaticResource TextButton}" Content="&#xE892;" Width="28" Height="32" FontSize="13"/>
+                    <Button x:Name="BtnPlay" Style="{StaticResource TextButton}" Content="&#xE768;" Width="32" Height="32" FontSize="15" Margin="4,0,4,0"/>
+                    <Button x:Name="BtnNext" Style="{StaticResource TextButton}" Content="&#xE893;" Width="28" Height="32" FontSize="13"/>
                 </StackPanel>
 
                 <!-- 2. Süre (0:10) -->
-                <TextBlock x:Name="TimeText" Grid.Column="1" Text="0:00" FontSize="11" Foreground="#CCFFFFFF" VerticalAlignment="Center" Margin="10,0,10,0"/>
+                <TextBlock x:Name="TimeText" Grid.Column="1" Text="0:00" FontSize="11" Foreground="#CCFFFFFF" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
                 <!-- 3. İlerleme Çubuğu -->
-                <Grid x:Name="SeekHit" Grid.Column="2" Height="14" Background="Transparent" Cursor="Hand" VerticalAlignment="Center" Margin="0,0,10,0">
+                <Grid x:Name="SeekHit" Grid.Column="2" Height="16" Background="Transparent" Cursor="Hand" VerticalAlignment="Center" Margin="0,0,8,0">
                     <Border x:Name="SeekTrack" Height="4" Background="#44FFFFFF" CornerRadius="2" VerticalAlignment="Center"/>
                     <Border x:Name="SeekFill" Height="4" Background="White" CornerRadius="2" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                     <Ellipse x:Name="SeekThumb" Width="10" Height="10" Fill="White" HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </Grid>
 
                 <!-- 4. Ses Kontrolü -->
-                <Grid x:Name="VolumeHit" Grid.Column="3" Background="Transparent" Cursor="Hand" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0">
+                <Grid x:Name="VolumeHit" Grid.Column="3" Background="Transparent" Cursor="Hand" Width="28" Height="32" VerticalAlignment="Center" Margin="0,0,8,0">
                     <TextBlock x:Name="VolumeGlyph" Text="&#xE995;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
 
-                <!-- 5. Karıştır / Döngü (Sağ uçta dikey üst üste) -->
+                <!-- 5. Karıştır / Döngü (Dikey üst üste) -->
                 <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Button x:Name="BtnMix" Style="{StaticResource TextButton}" Content="&#xE8B1;" Width="16" Height="14" FontSize="10"/>
-                    <Button x:Name="BtnLoop" Style="{StaticResource TextButton}" Content="&#xE8EE;" Width="16" Height="14" FontSize="10" Margin="0,1,0,0"/>
+                    <Button x:Name="BtnMix" Style="{StaticResource TextButton}" Content="&#xE8B1;" Width="18" Height="15" FontSize="10"/>
+                    <Button x:Name="BtnLoop" Style="{StaticResource TextButton}" Content="&#xE8EE;" Width="18" Height="15" FontSize="10" Margin="0,2,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -34,6 +38,22 @@ public partial class MainWindow : Window
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunName = "mey music player";
 
+    // --- Win32 Taskbar Ownership (Fixes always-on-top over games) ---
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtr", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLong", SetLastError = true)]
+    private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
+    {
+        if (IntPtr.Size == 8)
+            return SetWindowLongPtr64(hWnd, nIndex, dwNewLong);
+        else
+            return new IntPtr(SetWindowLong32(hWnd, nIndex, dwNewLong.ToInt32()));
+    }
+
+    private const int GWLP_HWNDPARENT = -8;
 
     enum Smtc { Props, Playback, Timeline }
     enum Side { Left, Right }   // which side the cover sits on; the player opens towards the other side
@@ -239,6 +259,9 @@ public partial class MainWindow : Window
 
         if (_taskbar != IntPtr.Zero)
         {
+            // Attach as owned window of Taskbar (hides player under full-screen games)
+            SetWindowLongPtr(_hwnd, GWLP_HWNDPARENT, _taskbar);
+
             GetWindowThreadProcessId(_taskbar, out uint pid);
             _locHook = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
                 IntPtr.Zero, _proc, pid, 0, WINEVENT_OUTOFCONTEXT);
@@ -325,12 +348,14 @@ public partial class MainWindow : Window
         _edge = atBottom ? "bottom" : atTop ? "top" : "side (not supported yet)";
         bool visible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
 
-        // Remember the taskbar's full height from the moment it is completely on screen,
-        // so the cover keeps its size while the taskbar slides.
+        // Remember the taskbar's full height from the moment it is completely on screen
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
-        int h = _fullHeight > 0 ? _fullHeight : r.Height;
-        int size = h - 2 * GapPx;
+
+        // Ensure player height never exceeds current taskbar height (fixes Win10 clipping)
+        int currentTaskbarH = r.Height;
+        int h = (_fullHeight > 0 && _fullHeight <= currentTaskbarH) ? _fullHeight : currentTaskbarH;
+        int size = Math.Max(12, h - 2 * GapPx);
 
         if (visible && size >= 12)
         {
@@ -350,11 +375,13 @@ public partial class MainWindow : Window
             _coverSize = size;
             int restX = PlaceX(size, r.Left);
             int coverX = _dragging ? _dragX
-                : _t > 0 ? restX + (int)Math.Round((OpenX(restX, size, r.Left) - restX) * _t)   // the opening player pushes itself (and the cover) back
+                : _t > 0 ? restX + (int)Math.Round((OpenX(restX, size, r.Left) - restX) * _t)
                 : restX;
             _gapX = coverX;
-            int winX = _side == Side.Left ? coverX : coverX + size - width;   // right side: the player opens leftwards
-            SetWindowPos(_hwnd, HWND_TOPMOST, winX, r.Top + GapPx, width, size,
+            int winX = _side == Side.Left ? coverX : coverX + size - width;
+            int winY = r.Top + (r.Height - size) / 2;  // Vertical centering inside taskbar
+
+            SetWindowPos(_hwnd, HWND_TOPMOST, winX, winY, width, size,
                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
             bool was = _shown;
             _shown = true;
@@ -376,13 +403,11 @@ public partial class MainWindow : Window
 
     int FullWidth(int size) => (int)Math.Round(DesignW * size / 40.0);
 
-    // Where the cover rests (the cover alone): where the user left it, snapped to a free spot, otherwise
-    // the default spot of the chosen side. Cached: only recomputed when the taskbar items, size or choice change.
     int PlaceX(int size, int taskbarLeft)
     {
         var key = (size, taskbarLeft, _spansVersion, _posVersion);
         if (key == _pxKey) return _pxVal;
-        int wanted = _userX ?? (_side == Side.Left ? taskbarLeft - 100000 : _screenW + 100000);   // default: far left / far right
+        int wanted = _userX ?? (_side == Side.Left ? taskbarLeft - 100000 : _screenW + 100000);
         int x = SnapToFree(wanted, size, taskbarLeft, size);
         if (x < 0) x = _side == Side.Left ? taskbarLeft + MarginPx : TrayLeft - MarginPx - size;
         _pxKey = key;
@@ -390,15 +415,12 @@ public partial class MainWindow : Window
         return x;
     }
 
-    // Where the cover has to be when the player is fully open: if the open player would cover taskbar
-    // items, it (and the cover) moves back to the nearest spot where the whole player fits.
     int OpenX(int restX, int size, int taskbarLeft)
     {
         int x = SnapToFree(restX, size, taskbarLeft, FullWidth(size));
-        return x >= 0 ? x : restX;       // nowhere big enough: it will overlap
+        return x >= 0 ? x : restX;
     }
 
-    // The parts of the taskbar between the items (and up to the tray) that are free.
     List<(int a, int b)> FreeGaps(int taskbarLeft)
     {
         var free = new List<(int a, int b)>();
@@ -412,9 +434,6 @@ public partial class MainWindow : Window
         return free;
     }
 
-    // The free spot closest to desiredX where `need` pixels (the cover alone, or the whole open player)
-    // fit without covering any taskbar item. Left side: the room is to the right of the cover, Right side:
-    // to its left. Returns -1 if nothing is big enough.
     int SnapToFree(int desiredX, int size, int taskbarLeft, int need)
     {
         int best = -1, bestDist = int.MaxValue;
@@ -422,7 +441,7 @@ public partial class MainWindow : Window
         {
             int lo = _side == Side.Left ? a + MarginPx : a + MarginPx + need - size;
             int hi = _side == Side.Left ? b - MarginPx - need : b - MarginPx - size;
-            if (hi < lo) continue;                              // too small
+            if (hi < lo) continue;
             int x = Math.Clamp(desiredX, lo, hi);
             int dist = Math.Abs(x - desiredX);
             if (dist < bestDist) { best = x; bestDist = dist; }
@@ -430,7 +449,6 @@ public partial class MainWindow : Window
         return best;
     }
 
-    // Dropping the cover only moves it; the side (which way the player opens) is set in the tray menu.
     void DropCover()
     {
         _dragging = false;
@@ -441,7 +459,6 @@ public partial class MainWindow : Window
         Update();
     }
 
-    // Left: cover on the left, player opens to the right. Right: the mirror image.
     void ApplySideLayout()
     {
         bool left = _side == Side.Left;
@@ -451,7 +468,6 @@ public partial class MainWindow : Window
         PlayerPanel.Margin = new Thickness(left ? 44 : 0, 0, 0, 0);
     }
 
-    // The taskbar can climb above us (e.g. after a click on it): put the player back on top.
     void KeepOnTop()
     {
         if (!_shown) return;
@@ -475,13 +491,11 @@ public partial class MainWindow : Window
         if (_measuring) { _remeasure = true; return; }
         _measuring = true;
 
-        // Everything from the tray (clock, hidden icons...) to the right is not a taskbar item.
         IntPtr tray = FindWindowEx(_taskbar, IntPtr.Zero, "TrayNotifyWnd", null);
         int trayLeft = tray != IntPtr.Zero && GetWindowRect(tray, out RECT tr)
             ? tr.Left
             : (int)(GetSystemMetrics(SM_CXSCREEN) * 0.75);
 
-        // UI Automation must not run on the UI thread (it can hang a WPF window).
         Task.Run(() => Scan(trayLeft)).ContinueWith(t =>
             Dispatcher.BeginInvoke(new Action(() => ApplyScan(t, trayLeft))));
     }
@@ -507,7 +521,7 @@ public partial class MainWindow : Window
                     if (rc.IsEmpty || rc.Width <= 0) continue;
                     int l = (int)rc.Left, rr = (int)Math.Ceiling(rc.Right);
                     bool counted = IsItemType(info.ControlType) && rr <= trayLeft;
-                    sb.AppendLine($"{(counted ? "*" : " ")} {info.ControlType.ProgrammaticName,-24} L{l} R{rr} T{(int)rc.Top} B{(int)rc.Bottom}  id='{info.AutomationId}' class='{info.ClassName}' name='{info.Name}'");
+                    sb.AppendLine($"{(counted ? "*" : " ")} {info.ControlType.ProgrammaticName,-24} L{l} R{rr} T{(int)rc.Top} B{(int)rc.Bottom}   id='{info.AutomationId}' class='{info.ClassName}' name='{info.Name}'");
                     if (counted) spans.Add((l, rr));
                 }
                 catch (ElementNotAvailableException) { }
@@ -544,7 +558,6 @@ public partial class MainWindow : Window
         }
         else
         {
-            // Nothing readable yet (taskbar still sliding in?): keep the old layout and retry shortly.
             _needMeasure = true;
             if (_shown && _retries++ < 5) _measureTimer.Start();
         }
@@ -558,7 +571,6 @@ public partial class MainWindow : Window
 
     void ToggleExpand()
     {
-        // Closing: the cover stays exactly where it is now (it only moved if the opening player had to push back).
         if (_expanded && _gapX != _pxVal)
         {
             _userX = _gapX;
@@ -591,7 +603,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // The 1-second progress timer only runs while the player is visible, open and playing.
     void UpdateTimers()
     {
         bool need = _shown && _expanded && _playing;
@@ -648,7 +659,7 @@ public partial class MainWindow : Window
 
     void OnSmtc(Smtc kind)
     {
-        if (!_shown) { _mediaDirty = true; return; }   // refreshed when the taskbar comes back
+        if (!_shown) { _mediaDirty = true; return; }
         var s = _session;
         if (s == null) return;
         try
@@ -676,7 +687,7 @@ public partial class MainWindow : Window
             ApplyPlayback(s.GetPlaybackInfo());
             ApplyTimeline(s.GetTimelineProperties());
             var props = await s.TryGetMediaPropertiesAsync();
-            if (s != _session) return;                      // song/app changed while loading
+            if (s != _session) return;
             _title = props.Title ?? "";
             _artist = props.Artist ?? "";
             _source = s.SourceAppUserModelId ?? "";
@@ -702,7 +713,7 @@ public partial class MainWindow : Window
         var bi = new BitmapImage();
         bi.BeginInit();
         bi.CacheOption = BitmapCacheOption.OnLoad;
-        bi.DecodePixelWidth = 256;                          // sharp at any taskbar size, still small in memory
+        bi.DecodePixelWidth = 256;
         bi.StreamSource = ms;
         bi.EndInit();
         bi.Freeze();
@@ -726,7 +737,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // One colour for buttons / time / bar / circle / volume, another for the background.
     void ApplyPalette(Color bg, Color accent)
     {
         static SolidColorBrush Frozen(Color c)
@@ -750,7 +760,6 @@ public partial class MainWindow : Window
         _paletteInfo = $"background {Hex(bg)}   buttons {Hex(accent)}";
     }
 
-    // Mix / loop: bright when on, dimmed when off.
     void UpdateToggleColors()
     {
         BtnMix.Foreground = _shuffleOn ? _accentBrush : _accentDimBrush;
@@ -759,8 +768,6 @@ public partial class MainWindow : Window
 
     static string Hex(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 
-    // Reads the cover once (a few thousand sampled pixels): the average colour, darkened, becomes the
-    // background; the most common colourful hue, brightened, becomes the buttons colour.
     static (Color bg, Color accent) ExtractPalette(BitmapSource src)
     {
         var fmt = new FormatConvertedBitmap(src, PixelFormats.Bgra32, null, 0);
@@ -788,7 +795,7 @@ public partial class MainWindow : Window
                 if (sat > 0.25 && lig > 0.15 && lig < 0.85)
                 {
                     int bin = (int)(hue / 30) % 12;
-                    double wt = sat * (1 - Math.Abs(2 * lig - 1));   // vivid, mid-light pixels count most
+                    double wt = sat * (1 - Math.Abs(2 * lig - 1));
                     binW[bin] += wt; binR[bin] += r * wt; binG[bin] += g * wt; binB[bin] += b * wt;
                 }
             }
@@ -804,12 +811,12 @@ public partial class MainWindow : Window
         Color accent;
         if (binW[best] < n * 0.02)
         {
-            accent = Color.FromRgb(0xF0, 0xF0, 0xF0);               // (almost) grayscale cover
+            accent = Color.FromRgb(0xF0, 0xF0, 0xF0);
         }
         else
         {
             var (hh, ss, _) = ToHsl((byte)(binR[best] / binW[best]), (byte)(binG[best] / binW[best]), (byte)(binB[best] / binW[best]));
-            accent = FromHsl(hh, Math.Clamp(ss, 0.5, 0.95), 0.68);   // light enough to read on the dark background
+            accent = FromHsl(hh, Math.Clamp(ss, 0.5, 0.95), 0.68);
         }
         return (bg, accent);
     }
@@ -856,7 +863,7 @@ public partial class MainWindow : Window
         BtnPlay.IsEnabled = c.IsPlayPauseToggleEnabled || c.IsPlayEnabled || c.IsPauseEnabled;
         BtnPrev.IsEnabled = c.IsPreviousEnabled;
         BtnNext.IsEnabled = c.IsNextEnabled;
-        BtnMix.IsEnabled = c.IsShuffleEnabled;      // sources without shuffle/repeat show them faded
+        BtnMix.IsEnabled = c.IsShuffleEnabled;
         BtnLoop.IsEnabled = c.IsRepeatEnabled;
         UpdateToggleColors();
         BtnLoop.Content = _repeat == Windows.Media.MediaPlaybackAutoRepeatMode.Track ? "\uE8ED" : "\uE8EE";
@@ -869,7 +876,7 @@ public partial class MainWindow : Window
         _tlEnd = tl.EndTime;
         if (_scrubbing || DateTime.UtcNow < _seekHoldUntil)
         {
-            UpdateProgressUi();     // don't let an old position jump the circle back
+            UpdateProgressUi();
             return;
         }
         _tlPos = tl.Position;
@@ -901,7 +908,6 @@ public partial class MainWindow : Window
         SeekFill.Width = has ? x + ThumbD / 2.0 : 0;
     }
 
-    // Dragging the circle: the time text follows it live.
     void ScrubTo(double mouseX)
     {
         var dur = _tlEnd - _tlStart;
@@ -913,7 +919,6 @@ public partial class MainWindow : Window
         UpdateProgressUi();
     }
 
-    // Mouse wheel on the bar: 5 seconds per notch, the time text follows each notch.
     void SeekBy(TimeSpan delta)
     {
         var dur = _tlEnd - _tlStart;
@@ -927,7 +932,7 @@ public partial class MainWindow : Window
         _seekHoldUntil = DateTime.UtcNow.AddMilliseconds(900);
         UpdateProgressUi();
         _seekCommitTimer.Stop();
-        _seekCommitTimer.Start();   // one real seek after the last notch
+        _seekCommitTimer.Start();
     }
 
     void CommitSeek(TimeSpan offset)
@@ -937,7 +942,6 @@ public partial class MainWindow : Window
     }
 
     // ------------------------------------------------------------------ volume
-    // Controls the volume of the app that is playing (Spotify, or the whole browser for YouTube).
 
     static string ProcessKey(string aumid)
     {
@@ -1004,14 +1008,14 @@ public partial class MainWindow : Window
             ReadVolume();
             if (_volTargets == 0) return;
         }
-        if (_muted && delta < 0) return;                       // already silent
+        if (_muted && delta < 0) return;
         float v = Math.Clamp((float)(Math.Round((_volume + delta) * 20.0) / 20.0), 0f, 1f);
         bool ok = WithAppSessions(list =>
         {
             foreach (var x in list)
             {
                 x.SimpleAudioVolume.Volume = v;
-                if (_muted) x.SimpleAudioVolume.Mute = false;  // turning it up un-mutes
+                if (_muted) x.SimpleAudioVolume.Mute = false;
             }
             return list.Count > 0;
         }, false);
@@ -1019,7 +1023,6 @@ public partial class MainWindow : Window
         ApplyVolumeUi(ok);
     }
 
-    // Click on the speaker: mute / un-mute the playing app.
     void ToggleMute()
     {
         if (_volTargets == 0)
@@ -1041,10 +1044,10 @@ public partial class MainWindow : Window
     {
         VolumeHit.Opacity = available ? 1 : 0.3;
         VolumeGlyph.Text = !available ? "\uE995"
-            : _muted || _volume <= 0.001f ? "\uE74F"   // muted
-            : _volume < 0.34f ? "\uE993"               // 1 arc
-            : _volume < 0.67f ? "\uE994"               // 2 arcs
-            : "\uE995";                                // 3 arcs
+            : _muted || _volume <= 0.001f ? "\uE74F"
+            : _volume < 0.34f ? "\uE993"
+            : _volume < 0.67f ? "\uE994"
+            : "\uE995";
     }
 
     // -------------------------------------------------------------------- tray
@@ -1096,7 +1099,7 @@ public partial class MainWindow : Window
                 if (e.Button == Forms.MouseButtons.Left) _ = _session?.TryTogglePlayPauseAsync();
             };
             _tray.MouseMove += (_, _) => OnTrayHover();
-            try { if (IsStartupEnabled()) SetStartup(true); } catch { }   // keep the start-up entry pointing at this exe
+            try { if (IsStartupEnabled()) SetStartup(true); } catch { }
         }
         catch (Exception ex) { _mediaStatus = "tray icon failed: " + ex.Message; }
     }
@@ -1163,7 +1166,6 @@ public partial class MainWindow : Window
         foreach (var (code, item) in _langItems) item.Checked = code == _lang;
     }
 
-    // Tray "Position": the cover goes to the default spot of that side.
     void SetSide(Side side)
     {
         _side = side;
@@ -1181,7 +1183,7 @@ public partial class MainWindow : Window
         ApplyTrayTexts();
         UpdateTrayChecks();
         SaveSettings();
-        if (_options != null) { _options.Close(); ShowOptions(); }   // re-open in the new language
+        if (_options != null) { _options.Close(); ShowOptions(); }
     }
 
     void ShowOptions()
@@ -1212,7 +1214,6 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------------ updates
 
-    // 5 seconds after the start and then once a day: look for a newer release on GitHub.
     async void CheckForUpdate()
     {
         try
@@ -1294,8 +1295,8 @@ public partial class MainWindow : Window
         _updateWin = win;
 
         bool busy = false;
-        win.Closing += (_, e) => { if (busy) e.Cancel = true; };                       // not while downloading
-        win.Closed += (_, _) => { _dismissedVersion = info.Version; _updateWin = null; };   // "Later" until the next start
+        win.Closing += (_, e) => { if (busy) e.Cancel = true; };
+        win.Closed += (_, _) => { _dismissedVersion = info.Version; _updateWin = null; };
         later.Click += (_, _) => win.Close();
         update.Click += async (_, _) =>
         {
@@ -1307,7 +1308,7 @@ public partial class MainWindow : Window
             try
             {
                 await Updater.DownloadAndInstallAsync(info, new Progress<double>(p => bar.Value = p));
-                Application.Current.Shutdown();      // the new exe is starting and waits for this one to exit
+                Application.Current.Shutdown();
             }
             catch (Exception ex)
             {
@@ -1337,7 +1338,7 @@ public partial class MainWindow : Window
                 else if (k == "userX" && int.TryParse(v, out int x)) _userX = x;
             }
         }
-        catch { /* first run: defaults */ }
+        catch { }
     }
 
     void SaveSettings()
@@ -1361,8 +1362,6 @@ public partial class MainWindow : Window
         return key?.GetValue(RunName) != null;
     }
 
-    // Start with Windows runs the launcher in "/run" mode when it is installed next to the exe: it checks that
-    // .NET is still there before starting the app. Without the launcher (a plain build) it starts the exe.
     static string StartupCommand()
     {
         string exe = Environment.ProcessPath ?? "";
@@ -1378,9 +1377,6 @@ public partial class MainWindow : Window
         else key.DeleteValue(RunName, false);
     }
 
-    // Mouse wheel over the tray icon changes the volume. Windows doesn't send wheel events to tray
-    // icons, so while the pointer rests on the icon a mouse hook listens for the wheel, and it is
-    // removed again a few seconds after the pointer was last seen on the icon.
     void OnTrayHover()
     {
         GetCursorPos(out _trayPos);
@@ -1402,7 +1398,7 @@ public partial class MainWindow : Window
                 short delta = (short)((d.mouseData >> 16) & 0xFFFF);
                 _lastTrayHover = Environment.TickCount64;
                 Dispatcher.BeginInvoke(new Action(() => ChangeVolume(delta > 0 ? 0.05f : -0.05f)));
-                return (IntPtr)1;   // swallow it, nothing underneath should scroll
+                return (IntPtr)1;
             }
         }
         return CallNextHookEx(_wheelHook, nCode, wParam, lParam);
@@ -1439,7 +1435,7 @@ public partial class MainWindow : Window
     {
         if (_debug == null) return;
         _info.Text =
-            $"mode                : {(_usePoll ? "poll (16 ms)" : "events")}\n" +
+            $"mode                 : {(_usePoll ? "poll (16 ms)" : "events")}\n" +
             $"taskbar window      : {(_taskbar == IntPtr.Zero ? "NOT FOUND" : "found")}\n" +
             $"taskbar rect        : L{_last.Left} T{_last.Top} R{_last.Right} B{_last.Bottom} ({_last.Width}x{_last.Height})\n" +
             $"screen / edge       : {_screenW}x{_screenH} / {_edge}\n" +

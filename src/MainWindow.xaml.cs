@@ -921,29 +921,39 @@ public partial class MainWindow : Window
     }
 
     void UpdateProgressUi()
-    {
-        var dur = _tlEnd - _tlStart;
-        var pos = CurrentPosition();
+{
+    var dur = _tlEnd - _tlStart;
+    var pos = CurrentPosition();
 
-        TimeText.Text = pos.TotalHours >= 1 ? pos.ToString(@"h\:mm\:ss") : pos.ToString(@"m\:ss");
-        bool has = dur.TotalSeconds > 0;
-        double ratio = has ? Math.Clamp(pos.TotalSeconds / dur.TotalSeconds, 0, 1) : 0;
-        double x = ratio * (SeekHit.Width - ThumbD);
-        SeekThumb.Margin = new Thickness(x, 0, 0, 0);
-        SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
-        SeekFill.Width = has ? x + ThumbD / 2.0 : 0;
-    }
+    TimeText.Text = pos.TotalHours >= 1 ? pos.ToString(@"h\:mm\:ss") : pos.ToString(@"m\:ss");
+    bool has = dur.TotalSeconds > 0;
+    double ratio = has ? Math.Clamp(pos.TotalSeconds / dur.TotalSeconds, 0, 1) : 0;
 
-    void ScrubTo(double mouseX)
-    {
-        var dur = _tlEnd - _tlStart;
-        double usable = SeekHit.Width - ThumbD;
-        double ratio = Math.Clamp((mouseX - ThumbD / 2.0) / usable, 0, 1);
-        _pendingSeek = dur * ratio;
-        _tlPos = _pendingSeek;
-        _tlUpdated = DateTimeOffset.UtcNow;
-        UpdateProgressUi();
-    }
+    // ActualWidth kullanıldı ve NaN/0 altı kontrolü eklendi
+    double trackW = SeekHit.ActualWidth;
+    double usable = trackW - ThumbD;
+    double x = (has && usable > 0) ? ratio * usable : 0;
+
+    if (double.IsNaN(x) || x < 0) x = 0;
+
+    SeekThumb.Margin = new Thickness(x, 0, 0, 0);
+    SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
+    SeekFill.Width = has ? Math.Max(0, x + ThumbD / 2.0) : 0;
+}
+
+void ScrubTo(double mouseX)
+{
+    var dur = _tlEnd - _tlStart;
+    double trackW = SeekHit.ActualWidth;
+    double usable = trackW - ThumbD;
+    if (usable <= 0) return;
+
+    double ratio = Math.Clamp((mouseX - ThumbD / 2.0) / usable, 0, 1);
+    _pendingSeek = dur * ratio;
+    _tlPos = _pendingSeek;
+    _tlUpdated = DateTimeOffset.UtcNow;
+    UpdateProgressUi();
+}
 
     void SeekBy(TimeSpan delta)
     {

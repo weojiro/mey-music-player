@@ -1384,7 +1384,7 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    SaveSettings()
+    void SaveSettings()
     {
         try
         {

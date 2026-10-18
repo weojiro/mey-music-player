@@ -21,9 +21,6 @@ using static TaskbarPlayerProto.NativeMethods;
 
 namespace TaskbarPlayerProto;
 
-// Prototype step 2: cover = current song artwork, click opens/closes the player.
-// The window sits on the taskbar (bottom or top), after the Start/search/app icons,
-// follows the taskbar while it slides in/out (auto-hide), and reports what happens.
 public partial class MainWindow : Window
 {
     const int GapPx = 2;          // space above/below the cover inside the taskbar
@@ -43,6 +40,9 @@ public partial class MainWindow : Window
 
     [DllImport("user32.dll", CharSet = CharSet.Auto)]
     private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
+    private const int GWL_STYLE_VAL = -16;
+    private const uint WS_MAXIMIZE_VAL = 0x01000000;
 
     enum Smtc { Props, Playback, Timeline }
     enum Side { Left, Right }   // which side the cover sits on; the player opens towards the other side
@@ -308,9 +308,13 @@ public partial class MainWindow : Window
         if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
             return false;
 
+        // Normal büyütülmüş pencereler (Chrome, Klasörler vb.) tam ekran oyun değildir
+        int style = GetWindowLong(fg, GWL_STYLE_VAL);
+        if ((style & WS_MAXIMIZE_VAL) != 0) return false;
+
         if (GetWindowRect(fg, out RECT r))
         {
-            if (r.Left <= 2 && r.Top <= 2 && r.Right >= _screenW - 2 && r.Bottom >= _screenH - 2)
+            if (r.Left <= 0 && r.Top <= 0 && r.Right >= _screenW && r.Bottom >= _screenH)
             {
                 return true;
             }

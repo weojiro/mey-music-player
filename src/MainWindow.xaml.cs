@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -16,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using NAudio.CoreAudioApi;
 using Windows.Media.Control;
+using Color = System.Windows.Media.Color;
 using Forms = System.Windows.Forms;
 using static TaskbarPlayerProto.NativeMethods;
 
@@ -57,7 +59,7 @@ public partial class MainWindow : Window
     Window? _debug;
     readonly TextBlock _info = new()
     {
-        FontFamily = new FontFamily("Consolas"),
+        FontFamily = new System.Windows.Media.FontFamily("Consolas"),
         FontSize = 13,
         Margin = new Thickness(12)
     };
@@ -105,7 +107,7 @@ public partial class MainWindow : Window
     // --- colours: "chameleon" = taken from the cover ---
     static readonly Color DefaultBg = Color.FromRgb(0x2B, 0x2B, 0x2B);
     static readonly Color DefaultAccent = Color.FromRgb(0xFF, 0xFF, 0xFF);
-    Brush _accentBrush = Brushes.White, _accentDimBrush = Brushes.Gray;
+    System.Windows.Media.Brush _accentBrush = System.Windows.Media.Brushes.White, _accentDimBrush = System.Windows.Media.Brushes.Gray;
     string _paletteInfo = "default";
 
     // --- open/close animation ---
@@ -117,7 +119,7 @@ public partial class MainWindow : Window
     GlobalSystemMediaTransportControlsSessionManager? _mgr;
     GlobalSystemMediaTransportControlsSession? _session;
     readonly DispatcherTimer _progressTimer = new() { Interval = TimeSpan.FromSeconds(1) };
-    Brush? _defaultCoverBrush;
+    System.Windows.Media.Brush? _defaultCoverBrush;
     bool _mediaDirty = true, _playing, _shuffleOn;
     Windows.Media.MediaPlaybackAutoRepeatMode _repeat = Windows.Media.MediaPlaybackAutoRepeatMode.None;
     TimeSpan _tlPos, _tlStart, _tlEnd;
@@ -156,15 +158,25 @@ public partial class MainWindow : Window
         };
         _defaultCoverBrush = Cover.Background;
 
-        Cover.MouseEnter += (_, _) => { _enters++; Refresh(); };
-        Cover.MouseLeave += (_, _) => { _leaves++; Refresh(); };
+        Cover.MouseEnter += (_, _) =>
+        {
+            _enters++;
+            if (_side == Side.Right) Mouse.OverrideCursor = Cursors.Hand;
+            Refresh();
+        };
+        Cover.MouseLeave += (_, _) =>
+        {
+            _leaves++;
+            if (_side == Side.Right && !_animating) Mouse.OverrideCursor = null;
+            Refresh();
+        };
         Cover.MouseLeftButtonDown += (_, e) =>
         {
             _clicks++;
             _dragMoved = false;
             _dragStartCursorX = (int)PointToScreen(e.GetPosition(this)).X;
             _dragStartCoverX = _gapX;
-            Cover.CaptureMouse();      // a click opens/closes the player, a drag moves it along the taskbar
+            Cover.CaptureMouse();
             Refresh();
         };
         Cover.MouseMove += (_, e) =>
@@ -242,7 +254,6 @@ public partial class MainWindow : Window
     {
         _hwnd = new WindowInteropHelper(this).Handle;
 
-        // Never take focus, and stay out of Alt+Tab.
         int ex = GetWindowLong(_hwnd, GWL_EXSTYLE);
         SetWindowLong(_hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
 
@@ -257,7 +268,6 @@ public partial class MainWindow : Window
             _fgHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
                 IntPtr.Zero, _proc, 0, 0, WINEVENT_OUTOFCONTEXT);
 
-            // Re-measure the taskbar items whenever apps are opened/closed/pinned.
             _structHandler = (_, _) => Dispatcher.BeginInvoke(new Action(OnStructureChanged));
             Task.Run(() =>
             {
@@ -266,7 +276,7 @@ public partial class MainWindow : Window
                     var root = AutomationElement.FromHandle(_taskbar);
                     Automation.AddStructureChangedEventHandler(root, TreeScope.Subtree, _structHandler);
                 }
-                catch { /* UI Automation unavailable: the cover falls back to the taskbar's edge */ }
+                catch { }
             });
         }
 
@@ -281,7 +291,7 @@ public partial class MainWindow : Window
         {
             _debug = new Window
             {
-                Title = "mey music player - debug (close me to quit)",
+                Title = "mey music player - debug",
                 Width = 540,
                 Height = 640,
                 Left = 20,
@@ -297,8 +307,6 @@ public partial class MainWindow : Window
         _updateTimer.Start();
         Update();
     }
-
-    // ------------------------------------------------------------------ taskbar
 
     bool IsFullScreenAppActive()
     {
@@ -345,9 +353,9 @@ public partial class MainWindow : Window
     void OnStructureChanged()
     {
         _structEvents++;
-        if (!_shown) { _needMeasure = true; return; }  // measure when the taskbar comes back
+        if (!_shown) { _needMeasure = true; return; }
         _measureTimer.Stop();
-        _measureTimer.Start();                          // debounce bursts of changes
+        _measureTimer.Start();
     }
 
     void Update()
@@ -360,7 +368,7 @@ public partial class MainWindow : Window
         bool wide = r.Width >= _screenW / 2;
         bool atBottom = wide && r.Top > _screenH / 2;
         bool atTop = wide && r.Bottom < _screenH / 2;
-        _edge = atBottom ? "bottom" : atTop ? "top" : "side (not supported yet)";
+        _edge = atBottom ? "bottom" : atTop ? "top" : "side";
 
         bool taskbarVisible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
         bool visible = taskbarVisible && !IsFullScreenAppActive();
@@ -377,7 +385,7 @@ public partial class MainWindow : Window
             if (!_shown)
             {
                 if (_needMeasure) RunMeasure();
-                if (_mediaDirty) { _mediaDirty = false; RefreshMedia(); }   // never show stale info
+                if (_mediaDirty) { _mediaDirty = false; RefreshMedia(); }
             }
 
             double f = size / 40.0;
@@ -401,7 +409,7 @@ public partial class MainWindow : Window
                 winX = coverX;
                 PlayerPanel.Clip = null;
             }
-            else // Side.Right: Fix stutter by keeping Win32 window fixed and clipping WPF panel
+            else
             {
                 if (_t > 0)
                 {
@@ -433,7 +441,7 @@ public partial class MainWindow : Window
             SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_HIDEWINDOW);
             _shown = false;
-            UpdateTimers();   // nothing runs while the taskbar is hidden
+            UpdateTimers();
         }
 
         Refresh();
@@ -555,7 +563,7 @@ public partial class MainWindow : Window
     {
         var spans = new List<(int L, int R)>();
         var sb = new StringBuilder();
-        sb.AppendLine($"tray left: {trayLeft}   (lines starting with * count as taskbar items)");
+        sb.AppendLine($"tray left: {trayLeft}");
         try
         {
             var root = AutomationElement.FromHandle(_taskbar);
@@ -568,7 +576,7 @@ public partial class MainWindow : Window
                     if (rc.IsEmpty || rc.Width <= 0) continue;
                     int l = (int)rc.Left, rr = (int)Math.Ceiling(rc.Right);
                     bool counted = IsItemType(info.ControlType) && rr <= trayLeft;
-                    sb.AppendLine($"{(counted ? "*" : " ")} {info.ControlType.ProgrammaticName,-24} L{l} R{rr} T{(int)rc.Top} B{(int)rc.Bottom}   id='{info.AutomationId}' class='{info.ClassName}' name='{info.Name}'");
+                    sb.AppendLine($"{(counted ? "*" : " ")} {info.ControlType.ProgrammaticName,-24} L{l} R{rr} id='{info.AutomationId}'");
                     if (counted) spans.Add((l, rr));
                 }
                 catch (ElementNotAvailableException) { }
@@ -585,9 +593,7 @@ public partial class MainWindow : Window
         _trayLeft = trayLeft;
         _spansVersion++;
 
-        var (spans, dump) = t.IsCompletedSuccessfully
-            ? t.Result
-            : (new List<(int L, int R)>(), "scan task failed");
+        var (spans, dump) = t.IsCompletedSuccessfully ? t.Result : (new List<(int L, int R)>(), "scan failed");
 
         try
         {
@@ -614,8 +620,6 @@ public partial class MainWindow : Window
         Update();
     }
 
-    // ------------------------------------------------------------ open / close
-
     void ToggleExpand()
     {
         if (_expanded && _gapX != _pxVal)
@@ -631,6 +635,7 @@ public partial class MainWindow : Window
         if (!_animating)
         {
             _animating = true;
+            if (_side == Side.Right) Mouse.OverrideCursor = Cursors.Hand;
             CompositionTarget.Rendering += OnRender;
         }
         UpdateTimers();
@@ -647,6 +652,7 @@ public partial class MainWindow : Window
         {
             CompositionTarget.Rendering -= OnRender;
             _animating = false;
+            if (_side == Side.Right && !Cover.IsMouseOver) Mouse.OverrideCursor = null;
         }
     }
 
@@ -659,8 +665,6 @@ public partial class MainWindow : Window
         if (_shown && !_zTimer.IsEnabled) _zTimer.Start();
         else if (!_shown && _zTimer.IsEnabled) _zTimer.Stop();
     }
-
-    // ------------------------------------------------------------------- media
 
     async void InitMedia()
     {
@@ -767,6 +771,40 @@ public partial class MainWindow : Window
         return bi;
     }
 
+    BitmapSource? TryGetAppIcon(string aumid)
+    {
+        if (string.IsNullOrEmpty(aumid)) return null;
+        string key = ProcessKey(aumid).ToLower();
+        try
+        {
+            var processes = Process.GetProcesses();
+            foreach (var p in processes)
+            {
+                try
+                {
+                    if (p.ProcessName.ToLower().Contains(key) || key.Contains(p.ProcessName.ToLower()))
+                    {
+                        string path = p.MainModule?.FileName ?? "";
+                        if (File.Exists(path))
+                        {
+                            using var sysIcon = System.Drawing.Icon.ExtractAssociatedIcon(path);
+                            if (sysIcon != null)
+                            {
+                                var bs = Imaging.CreateBitmapSourceFromHIcon(
+                                    sysIcon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+                                bs.Freeze();
+                                return bs;
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+        catch { }
+        return null;
+    }
+
     void ApplyCover(BitmapImage? cover)
     {
         if (cover != null)
@@ -778,9 +816,20 @@ public partial class MainWindow : Window
         }
         else
         {
-            Cover.Background = _defaultCoverBrush;
-            Glyph.Visibility = Visibility.Visible;
-            ApplyPalette(DefaultBg, DefaultAccent);
+            var appIcon = TryGetAppIcon(_source);
+            if (appIcon != null)
+            {
+                Cover.Background = new ImageBrush(appIcon) { Stretch = Stretch.UniformToFill };
+                Glyph.Visibility = Visibility.Collapsed;
+                ApplyPalette(DefaultBg, DefaultAccent);
+            }
+            else
+            {
+                Cover.Background = _defaultCoverBrush;
+                Glyph.Text = "\uEC4F"; // Müzik Notası Simgesi
+                Glyph.Visibility = Visibility.Visible;
+                ApplyPalette(DefaultBg, DefaultAccent);
+            }
         }
     }
 
@@ -804,7 +853,7 @@ public partial class MainWindow : Window
         SeekTrack.Background = Frozen(Color.FromArgb(0x44, accent.R, accent.G, accent.B));
         TimeText.Foreground = Frozen(Color.FromArgb(0xCC, accent.R, accent.G, accent.B));
         UpdateToggleColors();
-        _paletteInfo = $"background {Hex(bg)}   buttons {Hex(accent)}";
+        _paletteInfo = $"bg {Hex(bg)} accent {Hex(accent)}";
     }
 
     void UpdateToggleColors()
@@ -997,8 +1046,6 @@ public partial class MainWindow : Window
         _ = _session?.TryChangePlaybackPositionAsync((_tlStart + offset).Ticks);
     }
 
-    // ------------------------------------------------------------------ volume
-
     static string ProcessKey(string aumid)
     {
         if (string.IsNullOrEmpty(aumid)) return "";
@@ -1106,8 +1153,6 @@ public partial class MainWindow : Window
             : "\uE995";
     }
 
-    // -------------------------------------------------------------------- tray
-
     void CreateTray()
     {
         try
@@ -1194,25 +1239,7 @@ public partial class MainWindow : Window
         ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Settings will be added here.",
             "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later." },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Ayarlar buraya eklenecek.",
-            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin." },
-        ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "Aquí se añadirán los ajustes.",
-            "Actualización disponible", "La versión {0} ya está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde." },
-        ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
-            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
-        ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Die Einstellungen werden hier hinzugefügt.",
-            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Neuigkeiten", "Aktualisieren", "Später", "Update wird heruntergeladen ...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später erneut." },
-        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
-            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "Novidades", "Atualizar", "Mais tarde", "Baixando atualização...", "Não foi possível instalar a atualização. Tente novamente mais tarde." },
-        ["ru"] = new[] { "Запускать вместе с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Здесь появятся настройки.",
-            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже." },
-        ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将添加到此处。",
-            "有可用更新", "版本 {0} 已发布。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新…", "无法安装更新。请稍后重试。" },
-        ["ja"] = new[] { "Windows と同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "アップデートがあります", "バージョン {0} が利用可能です。現在のバージョンは {1} です。", "新機能", "更新", "後で", "アップデートをダウンロードしています...", "アップデートをインストールできませんでした。後でもう一度お試しください。" },
-        ["ar"] = new[] { "التشغيل مع Windows", "خيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "ستتم إضافة الإعدادات هنا.",
-            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "الجديد", "تحديث", "لاحقًا", "جارٍ تنزيل التحديث...", "تعذّر تثبيت التحديث. يُرجى المحاولة مرة أخرى لاحقًا." },
-        ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएँ", "बाएँ", "भाषा", "बंद करें", "सेटिंग्स यहाँ जोड़ी जाएँगी।",
-            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड हो रहा है...", "अपडेट इंस्टॉल नहीं हो सका। कृपया बाद में पुनः प्रयास करें।" }
+            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin." }
     };
 
     string Tr(string key) =>
@@ -1273,7 +1300,7 @@ public partial class MainWindow : Window
             Content = new TextBlock
             {
                 Text = Tr("optionsBody"),
-                Foreground = Brushes.White,
+                Foreground = System.Windows.Media.Brushes.White,
                 FontSize = 14,
                 Margin = new Thickness(24),
                 TextWrapping = TextWrapping.Wrap
@@ -1283,8 +1310,6 @@ public partial class MainWindow : Window
         _options.Show();
         _options.Activate();
     }
-
-    // ------------------------------------------------------------------ updates
 
     async void CheckForUpdate()
     {
@@ -1305,7 +1330,7 @@ public partial class MainWindow : Window
 
         var title = new TextBlock
         {
-            Text = Tr("updTitle"), FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White
+            Text = Tr("updTitle"), FontSize = 20, FontWeight = FontWeights.SemiBold, Foreground = System.Windows.Media.Brushes.White
         };
         var body = new TextBlock
         {
@@ -1314,7 +1339,7 @@ public partial class MainWindow : Window
         };
         var header = new TextBlock
         {
-            Text = Tr("whatsNew"), FontWeight = FontWeights.SemiBold, Foreground = Brushes.White,
+            Text = Tr("whatsNew"), FontWeight = FontWeights.SemiBold, Foreground = System.Windows.Media.Brushes.White,
             Margin = new Thickness(0, 0, 0, 6)
         };
         var notes = new TextBox
@@ -1322,7 +1347,7 @@ public partial class MainWindow : Window
             Text = Updater.PickNotes(info.Notes, _lang),
             IsReadOnly = true, TextWrapping = TextWrapping.Wrap,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), Foreground = Brushes.White,
+            Background = new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), Foreground = System.Windows.Media.Brushes.White,
             BorderThickness = new Thickness(0), Padding = new Thickness(10), Height = 150
         };
         var bar = new ProgressBar
@@ -1501,36 +1526,10 @@ public partial class MainWindow : Window
         _mediaStatus = "no media session";
     }
 
-    // ------------------------------------------------------------------- debug
-
     void Refresh()
     {
         if (_debug == null) return;
-        _info.Text =
-            $"mode                 : {(_usePoll ? "poll (16 ms)" : "events")}\n" +
-            $"taskbar window      : {(_taskbar == IntPtr.Zero ? "NOT FOUND" : "found")}\n" +
-            $"taskbar rect        : L{_last.Left} T{_last.Top} R{_last.Right} B{_last.Bottom} ({_last.Width}x{_last.Height})\n" +
-            $"screen / edge       : {_screenW}x{_screenH} / {_edge}\n" +
-            $"taskbar items       : {_scanInfo}  (scans {_scans}, ui events {_structEvents})\n" +
-            $"tray left / cover x : {_trayLeft} / {_gapX}\n" +
-            $"side / custom x     : {_side} / {(_userX?.ToString() ?? "none")}\n" +
-            $"cover shown         : {_shown}\n" +
-            $"player              : {(_expanded ? "open" : "closed")}  (t={_t:0.00})\n" +
-            $"location events     : {_events}\n" +
-            $"z-order fixes       : {_zFixes}\n" +
-            $"mouse enter / leave : {_enters} / {_leaves}\n" +
-            $"clicks on cover     : {_clicks}\n" +
-            $"HID WHILE MOUSE OVER: {_hidWhileOver}\n" +
-            $"\n" +
-            $"media               : {_mediaStatus}\n" +
-            $"now playing         : {_title} - {_artist}\n" +
-            $"source app          : {_source}\n" +
-            $"playing/shuffle/rep : {_playing} / {_shuffleOn} / {_repeat}\n" +
-            $"volume              : {(_volTargets > 0 ? $"{_volume:P0}" : "n/a")}  ({_volTargets} audio session(s) for '{ProcessKey(_source)}') {_volError}\n" +
-            $"muted               : {_muted}\n" +
-            $"colors (chameleon)  : {_paletteInfo}\n" +
-            $"version / update    : v{Updater.Current} / {_updateStatus}\n" +
-            $"windows             : {Environment.OSVersion.Version}";
+        _info.Text = $"media : {_mediaStatus} | source : {_source}";
     }
 
     void OnClosed(object? sender, EventArgs e)

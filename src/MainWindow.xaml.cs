@@ -313,12 +313,9 @@ public partial class MainWindow : Window
             if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
                 return false;
 
-            // Normal pencerelerin hepsinde WS_CAPTION (Başlık çubuğu) bulunur.
-            // Başlık çubuğu olan pencereler kesinlikle tam ekran oyun DEĞİLDİR.
             int style = GetWindowLong(fg, GWL_STYLE);
             if ((style & WS_CAPTION) == WS_CAPTION) return false;
 
-            // Başlık çubuğu olmayan ve tüm ekranı kaplayan pencereler gerçek tam ekran oyun/videodur.
             if (GetWindowRect(fg, out RECT r) && _screenW > 0 && _screenH > 0)
             {
                 if (r.Left <= 0 && r.Top <= 0 && r.Right >= _screenW && r.Bottom >= _screenH)
@@ -368,11 +365,9 @@ public partial class MainWindow : Window
         bool taskbarVisible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
         bool visible = taskbarVisible && !IsFullScreenAppActive();
 
-        // Remember the taskbar's full height from the moment it is completely on screen
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
 
-        // Ensure player height never exceeds current taskbar height (fixes Win10 clipping)
         int currentTaskbarH = r.Height;
         int h = (_fullHeight > 0 && _fullHeight <= currentTaskbarH) ? _fullHeight : currentTaskbarH;
         int size = Math.Max(12, h - 2 * GapPx);
@@ -385,12 +380,10 @@ public partial class MainWindow : Window
                 if (_mediaDirty) { _mediaDirty = false; RefreshMedia(); }   // never show stale info
             }
 
-            // The content is designed 40 units tall; scale it to the taskbar.
             double f = size / 40.0;
             double s = f / VisualTreeHelper.GetDpi(this).DpiScaleX;
             if (Math.Abs(Scale.ScaleX - s) > 0.001) { Scale.ScaleX = s; Scale.ScaleY = s; }
             int fullW = (int)Math.Round(DesignW * f);
-            int width = size + (int)Math.Round((fullW - size) * _t);
 
             _coverSize = size;
             int restX = PlaceX(size, r.Left);
@@ -398,8 +391,35 @@ public partial class MainWindow : Window
                 : _t > 0 ? restX + (int)Math.Round((OpenX(restX, size, r.Left) - restX) * _t)
                 : restX;
             _gapX = coverX;
-            int winX = _side == Side.Left ? coverX : coverX + size - width;
-            int winY = r.Top + (r.Height - size) / 2;  // Vertical centering inside taskbar
+
+            int winX;
+            int width;
+
+            if (_side == Side.Left)
+            {
+                width = size + (int)Math.Round((fullW - size) * _t);
+                winX = coverX;
+                PlayerPanel.Clip = null;
+            }
+            else // Side.Right: Fix stutter by keeping Win32 window fixed and clipping WPF panel
+            {
+                if (_t > 0)
+                {
+                    width = fullW;
+                    winX = coverX + size - fullW;
+                    double panelW = 338.0;
+                    double visibleW = panelW * _t;
+                    PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
+                }
+                else
+                {
+                    width = size;
+                    winX = coverX;
+                    PlayerPanel.Clip = null;
+                }
+            }
+
+            int winY = r.Top + (r.Height - size) / 2;
 
             SetWindowPos(_hwnd, HWND_TOPMOST, winX, winY, width, size,
                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -428,7 +448,8 @@ public partial class MainWindow : Window
         var key = (size, taskbarLeft, _spansVersion, _posVersion);
         if (key == _pxKey) return _pxVal;
         int wanted = _userX ?? (_side == Side.Left ? taskbarLeft - 100000 : _screenW + 100000);
-        int x = SnapToFree(wanted, size, taskbarLeft, size);
+        int need = _side == Side.Right ? FullWidth(size) : size;
+        int x = SnapToFree(wanted, size, taskbarLeft, need);
         if (x < 0) x = _side == Side.Left ? taskbarLeft + MarginPx : TrayLeft - MarginPx - size;
         _pxKey = key;
         _pxVal = x;
@@ -921,39 +942,38 @@ public partial class MainWindow : Window
     }
 
     void UpdateProgressUi()
-{
-    var dur = _tlEnd - _tlStart;
-    var pos = CurrentPosition();
+    {
+        var dur = _tlEnd - _tlStart;
+        var pos = CurrentPosition();
 
-    TimeText.Text = pos.TotalHours >= 1 ? pos.ToString(@"h\:mm\:ss") : pos.ToString(@"m\:ss");
-    bool has = dur.TotalSeconds > 0;
-    double ratio = has ? Math.Clamp(pos.TotalSeconds / dur.TotalSeconds, 0, 1) : 0;
+        TimeText.Text = pos.TotalHours >= 1 ? pos.ToString(@"h\:mm\:ss") : pos.ToString(@"m\:ss");
+        bool has = dur.TotalSeconds > 0;
+        double ratio = has ? Math.Clamp(pos.TotalSeconds / dur.TotalSeconds, 0, 1) : 0;
 
-    // ActualWidth kullanıldı ve NaN/0 altı kontrolü eklendi
-    double trackW = SeekHit.ActualWidth;
-    double usable = trackW - ThumbD;
-    double x = (has && usable > 0) ? ratio * usable : 0;
+        double trackW = SeekHit.ActualWidth;
+        double usable = trackW - ThumbD;
+        double x = (has && usable > 0) ? ratio * usable : 0;
 
-    if (double.IsNaN(x) || x < 0) x = 0;
+        if (double.IsNaN(x) || x < 0) x = 0;
 
-    SeekThumb.Margin = new Thickness(x, 0, 0, 0);
-    SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
-    SeekFill.Width = has ? Math.Max(0, x + ThumbD / 2.0) : 0;
-}
+        SeekThumb.Margin = new Thickness(x, 0, 0, 0);
+        SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
+        SeekFill.Width = has ? Math.Max(0, x + ThumbD / 2.0) : 0;
+    }
 
-void ScrubTo(double mouseX)
-{
-    var dur = _tlEnd - _tlStart;
-    double trackW = SeekHit.ActualWidth;
-    double usable = trackW - ThumbD;
-    if (usable <= 0) return;
+    void ScrubTo(double mouseX)
+    {
+        var dur = _tlEnd - _tlStart;
+        double trackW = SeekHit.ActualWidth;
+        double usable = trackW - ThumbD;
+        if (usable <= 0) return;
 
-    double ratio = Math.Clamp((mouseX - ThumbD / 2.0) / usable, 0, 1);
-    _pendingSeek = dur * ratio;
-    _tlPos = _pendingSeek;
-    _tlUpdated = DateTimeOffset.UtcNow;
-    UpdateProgressUi();
-}
+        double ratio = Math.Clamp((mouseX - ThumbD / 2.0) / usable, 0, 1);
+        _pendingSeek = dur * ratio;
+        _tlPos = _pendingSeek;
+        _tlUpdated = DateTimeOffset.UtcNow;
+        UpdateProgressUi();
+    }
 
     void SeekBy(TimeSpan delta)
     {
@@ -1112,7 +1132,6 @@ void ScrubTo(double mouseX)
             }
             catch { }
 
-            // Dosya yolu hatasında bile uygulamanın Tray ikonu mutlaka oluşsun:
             tray.Icon = icon ?? System.Drawing.SystemIcons.Application;
 
             _miStartup.Click += (_, _) =>

@@ -32,7 +32,9 @@
     </Window.Resources>
 
     <Grid x:Name="Content" Width="382" Height="40">
-        <ScaleTransform x:Name="Scale"/>
+        <Grid.LayoutTransform>
+            <ScaleTransform x:Name="Scale"/>
+        </Grid.LayoutTransform>
 
         <!-- Açılan Oynatıcı Paneli (Esnek Genişlik) -->
         <Border x:Name="PlayerPanel" CornerRadius="8" ClipToBounds="True" Background="#2B2B2B" Height="40" HorizontalAlignment="Stretch">

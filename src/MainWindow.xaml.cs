@@ -38,6 +38,12 @@ public partial class MainWindow : Window
     const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     const string RunName = "mey music player";
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    private static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+
     enum Smtc { Props, Playback, Timeline }
     enum Side { Left, Right }   // which side the cover sits on; the player opens towards the other side
 
@@ -291,6 +297,27 @@ public partial class MainWindow : Window
 
     // ------------------------------------------------------------------ taskbar
 
+    bool IsFullScreenAppActive()
+    {
+        IntPtr fg = GetForegroundWindow();
+        if (fg == IntPtr.Zero || fg == _hwnd || fg == _taskbar) return false;
+
+        StringBuilder sb = new StringBuilder(256);
+        GetClassName(fg, sb, sb.Capacity);
+        string cls = sb.ToString();
+        if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
+            return false;
+
+        if (GetWindowRect(fg, out RECT r))
+        {
+            if (r.Left <= 2 && r.Top <= 2 && r.Right >= _screenW - 2 && r.Bottom >= _screenH - 2)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void OnWinEvent(IntPtr hook, uint evt, IntPtr hwnd, int idObject, int idChild, uint thread, uint time)
     {
         if (evt == EVENT_OBJECT_LOCATIONCHANGE)
@@ -299,11 +326,9 @@ public partial class MainWindow : Window
             _events++;
             Update();
         }
-        else if (_shown) // foreground changed: make sure the taskbar didn't climb above us
+        else if (evt == EVENT_SYSTEM_FOREGROUND)
         {
-            SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-            _zFixes++;
-            Refresh();
+            Update();
         }
     }
 
@@ -326,7 +351,9 @@ public partial class MainWindow : Window
         bool atBottom = wide && r.Top > _screenH / 2;
         bool atTop = wide && r.Bottom < _screenH / 2;
         _edge = atBottom ? "bottom" : atTop ? "top" : "side (not supported yet)";
-        bool visible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
+
+        bool taskbarVisible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
+        bool visible = taskbarVisible && !IsFullScreenAppActive();
 
         // Remember the taskbar's full height from the moment it is completely on screen
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
@@ -445,12 +472,17 @@ public partial class MainWindow : Window
         Content.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         Content.RenderTransformOrigin = new Point(left ? 0 : 1, 0);
         Cover.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
-        PlayerPanel.Margin = new Thickness(left ? 44 : 0, 0, 0, 0);
+        PlayerPanel.Margin = left ? new Thickness(44, 0, 0, 0) : new Thickness(0, 0, 44, 0);
     }
 
     void KeepOnTop()
     {
         if (!_shown) return;
+        if (IsFullScreenAppActive())
+        {
+            Update();
+            return;
+        }
         IntPtr w = NativeMethods.GetWindow(_hwnd, GW_HWNDPREV);
         for (int guard = 0; w != IntPtr.Zero && guard < 300; guard++)
         {
@@ -1116,7 +1148,7 @@ public partial class MainWindow : Window
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将添加到此处。",
             "有可用更新", "版本 {0} 已发布。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新…", "无法安装更新。请稍后重试。" },
         ["ja"] = new[] { "Windows と同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "アップデートがあります", "バージョン {0} が利用可能です。現在のバージョンは {1} です。", "新機能", "更新", "後で", "アップデートをダウンロードしています...", "アップデート tasting インストールできませんでした。後でもう一度お試しください。" },
+            "アップデートがあります", "バージョン {0} が利用可能です。現在のバージョンは {1} です。", "新機能", "更新", "後で", "アップデートをダウンロードしています...", "アップデートをインストールできませんでした。後でもう一度お試しください。" },
         ["ar"] = new[] { "التشغيل مع Windows", "خيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "ستتم إضافة الإعدادات هنا.",
             "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "الجديد", "تحديث", "لاحقًا", "جارٍ تنزيل التحديث...", "تعذّر تثبيت التحديث. يُرجى المحاولة مرة أخرى لاحقًا." },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएँ", "बाएँ", "भाषा", "बंद करें", "सेटिंग्स यहाँ जोड़ी जाएँगी।",

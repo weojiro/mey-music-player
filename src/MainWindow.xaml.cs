@@ -157,18 +157,8 @@ public partial class MainWindow : Window
         };
         _defaultCoverBrush = Cover.Background;
 
-        Cover.MouseEnter += (_, _) =>
-        {
-            _enters++;
-            if (_side == Side.Right) Mouse.OverrideCursor = Cursors.Hand;
-            Refresh();
-        };
-        Cover.MouseLeave += (_, _) =>
-        {
-            _leaves++;
-            if (_side == Side.Right && !_animating) Mouse.OverrideCursor = null;
-            Refresh();
-        };
+        Cover.MouseEnter += (_, _) => { _enters++; Refresh(); };
+        Cover.MouseLeave += (_, _) => { _leaves++; Refresh(); };
         Cover.MouseLeftButtonDown += (_, e) =>
         {
             _clicks++;
@@ -410,20 +400,13 @@ public partial class MainWindow : Window
             }
             else
             {
-                if (_t > 0)
-                {
-                    width = fullW;
-                    winX = coverX + size - fullW;
-                    double panelW = 338.0;
-                    double visibleW = panelW * _t;
-                    PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
-                }
-                else
-                {
-                    width = size;
-                    winX = coverX;
-                    PlayerPanel.Clip = null;
-                }
+                // Sağ Kapak İmleç Düzeltmesi: Lokal kapağın koordinatı zıplamasın diye pencere boyutu sabit tutulur.
+                width = fullW;
+                winX = coverX + size - fullW;
+
+                double panelW = 338.0;
+                double visibleW = panelW * _t;
+                PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
             }
 
             int winY = r.Top + (r.Height - size) / 2;
@@ -634,7 +617,6 @@ public partial class MainWindow : Window
         if (!_animating)
         {
             _animating = true;
-            if (_side == Side.Right) Mouse.OverrideCursor = Cursors.Hand;
             CompositionTarget.Rendering += OnRender;
         }
         UpdateTimers();
@@ -651,7 +633,6 @@ public partial class MainWindow : Window
         {
             CompositionTarget.Rendering -= OnRender;
             _animating = false;
-            if (_side == Side.Right && !Cover.IsMouseOver) Mouse.OverrideCursor = null;
         }
     }
 

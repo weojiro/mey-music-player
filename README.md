@@ -26,7 +26,7 @@ version and what's new, with **Update** and **Later**. If the app says .NET is m
 - Click the cover to open or close the player. Drag the cover along the taskbar to move it.
 - Mouse wheel on the cover: forward plays the next song, back the previous one. Middle click on the cover plays / pauses.
 - Mouse wheel on the time bar seeks, on the speaker changes the volume, a click on the speaker mutes.
-- Tray icon: left click plays / pauses, mouse wheel changes the volume. Right click: Options, Start with Windows,
+- Tray icon: left click plays / pauses, mouse wheel changes the volume. Right click: the version (greyed out), Options, Start with Windows,
   Position (Right / Left), Language, Close.
 - 11 languages: English, Türkçe, Español, Français, Deutsch, Português (Brasil), Русский, 简体中文, 日本語,
   العربية, हिन्दी.

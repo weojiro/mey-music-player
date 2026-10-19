@@ -99,6 +99,7 @@ public partial class MainWindow : Window
     // --- tray menu ---
     readonly Forms.ToolStripMenuItem _miStartup = new(), _miOptions = new(), _miPosition = new(),
         _miRight = new(), _miLeft = new(), _miLanguage = new(), _miClose = new();
+    readonly Forms.ToolStripMenuItem _miVersion = new() { Enabled = false };   // greyed out, only shows the version
     readonly List<(string code, Forms.ToolStripMenuItem item)> _langItems = new();
     Forms.ContextMenuStrip? _menu;
 
@@ -1325,12 +1326,14 @@ public partial class MainWindow : Window
                 _miLanguage.DropDownItems.Add(item);
             }
             _miClose.Click += (_, _) => Application.Current.Shutdown();
+            _miVersion.Text = $"v{Updater.Current}";
 
             _menu = new Forms.ContextMenuStrip();
             var menu = _menu;
             menu.Items.AddRange(new Forms.ToolStripItem[]
             {
-                // the window, then the on/off settings, then the submenus, Close on its own at the bottom
+                // version, the window, then the on/off settings, then the submenus, Close on its own at the bottom
+                _miVersion, new Forms.ToolStripSeparator(),
                 _miOptions, new Forms.ToolStripSeparator(), _miStartup, new Forms.ToolStripSeparator(),
                 _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miClose
             });

@@ -34,8 +34,9 @@ Every song paints the player in its own colours.
 
 Open **Options** in the tray menu to make the player your own: pick the background and button colours
 (or keep *Chameleon*, the colours from the cover) and put PNG, JPG or GIF images on it. Drag, resize and
-rotate them on a big preview; they always stay behind the buttons and GIFs play only while the player is
-open. Save up to 5 players and switch between them.
+rotate them on a big preview and drag them up or down in the image list to choose which one is in front;
+they always stay behind the buttons and GIFs play only while the player is open. Save up to 5 players and
+switch between them.
 
 ### Lyrics, like in Spotify
 

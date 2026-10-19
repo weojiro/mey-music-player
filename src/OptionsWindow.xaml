@@ -93,6 +93,37 @@
             </Setter>
         </Style>
 
+        <!-- slim dark scrollbar for when the page is taller than the screen -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="MinWidth" Value="10"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Track IsDirectionReversed="True" x:Name="PART_Track">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="#4A4A4A" CornerRadius="3" Margin="2,2,2,2" x:Name="Bar"/>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" TargetName="Bar" Value="#6A6A6A"/>
+                                                </Trigger>
+                                                <Trigger Property="IsDragging" Value="True">
+                                                    <Setter Property="Background" TargetName="Bar" Value="#7A7A7A"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="TextBlock" x:Key="Section">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -102,6 +133,7 @@
     </Window.Resources>
 
     <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" x:Name="PageScroll">
         <StackPanel Margin="28,22,28,24" MinWidth="640" x:Name="Page">
 
             <Grid>
@@ -207,6 +239,11 @@
                         <Button Background="#E3E3E3" Foreground="#1F1F1F" Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="AddImageButton"/>
                         <Button Foreground="#F28B82" Style="{StaticResource Btn}" x:Name="RemoveButton"/>
                     </WrapPanel>
+                    <!-- layers: the top row is the image in front; rows are dragged to reorder -->
+                    <Border Background="{StaticResource Card}" CornerRadius="10" HorizontalAlignment="Left" Margin="0,12,0,0" MinWidth="360" Padding="4" Visibility="Collapsed" x:Name="LayerCard">
+                        <StackPanel Background="Transparent" x:Name="LayerList"/>
+                    </Border>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" Visibility="Collapsed" x:Name="LayerHintText"/>
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" x:Name="ImageHintText"/>
                     <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="MessageText"/>
                 </StackPanel>
@@ -216,6 +253,7 @@
 
             <Button Foreground="#F28B82" HorizontalAlignment="Left" Style="{StaticResource Btn}" x:Name="ResetButton"/>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- confirmation over the page (reset, delete player) -->
         <Border Background="#B0101010" Visibility="Collapsed" x:Name="ConfirmLayer">

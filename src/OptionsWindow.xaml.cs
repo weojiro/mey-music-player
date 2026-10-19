@@ -39,6 +39,13 @@ public partial class OptionsWindow : Window
     Action? _confirmAction;
     bool _loadingName;
 
+    readonly FontFamily _icons = new(Environment.OSVersion.Version.Build >= 22000 ? "Segoe Fluent Icons" : "Segoe MDL2 Assets");
+
+    // a row of the layer list being dragged
+    StickerSpec? _layerDrag;
+    double _layerDragY;
+    bool _layerMoved;
+
     enum DragKind { None, Move, Resize, Rotate }
     DragKind _drag;
     Point _dragFrom;
@@ -81,8 +88,8 @@ public partial class OptionsWindow : Window
         ResetButton.Content = T("reset");
         ConfirmCancel.Content = T("cancel");
 
-        var icons = new FontFamily(Environment.OSVersion.Version.Build >= 22000 ? "Segoe Fluent Icons" : "Segoe MDL2 Assets");
-        foreach (var t in new[] { PvPrev, PvPlay, PvNext, PvVolume, PvMix, PvLoop, PvGlyph }) t.FontFamily = icons;
+        LayerHintText.Text = T("layersHint");
+        foreach (var t in new[] { PvPrev, PvPlay, PvNext, PvVolume, PvMix, PvLoop, PvGlyph }) t.FontFamily = _icons;
 
         foreach (int z in new[] { 1, 2, 3 })
         {
@@ -102,6 +109,9 @@ public partial class OptionsWindow : Window
         PvStickers.MouseLeftButtonUp += (_, _) => EndDrag();
         PvStickers.LostMouseCapture += (_, _) => _drag = DragKind.None;
         PvStickers.MouseWheel += OnPreviewWheel;
+        LayerList.MouseMove += OnLayerMove;
+        LayerList.MouseLeftButtonUp += (_, _) => EndLayerDrag();
+        LayerList.LostMouseCapture += (_, _) => _layerDrag = null;
 
         NameBox.TextChanged += (_, _) => OnNameChanged();
         DeletePlayerButton.Click += (_, _) => Confirm(T("deleteAsk"), T("deletePlayer"), DeletePlayer);
@@ -113,7 +123,8 @@ public partial class OptionsWindow : Window
 
         _saveTimer.Tick += (_, _) => Flush();
         _messageTimer.Tick += (_, _) => { _messageTimer.Stop(); MessageText.Visibility = Visibility.Collapsed; };
-        KeyDown += OnKey;
+        PreviewKeyDown += OnKey;        // before the scroll viewer takes the arrow keys
+        MaxHeight = SystemParameters.WorkArea.Height;   // taller pages scroll
         StateChanged += (_, _) => _pvAnim.Run(WindowState != WindowState.Minimized);
         SourceInitialized += (_, _) => DarkTitleBar();
         _main.CoverChanged += OnCoverChanged;
@@ -587,7 +598,7 @@ public partial class OptionsWindow : Window
         // as tall as the player, centered; wide pictures are made to fit its width
         double h = 40, w = h * frames.Aspect;
         if (w > 338) { w = 338; h = w / frames.Aspect; }
-        p.Stickers.Add(new StickerSpec { File = file, X = 169, Y = 20, W = w, H = h });
+        p.Stickers.Add(new StickerSpec { File = file, Name = System.IO.Path.GetFileName(dialog.FileName), X = 169, Y = 20, W = w, H = h });
         _selected = p.Stickers.Count - 1;
         RebuildPreviewStickers();
         RefreshButtons();
@@ -619,6 +630,7 @@ public partial class OptionsWindow : Window
         foreach (var (spec, frames) in loaded)
         {
             var img = new Image { Source = frames.Frames[0], Stretch = Stretch.Fill, Tag = spec, Cursor = Cursors.SizeAll };
+            Panel.SetZIndex(img, specs.IndexOf(spec));
             RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
             Stickers.Place(img, spec);
             img.MouseLeftButtonDown += (_, e) =>
@@ -633,6 +645,7 @@ public partial class OptionsWindow : Window
         }
         _pvAnim.Run(WindowState != WindowState.Minimized);
         UpdateOverlay();
+        RefreshLayers();
     }
 
     Image? SelectedImage => _pvImages.FirstOrDefault(i => ReferenceEquals(i.Tag, SelectedSpec));
@@ -642,6 +655,84 @@ public partial class OptionsWindow : Window
         _selected = index;
         UpdateOverlay();
         RefreshButtons();
+        RefreshLayers();
+    }
+
+    // ---------- layer list: one row per image, the image in front first ----------
+
+    void RefreshLayers()
+    {
+        LayerList.Children.Clear();
+        var specs = Current?.Stickers ?? new List<StickerSpec>();
+        LayerCard.Visibility = LayerHintText.Visibility = specs.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        var dim = (Brush)FindResource("Dim");
+        var picked = new SolidColorBrush(Color.FromRgb(0x3A, 0x3A, 0x3A));
+        var hover = new SolidColorBrush(Color.FromRgb(0x30, 0x30, 0x30));
+        for (int i = specs.Count - 1; i >= 0; i--)          // the spec list runs back to front
+        {
+            var s = specs[i];
+            bool on = ReferenceEquals(s, SelectedSpec);
+            var row = new Border
+            {
+                Height = 38, CornerRadius = new CornerRadius(7), Padding = new Thickness(10, 0, 12, 0),
+                Background = on ? picked : Brushes.Transparent, Cursor = Cursors.SizeNS, Tag = s
+            };
+            var g = new Grid();
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            g.Children.Add(new TextBlock { Text = "", FontFamily = _icons, FontSize = 12, Foreground = dim, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
+            var thumb = new Image { Stretch = Stretch.Uniform, Margin = new Thickness(2) };
+            if (_pvCache.TryGetValue(s.File, out var f)) thumb.Source = f.Frames[0];
+            RenderOptions.SetBitmapScalingMode(thumb, BitmapScalingMode.HighQuality);
+            var box = new Border { Width = 46, Height = 28, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A)), Margin = new Thickness(0, 0, 12, 0), Child = thumb };
+            Grid.SetColumn(box, 1);
+            g.Children.Add(box);
+            var name = new TextBlock { Text = s.Name ?? string.Format(T("imageN"), i + 1), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 280 };
+            Grid.SetColumn(name, 2);
+            g.Children.Add(name);
+            row.Child = g;
+            row.MouseEnter += (_, _) => { if (!ReferenceEquals(row.Tag, SelectedSpec)) row.Background = hover; };
+            row.MouseLeave += (_, _) => { if (!ReferenceEquals(row.Tag, SelectedSpec)) row.Background = Brushes.Transparent; };
+            row.MouseLeftButtonDown += (_, e) =>
+            {
+                if (Current is not { } p) return;
+                _layerDragY = e.GetPosition(LayerList).Y;
+                _layerMoved = false;
+                Select(p.Stickers.IndexOf(s));
+                _layerDrag = s;
+                LayerList.CaptureMouse();
+                e.Handled = true;
+            };
+            LayerList.Children.Add(row);
+        }
+    }
+
+    // the dragged row goes where the mouse is; the preview changes its order at once
+    void OnLayerMove(object sender, MouseEventArgs e)
+    {
+        if (_layerDrag is not { } s || Current is not { } p || !LayerList.IsMouseCaptured) return;
+        double y = e.GetPosition(LayerList).Y;
+        if (!_layerMoved && Math.Abs(y - _layerDragY) < 4) return;
+        _layerMoved = true;
+        int rows = LayerList.Children.Count;
+        double rowH = rows > 0 && LayerList.ActualHeight > 0 ? LayerList.ActualHeight / rows : 38;
+        int target = p.Stickers.Count - 1 - Math.Clamp((int)(y / rowH), 0, rows - 1);
+        int now = p.Stickers.IndexOf(s);
+        if (target == now || now < 0) return;
+        p.Stickers.RemoveAt(now);
+        p.Stickers.Insert(target, s);
+        _selected = target;
+        foreach (var img in _pvImages) Panel.SetZIndex(img, p.Stickers.IndexOf((StickerSpec)img.Tag));
+        RefreshLayers();
+        UpdateOverlay();
+        QueueSave();
+    }
+
+    void EndLayerDrag()
+    {
+        _layerDrag = null;
+        if (LayerList.IsMouseCaptured) LayerList.ReleaseMouseCapture();
     }
 
     void RemoveSelected()

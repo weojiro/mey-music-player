@@ -9,6 +9,7 @@ namespace TaskbarPlayerProto;
 sealed class StickerSpec
 {
     public string File { get; set; } = "";
+    public string? Name { get; set; }       // the picked file's name, shown in the layer list
     public double X { get; set; }
     public double Y { get; set; }
     public double W { get; set; }

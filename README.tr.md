@@ -34,8 +34,9 @@ Her şarkı oynatıcıyı kendi renklerine boyar.
 
 Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç: arka plan ve buton renklerini seç
 (ya da kapaktan gelen renkler için *Bukalemun*'da bırak) ve üstüne PNG, JPG veya GIF resimler koy. Büyük bir
-önizlemede sürükle, boyutlandır ve döndür; resimler hep butonların arkasında kalır, GIF'ler sadece oynatıcı
-açıkken oynar. 5 oynatıcıya kadar kaydedip aralarında geçiş yapabilirsin.
+önizlemede sürükle, boyutlandır ve döndür; hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek
+seç. Resimler hep butonların arkasında kalır, GIF'ler sadece oynatıcı açıkken oynar. 5 oynatıcıya kadar kaydedip
+aralarında geçiş yapabilirsin.
 
 ### Spotify'daki gibi şarkı sözleri
 

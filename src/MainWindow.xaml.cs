@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
@@ -79,6 +80,9 @@ public partial class MainWindow : Window
     Window? _updateWin;
     Version? _dismissedVersion;
     string _updateStatus = "not checked yet";
+
+    // --- hover info card ---
+    readonly DispatcherTimer _hoverTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
     // --- position / drag / settings ---
     Side _side = Side.Left;
@@ -157,11 +161,37 @@ public partial class MainWindow : Window
         };
         _defaultCoverBrush = Cover.Background;
 
-        Cover.MouseEnter += (_, _) => { _enters++; Refresh(); };
-        Cover.MouseLeave += (_, _) => { _leaves++; Refresh(); };
+        _hoverTimer.Tick += (_, _) =>
+        {
+            _hoverTimer.Stop();
+            if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title))
+            {
+                TitlePopupText.Text = _title;
+                bool atTop = _edge == "top";
+                TitlePopup.Placement = atTop ? PlacementMode.Bottom : PlacementMode.Top;
+                TitlePopup.IsOpen = true;
+            }
+        };
+
+        Cover.MouseEnter += (_, _) =>
+        {
+            _enters++;
+            if (!_hoverTimer.IsEnabled && !string.IsNullOrWhiteSpace(_title))
+                _hoverTimer.Start();
+            Refresh();
+        };
+        Cover.MouseLeave += (_, _) =>
+        {
+            _leaves++;
+            _hoverTimer.Stop();
+            TitlePopup.IsOpen = false;
+            Refresh();
+        };
         Cover.MouseLeftButtonDown += (_, e) =>
         {
             _clicks++;
+            _hoverTimer.Stop();
+            TitlePopup.IsOpen = false;
             _dragMoved = false;
             _dragStartCursorX = (int)PointToScreen(e.GetPosition(this)).X;
             _dragStartCoverX = _gapX;
@@ -400,10 +430,8 @@ public partial class MainWindow : Window
             }
             else
             {
-                // Sağ Kapak İmleç Düzeltmesi: Lokal kapağın koordinatı zıplamasın diye pencere boyutu sabit tutulur.
                 width = fullW;
                 winX = coverX + size - fullW;
-
                 double panelW = 338.0;
                 double visibleW = panelW * _t;
                 PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
@@ -825,7 +853,12 @@ public partial class MainWindow : Window
         _accentBrush = Frozen(accent);
         _accentDimBrush = Frozen(Color.FromArgb(0x80, accent.R, accent.G, accent.B));
 
+        // Bukalemun Renkleri Oynatıcı ve Hover Bilgi Kartına Uygulanır
         PlayerPanel.Background = Frozen(bg);
+        TitlePopupBorder.Background = Frozen(bg);
+        TitlePopupBorder.BorderBrush = Frozen(Color.FromArgb(0x44, accent.R, accent.G, accent.B));
+        TitlePopupText.Foreground = _accentBrush;
+
         BtnPrev.Foreground = BtnPlay.Foreground = BtnNext.Foreground = _accentBrush;
         VolumeGlyph.Foreground = _accentBrush;
         SeekFill.Background = _accentBrush;
@@ -1519,6 +1552,7 @@ public partial class MainWindow : Window
         _progressTimer.Stop();
         _zTimer.Stop();
         _updateTimer.Stop();
+        _hoverTimer.Stop();
         StopWheelHook();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
         if (_locHook != IntPtr.Zero) UnhookWinEvent(_locHook);

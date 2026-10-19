@@ -112,10 +112,11 @@ static class TrayMenu
             bool rtl = e.Item.RightToLeft == Forms.RightToLeft.Yes;
             var color = e.Item.Enabled ? Text : Dim;
             e.TextColor = color;
-            var r = e.TextRectangle;
+            // the layout's text box sits at the top of the padded row: center the text over the whole row instead
             e.TextRectangle = rtl
-                ? new Rectangle(ArrowRoom, r.Y, e.Item.Width - TextLeft - ArrowRoom, r.Height)
-                : new Rectangle(TextLeft, r.Y, e.Item.Width - TextLeft - ArrowRoom, r.Height);
+                ? new Rectangle(ArrowRoom, 0, e.Item.Width - TextLeft - ArrowRoom, e.Item.Height)
+                : new Rectangle(TextLeft, 0, e.Item.Width - TextLeft - ArrowRoom, e.Item.Height);
+            e.TextFormat |= Forms.TextFormatFlags.VerticalCenter | Forms.TextFormatFlags.SingleLine;
             base.OnRenderItemText(e);
 
             if (e.Item is Forms.ToolStripMenuItem { Checked: true })

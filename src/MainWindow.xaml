@@ -23,7 +23,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="{TemplateBinding Background}" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <ContentPresenter HorizontalAlignment="Center" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>
@@ -84,7 +84,7 @@
 
         <!-- 1 Saniye Durunca Açılan Kapağa Ortalı Bukalemun Şarkı Adı Kartı -->
         <Popup AllowsTransparency="True" PlacementTarget="{Binding ElementName=Cover}" PopupAnimation="Fade" StaysOpen="True" x:Name="TitlePopup">
-            <Border Background="#2B2B2B" BorderBrush="#44FFFFFF" BorderThickness="1" CornerRadius="8" MaxWidth="240" MinWidth="110" Padding="12,8" x:Name="TitlePopupBorder">
+            <Border Background="#2B2B2B" BorderBrush="Transparent" BorderThickness="1" CornerRadius="8" MaxWidth="240" MinWidth="110" Padding="12,8" x:Name="TitlePopupBorder">
                 <TextBlock FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12" FontWeight="SemiBold" Foreground="White" MaxHeight="36" TextAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="TitlePopupText"/>
             </Border>
         </Popup>

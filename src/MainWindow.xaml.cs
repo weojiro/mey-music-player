@@ -129,6 +129,7 @@ public partial class MainWindow : Window
     TimeSpan _tlPos, _tlStart, _tlEnd;
     DateTimeOffset _tlUpdated;
     string _mediaStatus = "starting...", _title = "", _artist = "", _source = "";
+    long _lastWheelSkip;                    // mouse wheel on the cover: at most one skip per 300 ms
 
     // --- seeking / scrubbing ---
     const int ThumbD = 10;                  // diameter of the circle on the seek bar (design units)
@@ -228,6 +229,15 @@ public partial class MainWindow : Window
             if (e.ChangedButton != MouseButton.Middle) return;
             e.Handled = true;
             _ = _session?.TryTogglePlayPauseAsync();
+        };
+
+        // wheel forward = next song, back = previous; touchpads send many small steps, so skip once per 300 ms
+        Cover.MouseWheel += (_, e) =>
+        {
+            e.Handled = true;
+            if (Environment.TickCount64 - _lastWheelSkip < 300) return;
+            _lastWheelSkip = Environment.TickCount64;
+            _ = e.Delta > 0 ? _session?.TrySkipNextAsync() : _session?.TrySkipPreviousAsync();
         };
 
         Cover.MouseMove += (_, e) =>
@@ -923,7 +933,6 @@ public partial class MainWindow : Window
         // Bukalemun Renkleri Oynatıcı ve Hover Bilgi Kartına Uygulanır
         PlayerPanel.Background = Frozen(bg);
         TitlePopupBorder.Background = Frozen(bg);
-        TitlePopupBorder.BorderBrush = Frozen(Color.FromArgb(0x44, accent.R, accent.G, accent.B));
         TitlePopupText.Foreground = _accentBrush;
 
         BtnPrev.Foreground = BtnPlay.Foreground = BtnNext.Foreground = _accentBrush;
@@ -1281,7 +1290,9 @@ public partial class MainWindow : Window
             var menu = _menu;
             menu.Items.AddRange(new Forms.ToolStripItem[]
             {
-                _miStartup, _miOptions, _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miClose
+                // the window, then the on/off settings, then the submenus, Close on its own at the bottom
+                _miOptions, new Forms.ToolStripSeparator(), _miStartup, new Forms.ToolStripSeparator(),
+                _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miClose
             });
             menu.Opening += (_, _) => UpdateTrayChecks();
             ApplyTrayTexts();
@@ -1461,10 +1472,14 @@ public partial class MainWindow : Window
         };
         var update = new Button
         {
-            Content = Tr("updUpdate"), Style = buttonStyle, FontFamily = textFont,
-            Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x96, 0xDD)), Margin = new Thickness(0, 0, 8, 0)
+            Content = Tr("updUpdate"), Style = buttonStyle, FontFamily = textFont, Padding = new Thickness(16, 6, 16, 6),
+            MinWidth = 90, Background = new SolidColorBrush(Color.FromRgb(0x3A, 0x96, 0xDD)), Margin = new Thickness(0, 0, 8, 0)
         };
-        var later = new Button { Content = Tr("updLater"), Style = buttonStyle, FontFamily = textFont };
+        var later = new Button
+        {
+            Content = Tr("updLater"), Style = buttonStyle, FontFamily = textFont, Padding = new Thickness(16, 6, 16, 6),
+            MinWidth = 90
+        };
         var buttons = new StackPanel
         {
             Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right,

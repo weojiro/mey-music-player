@@ -791,6 +791,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             _mediaStatus = "media API unavailable: " + ex.Message;
+            ErrorLog.Write("media init", ex);
             Refresh();
         }
     }
@@ -840,7 +841,7 @@ public partial class MainWindow : Window
                 case Smtc.Timeline: ApplyTimeline(s.GetTimelineProperties()); LoadLyrics(); break;   // the length can come after the title
             }
         }
-        catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; }
+        catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; ErrorLog.Write("media event", ex); }
         Refresh();
     }
 
@@ -871,7 +872,7 @@ public partial class MainWindow : Window
             ApplyCover(cover);
             _mediaStatus = "ok";
         }
-        catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; }
+        catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; ErrorLog.Write("media refresh", ex); }
         Refresh();
     }
 
@@ -1481,7 +1482,7 @@ public partial class MainWindow : Window
                 SaveSettings();
             }
         }
-        catch (Exception ex) { _mediaStatus = "tray icon failed: " + ex.Message; }
+        catch (Exception ex) { _mediaStatus = "tray icon failed: " + ex.Message; ErrorLog.Write("tray", ex); }
     }
 
     static readonly (string code, string name)[] Languages =
@@ -1770,6 +1771,7 @@ public partial class MainWindow : Window
             {
                 busy = false;
                 _updateStatus = "update failed: " + ex.Message;
+                ErrorLog.Write("update install", ex);
                 status.Text = Tr("updFailed");
                 update.IsEnabled = later.IsEnabled = true;
                 Refresh();

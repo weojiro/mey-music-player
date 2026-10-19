@@ -9,6 +9,11 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // unexpected errors are written to error.log; a UI error does not take the player off the taskbar
+        DispatcherUnhandledException += (_, a) => { ErrorLog.Write("ui", a.Exception); a.Handled = true; };
+        AppDomain.CurrentDomain.UnhandledException += (_, a) => { if (a.ExceptionObject is Exception ex) ErrorLog.Write("crash", ex); };
+        TaskScheduler.UnobservedTaskException += (_, a) => { ErrorLog.Write("task", a.Exception); a.SetObserved(); };
+
         // Only one copy at a time. After an update the old copy is still shutting down: wait for it.
         bool afterUpdate = e.Args.Contains("--after-update");
         _single = new Mutex(true, @"Local\MMP-single-instance", out bool createdNew);

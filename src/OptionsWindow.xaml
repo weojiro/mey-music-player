@@ -205,8 +205,6 @@
                 <StackPanel Grid.Column="1">
                     <WrapPanel>
                         <Button Background="#E3E3E3" Foreground="#1F1F1F" Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="AddImageButton"/>
-                        <Button Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="FrontButton"/>
-                        <Button Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="BackButton"/>
                         <Button Foreground="#F28B82" Style="{StaticResource Btn}" x:Name="RemoveButton"/>
                     </WrapPanel>
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" x:Name="ImageHintText"/>

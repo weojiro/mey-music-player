@@ -76,8 +76,6 @@ public partial class OptionsWindow : Window
         ButtonsText.Text = T("buttons");
         ImagesText.Text = T("images");
         AddImageButton.Content = "+  " + T("addImage");
-        FrontButton.Content = T("front");
-        BackButton.Content = T("back");
         RemoveButton.Content = T("remove");
         ImageHintText.Text = T("imageHint");
         ResetButton.Content = T("reset");
@@ -108,8 +106,6 @@ public partial class OptionsWindow : Window
         NameBox.TextChanged += (_, _) => OnNameChanged();
         DeletePlayerButton.Click += (_, _) => Confirm(T("deleteAsk"), T("deletePlayer"), DeletePlayer);
         AddImageButton.Click += (_, _) => AddImage();
-        FrontButton.Click += (_, _) => MoveSelected(toFront: true);
-        BackButton.Click += (_, _) => MoveSelected(toFront: false);
         RemoveButton.Click += (_, _) => RemoveSelected();
         ResetButton.Click += (_, _) => Confirm(T("resetAsk"), T("reset"), ResetPlayer);
         ConfirmCancel.Click += (_, _) => ConfirmLayer.Visibility = Visibility.Collapsed;
@@ -166,7 +162,7 @@ public partial class OptionsWindow : Window
     {
         var p = Current;
         AddImageButton.IsEnabled = p == null ? _designs.Players.Count < Designs.MaxPlayers : p.Stickers.Count < Designs.MaxStickers;
-        FrontButton.IsEnabled = BackButton.IsEnabled = RemoveButton.IsEnabled = SelectedSpec != null;
+        RemoveButton.IsEnabled = SelectedSpec != null;
         ResetButton.IsEnabled = p != null;
     }
 
@@ -646,16 +642,6 @@ public partial class OptionsWindow : Window
         _selected = index;
         UpdateOverlay();
         RefreshButtons();
-    }
-
-    void MoveSelected(bool toFront)
-    {
-        if (Current is not { } p || SelectedSpec is not { } s) return;
-        p.Stickers.Remove(s);
-        if (toFront) p.Stickers.Add(s); else p.Stickers.Insert(0, s);
-        _selected = p.Stickers.IndexOf(s);
-        RebuildPreviewStickers();
-        QueueSave();
     }
 
     void RemoveSelected()

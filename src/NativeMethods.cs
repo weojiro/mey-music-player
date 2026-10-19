@@ -52,6 +52,9 @@ internal static class NativeMethods
     public static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
 
     [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 
     [DllImport("user32.dll")]
@@ -108,8 +111,10 @@ internal static class NativeMethods
     public static extern IntPtr GetModuleHandle(string? moduleName);
 
     // Windows 11 only: rounded corners and border colour of a window
+    public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;     // dark title bar (Windows 10 2004+ and 11)
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     public const int DWMWA_BORDER_COLOR = 34;
+    public const int DWMWA_CAPTION_COLOR = 35;
     public const int DWMWCP_ROUND = 2;
     public const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
 

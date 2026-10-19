@@ -30,6 +30,13 @@ Oynatıcıyı açıp kapatmak için kapağa tıkla, istediğin yere koymak için
 
 Her şarkı oynatıcıyı kendi renklerine boyar.
 
+### Oynatıcını tasarla
+
+Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç: arka plan ve buton renklerini seç
+(ya da kapaktan gelen renkler için *Bukalemun*'da bırak) ve üstüne PNG, JPG veya GIF resimler koy. Büyük bir
+önizlemede sürükle, boyutlandır ve döndür; resimler hep butonların arkasında kalır, GIF'ler sadece oynatıcı
+açıkken oynar. 5 oynatıcıya kadar kaydedip aralarında geçiş yapabilirsin.
+
 ### Spotify'daki gibi şarkı sözleri
 
 <img src="docs/lyrics.gif" alt="Oynatıcıda satır satır değişen şarkı sözleri" width="420">
@@ -54,7 +61,7 @@ Fareyi bir saniye kapağın üstünde tut.
 
 <img src="docs/tray-menu.png" alt="Tray menüsü" width="232">
 
-Tray ikonuna sağ tıklayınca: Şarkı sözleri, Windows ile başlat, görev çubuğunun hangi tarafı (sol / sağ),
+Tray ikonuna sağ tıklayınca: Ayarlar, Şarkı sözleri, Windows ile başlat, görev çubuğunun hangi tarafı (sol / sağ),
 dil ve Yeniden başlat.
 
 ## Kurulum

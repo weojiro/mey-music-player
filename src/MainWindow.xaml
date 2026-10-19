@@ -39,6 +39,10 @@
         <!-- Player panel -->
         <Border Background="#2B2B2B" ClipToBounds="True" CornerRadius="8" Height="40" HorizontalAlignment="Left" Width="338" x:Name="PlayerPanel">
             <Grid>
+            <!-- Pictures of the player in use (Design your player): behind everything else, clipped to the rounded panel -->
+            <Canvas IsHitTestVisible="False" x:Name="StickerLayer">
+                <Canvas.Clip><RectangleGeometry RadiusX="8" RadiusY="8" Rect="0,0,338,40"/></Canvas.Clip>
+            </Canvas>
             <Grid Margin="10,0,10,0" x:Name="ControlsGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/> <!-- 1. Media controls -->

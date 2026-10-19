@@ -117,6 +117,13 @@ public partial class MainWindow : Window
     static readonly Color DefaultAccent = Color.FromRgb(0xFF, 0xFF, 0xFF);
     System.Windows.Media.Brush _accentBrush = System.Windows.Media.Brushes.White, _accentDimBrush = System.Windows.Media.Brushes.Gray;
     string _paletteInfo = "default";
+    Color _chamBg = DefaultBg, _chamAccent = DefaultAccent;     // chameleon colours of the current cover
+
+    // --- Design your player: saved players, pictures on the player ---
+    readonly Designs _designs = Designs.Load();
+    readonly StickerAnimator _stickerAnim = new();
+    readonly Dictionary<string, StickerFrames> _stickerCache = new();
+    int _stickerBuild;
 
     // --- open/close animation ---
     bool _expanded, _animating;
@@ -327,7 +334,9 @@ public partial class MainWindow : Window
         };
 
         SetNoMedia();
+        BuildStickers();
         SourceInitialized += OnSourceInitialized;
+        ContentRendered += (_, _) => Update();      // WPF has shown the window now: hide or place it
         Closed += OnClosed;
     }
 
@@ -389,6 +398,7 @@ public partial class MainWindow : Window
         InitMedia();
         _updateTimer.Start();
         Update();
+        if (Environment.GetCommandLineArgs().Contains("--options")) ShowOptions();     // for development and tests
     }
 
     bool IsFullScreenAppActive()
@@ -510,7 +520,7 @@ public partial class MainWindow : Window
             _shown = true;
             if (!was) UpdateTimers();
         }
-        else if (_shown)
+        else if (_shown || IsWindowVisible(_hwnd))     // WPF shows the window at start even when the taskbar is hidden
         {
             if (Cover.IsMouseOver) _hidWhileOver++;
             _hoverTimer.Stop();
@@ -521,6 +531,7 @@ public partial class MainWindow : Window
             UpdateTimers();
         }
 
+        UpdateStickerAnim();
         Refresh();
     }
 
@@ -959,7 +970,7 @@ public partial class MainWindow : Window
             Cover.Background = new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
             Glyph.Visibility = Visibility.Collapsed;
             var (bg, accent) = ExtractPalette(cover);
-            ApplyPalette(bg, accent);
+            SetChameleon(bg, accent);
         }
         else
         {
@@ -968,17 +979,88 @@ public partial class MainWindow : Window
             {
                 Cover.Background = new ImageBrush(appIcon) { Stretch = Stretch.UniformToFill };
                 Glyph.Visibility = Visibility.Collapsed;
-                ApplyPalette(DefaultBg, DefaultAccent);
+                SetChameleon(DefaultBg, DefaultAccent);
             }
             else
             {
                 Cover.Background = _defaultCoverBrush;
                 Glyph.Text = "\uEC4F"; // music note
                 Glyph.Visibility = Visibility.Visible;
-                ApplyPalette(DefaultBg, DefaultAccent);
+                SetChameleon(DefaultBg, DefaultAccent);
             }
         }
     }
+
+    void SetChameleon(Color bg, Color accent)
+    {
+        _chamBg = bg;
+        _chamAccent = accent;
+        ApplyDesignColors();
+        CoverChanged?.Invoke();
+    }
+
+    // The player in use decides each colour; a colour it leaves empty comes from the cover (chameleon)
+    internal void ApplyDesignColors()
+    {
+        var d = _designs.Current;
+        ApplyPalette(Designs.ParseColor(d?.Bg) ?? _chamBg, Designs.ParseColor(d?.Buttons) ?? _chamAccent);
+    }
+
+    // --- for the options window ---
+    internal Designs DesignStore => _designs;
+    internal (Color Bg, Color Accent) Chameleon => (_chamBg, _chamAccent);
+    internal System.Windows.Media.Brush CoverBackground => Cover.Background;
+    internal bool CoverShowsGlyph => Glyph.Visibility == Visibility.Visible;
+    internal bool CoverOnRight => _side == Side.Right;
+    internal string Text(string key) => Tr(key);
+    internal event Action? CoverChanged;
+
+    // Called by the options window after the player in use or its pictures changed
+    internal void DesignChanged()
+    {
+        ApplyDesignColors();
+        BuildStickers();
+    }
+
+    // Decodes the pictures of the player in use (in the background, so they are ready before the player opens)
+    async void BuildStickers()
+    {
+        int build = ++_stickerBuild;
+        var specs = _designs.Current?.Stickers.ToList() ?? new List<StickerSpec>();
+        var used = new Dictionary<string, StickerFrames>();
+        var shown = new List<(StickerSpec spec, StickerFrames frames)>();
+        foreach (var s in specs)
+        {
+            // about 2.5 px per design unit covers big taskbars and 200 % scaling; sizes are bucketed so small edits reuse it
+            int side = (int)Math.Ceiling(Math.Max(s.W, s.H) * 2.5 / 32) * 32;
+            string key = s.File + "|" + side;
+            if (!used.TryGetValue(key, out var frames) && !_stickerCache.TryGetValue(key, out frames))
+            {
+                frames = await Stickers.LoadAsync(Designs.ImagePath(s.File), side, 1_500_000);
+                if (build != _stickerBuild) return;
+            }
+            if (frames == null) continue;
+            used[key] = frames;
+            shown.Add((s, frames));
+        }
+        _stickerCache.Clear();
+        foreach (var kv in used) _stickerCache[kv.Key] = kv.Value;
+
+        _stickerAnim.Clear();
+        StickerLayer.Children.Clear();
+        foreach (var (spec, frames) in shown)
+        {
+            var img = new Image { Source = frames.Frames[0], Stretch = Stretch.Fill };
+            RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+            Stickers.Place(img, spec);
+            StickerLayer.Children.Add(img);
+            _stickerAnim.Add(img, frames);
+        }
+        UpdateStickerAnim();
+    }
+
+    // GIFs only play while the player is open and on screen
+    void UpdateStickerAnim() => _stickerAnim.Run(_shown && _t > 0);
 
     void ApplyPalette(Color bg, Color accent)
     {
@@ -1411,34 +1493,111 @@ public partial class MainWindow : Window
 
     static readonly string[] StrKeys =
     {
-        "startup", "options", "position", "right", "left", "language", "close", "optionsBody",
-        "updTitle", "updBody", "whatsNew", "updUpdate", "updLater", "updDownloading", "updFailed", "restart", "lyrics"
+        "startup", "options", "position", "right", "left", "language", "close", "updTitle", "updBody", "whatsNew",
+        "updUpdate", "updLater", "updDownloading", "updFailed", "restart", "lyrics", "design", "autosave",
+        "players", "default", "customPlayer", "newPlayer", "name", "deletePlayer", "background", "buttons",
+        "chameleon", "customColor", "images", "addImage", "imageHint", "editHint", "front", "back", "remove",
+        "reset", "resetAsk", "deleteAsk", "cancel", "maxImages", "maxPlayers", "badImage"
     };
 
     static readonly Dictionary<string, string[]> Strings = new()
     {
-        ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Settings will be added here.",
-            "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later.", "Restart", "Lyrics" },
-        ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Ayarlar buraya eklenecek.",
-            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat", "Şarkı sözleri" },
-        ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "La configuración se agregará aquí.",
-            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar", "Letras" },
-        ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
-            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer", "Paroles" },
-        ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
-            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten", "Songtexte" },
-        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
-            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar", "Letras" },
-        ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Настройки будут добавлены здесь.",
-            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить", "Тексты песен" },
-        ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将在此处添加。",
-            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。", "重新启动", "歌词" },
-        ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動", "歌詞" },
-        ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "سيتم إضافة الإعدادات هنا.",
-            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل", "كلمات الأغاني" },
-        ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "सेटिंग्स यहां जोड़ी जाएंगी।",
-            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें", "गीत के बोल" }
+        ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Update available",
+            "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...",
+            "The update could not be installed. Please try again later.", "Restart", "Lyrics", "Design your player",
+            "Changes are saved automatically.", "Players", "Default", "Custom player", "New player", "Name", "Delete player", "Background", "Buttons",
+            "Chameleon: colours from the cover", "Custom colour", "Images", "Add image", "PNG, JPG or GIF, up to 10 MB. Up to 10 images per player.",
+            "Drag an image to move it, its corner to resize it and the dot above it to rotate it. Mouse wheel: size. Delete: remove.", "To front",
+            "To back", "Remove", "Reset", "Reset this player to the default colours and remove its images?", "Delete this player?", "Cancel",
+            "A player can have up to 10 images.", "You can save up to 5 players.", "This file can't be used. Choose a PNG, JPG or GIF up to 10 MB." },
+        ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Güncelleme mevcut",
+            "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...",
+            "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat", "Şarkı sözleri", "Oynatıcını tasarla",
+            "Değişiklikler otomatik kaydedilir.", "Oynatıcılar", "Varsayılan", "Özel oynatıcı", "Yeni oynatıcı", "Ad", "Oynatıcıyı sil", "Arka plan",
+            "Butonlar", "Bukalemun: renkler kapaktan", "Özel renk", "Resimler", "Resim ekle",
+            "PNG, JPG veya GIF, en fazla 10 MB. Bir oynatıcıda en fazla 10 resim.",
+            "Taşımak için resmi, boyutlandırmak için köşesini, döndürmek için üstündeki noktayı sürükle. Fare tekerleği: boyut. Delete: kaldır.",
+            "Öne al", "Arkaya al", "Kaldır", "Sıfırla", "Bu oynatıcı varsayılan renklere dönsün ve resimleri kaldırılsın mı?",
+            "Bu oynatıcı silinsin mi?", "Vazgeç", "Bir oynatıcıda en fazla 10 resim olabilir.", "En fazla 5 oynatıcı kaydedebilirsin.",
+            "Bu dosya kullanılamıyor. En fazla 10 MB'lık bir PNG, JPG veya GIF seç." },
+        ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "Actualización disponible",
+            "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...",
+            "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar", "Letras", "Diseña tu reproductor",
+            "Los cambios se guardan automáticamente.", "Reproductores", "Predeterminado", "Reproductor personalizado", "Nuevo reproductor", "Nombre",
+            "Eliminar reproductor", "Fondo", "Botones", "Camaleón: colores de la portada", "Color personalizado", "Imágenes", "Añadir imagen",
+            "PNG, JPG o GIF, hasta 10 MB. Hasta 10 imágenes por reproductor.",
+            "Arrastra una imagen para moverla, su esquina para cambiar el tamaño y el punto de arriba para girarla. Rueda del ratón: tamaño. Supr: quitar.",
+            "Al frente", "Al fondo", "Quitar", "Restablecer", "¿Restablecer este reproductor a los colores predeterminados y quitar sus imágenes?",
+            "¿Eliminar este reproductor?", "Cancelar", "Un reproductor puede tener hasta 10 imágenes.", "Puedes guardar hasta 5 reproductores.",
+            "Este archivo no se puede usar. Elige un PNG, JPG o GIF de hasta 10 MB." },
+        ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Mise à jour disponible",
+            "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard",
+            "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer", "Paroles",
+            "Concevez votre lecteur", "Les modifications sont enregistrées automatiquement.", "Lecteurs", "Par défaut", "Lecteur personnalisé",
+            "Nouveau lecteur", "Nom", "Supprimer le lecteur", "Arrière-plan", "Boutons", "Caméléon : couleurs de la pochette",
+            "Couleur personnalisée", "Images", "Ajouter une image", "PNG, JPG ou GIF, jusqu'à 10 Mo. Jusqu'à 10 images par lecteur.",
+            "Faites glisser une image pour la déplacer, son coin pour la redimensionner et le point au-dessus pour la faire pivoter. Molette : taille. Suppr : retirer.",
+            "Mettre devant", "Mettre derrière", "Retirer", "Réinitialiser",
+            "Réinitialiser ce lecteur aux couleurs par défaut et retirer ses images ?", "Supprimer ce lecteur ?", "Annuler",
+            "Un lecteur peut avoir jusqu'à 10 images.", "Vous pouvez enregistrer jusqu'à 5 lecteurs.",
+            "Ce fichier ne peut pas être utilisé. Choisissez un PNG, JPG ou GIF de 10 Mo maximum." },
+        ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Update verfügbar",
+            "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...",
+            "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten", "Songtexte",
+            "Gestalten Sie Ihren Player", "Änderungen werden automatisch gespeichert.", "Player", "Standard", "Eigener Player", "Neuer Player",
+            "Name", "Player löschen", "Hintergrund", "Schaltflächen", "Chamäleon: Farben vom Cover", "Eigene Farbe", "Bilder", "Bild hinzufügen",
+            "PNG, JPG oder GIF, bis 10 MB. Bis zu 10 Bilder pro Player.",
+            "Ziehen Sie ein Bild, um es zu verschieben, seine Ecke für die Größe und den Punkt darüber zum Drehen. Mausrad: Größe. Entf: entfernen.",
+            "Nach vorne", "Nach hinten", "Entfernen", "Zurücksetzen", "Diesen Player auf die Standardfarben zurücksetzen und seine Bilder entfernen?",
+            "Diesen Player löschen?", "Abbrechen", "Ein Player kann bis zu 10 Bilder haben.", "Sie können bis zu 5 Player speichern.",
+            "Diese Datei kann nicht verwendet werden. Wählen Sie ein PNG, JPG oder GIF bis 10 MB." },
+        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "Atualização disponível",
+            "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...",
+            "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar", "Letras", "Crie seu player",
+            "As alterações são salvas automaticamente.", "Players", "Padrão", "Player personalizado", "Novo player", "Nome", "Excluir player",
+            "Fundo", "Botões", "Camaleão: cores da capa", "Cor personalizada", "Imagens", "Adicionar imagem",
+            "PNG, JPG ou GIF, até 10 MB. Até 10 imagens por player.",
+            "Arraste uma imagem para movê-la, o canto para redimensionar e o ponto acima para girar. Roda do mouse: tamanho. Delete: remover.",
+            "Para frente", "Para trás", "Remover", "Redefinir", "Redefinir este player para as cores padrão e remover as imagens dele?",
+            "Excluir este player?", "Cancelar", "Um player pode ter até 10 imagens.", "Você pode salvar até 5 players.",
+            "Este arquivo não pode ser usado. Escolha um PNG, JPG ou GIF de até 10 MB." },
+        ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Доступно обновление",
+            "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...",
+            "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить", "Тексты песен", "Оформите свой плеер",
+            "Изменения сохраняются автоматически.", "Плееры", "По умолчанию", "Свой плеер", "Новый плеер", "Название", "Удалить плеер", "Фон",
+            "Кнопки", "Хамелеон: цвета обложки", "Свой цвет", "Изображения", "Добавить изображение",
+            "PNG, JPG или GIF до 10 МБ. До 10 изображений на плеер.",
+            "Перетащите изображение, чтобы переместить его; угол — изменить размер, точку над ним — повернуть. Колесо мыши: размер. Delete: убрать.",
+            "На передний план", "На задний план", "Убрать", "Сбросить", "Сбросить этот плеер к стандартным цветам и убрать его изображения?",
+            "Удалить этот плеер?", "Отмена", "У плеера может быть до 10 изображений.", "Можно сохранить до 5 плееров.",
+            "Этот файл нельзя использовать. Выберите PNG, JPG или GIF до 10 МБ." },
+        ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。",
+            "重新启动", "歌词", "设计你的播放器", "更改会自动保存。", "播放器", "默认", "自定义播放器", "新建播放器", "名称", "删除播放器", "背景", "按钮", "变色龙：取自封面的颜色", "自定义颜色", "图片", "添加图片",
+            "PNG、JPG 或 GIF，最大 10 MB。每个播放器最多 10 张图片。", "拖动图片可移动，拖动角可调整大小，拖动上方的圆点可旋转。鼠标滚轮：大小。Delete：移除。", "置于顶层", "置于底层", "移除", "重置",
+            "将此播放器重置为默认颜色并移除其图片？", "删除此播放器？", "取消", "每个播放器最多可以有 10 张图片。", "最多可以保存 5 个播放器。", "无法使用此文件。请选择不超过 10 MB 的 PNG、JPG 或 GIF。" },
+        ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で",
+            "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動", "歌詞", "プレーヤーをデザイン", "変更は自動的に保存されます。", "プレーヤー", "デフォルト", "カスタムプレーヤー",
+            "新しいプレーヤー", "名前", "プレーヤーを削除", "背景", "ボタン", "カメレオン：カバーの色", "カスタムカラー", "画像", "画像を追加", "PNG、JPG、GIF（10 MB まで）。1 つのプレーヤーに画像は 10 枚まで。",
+            "画像をドラッグして移動、角でサイズ変更、上の点で回転します。マウスホイール：サイズ。Delete：取り除く。", "前面へ", "背面へ", "取り除く", "リセット", "このプレーヤーをデフォルトの色に戻し、画像を取り除きますか？",
+            "このプレーヤーを削除しますか？", "キャンセル", "1 つのプレーヤーに画像は 10 枚までです。", "プレーヤーは 5 つまで保存できます。", "このファイルは使用できません。10 MB までの PNG、JPG、GIF を選んでください。" },
+        ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.",
+            "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل",
+            "كلمات الأغاني", "صمّم مشغّلك", "يتم حفظ التغييرات تلقائياً.", "المشغّلات", "الافتراضي", "مشغّل مخصّص", "مشغّل جديد", "الاسم",
+            "حذف المشغّل", "الخلفية", "الأزرار", "الحرباء: ألوان من الغلاف", "لون مخصّص", "الصور", "إضافة صورة",
+            "PNG أو JPG أو GIF حتى 10 ميغابايت. حتى 10 صور لكل مشغّل.",
+            "اسحب الصورة لتحريكها، وزاويتها لتغيير حجمها، والنقطة فوقها لتدويرها. عجلة الماوس: الحجم. Delete: إزالة.", "إلى الأمام", "إلى الخلف",
+            "إزالة", "إعادة تعيين", "هل تريد إعادة هذا المشغّل إلى الألوان الافتراضية وإزالة صوره؟", "هل تريد حذف هذا المشغّل؟", "إلغاء",
+            "يمكن أن يحتوي المشغّل على 10 صور كحد أقصى.", "يمكنك حفظ 5 مشغّلات كحد أقصى.",
+            "لا يمكن استخدام هذا الملف. اختر صورة PNG أو JPG أو GIF حتى 10 ميغابايت." },
+        ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "अपडेट उपलब्ध है",
+            "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...",
+            "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें", "गीत के बोल", "अपना प्लेयर डिज़ाइन करें",
+            "बदलाव अपने आप सहेजे जाते हैं।", "प्लेयर", "डिफ़ॉल्ट", "कस्टम प्लेयर", "नया प्लेयर", "नाम", "प्लेयर हटाएं", "पृष्ठभूमि", "बटन",
+            "गिरगिट: कवर से रंग", "कस्टम रंग", "चित्र", "चित्र जोड़ें", "PNG, JPG या GIF, 10 MB तक। हर प्लेयर में 10 चित्र तक।",
+            "खिसकाने के लिए चित्र को, आकार बदलने के लिए उसके कोने को और घुमाने के लिए ऊपर के बिंदु को खींचें। माउस व्हील: आकार। Delete: निकालें।",
+            "आगे लाएं", "पीछे भेजें", "निकालें", "रीसेट करें", "इस प्लेयर को डिफ़ॉल्ट रंगों पर रीसेट करें और इसके चित्र निकालें?",
+            "इस प्लेयर को हटाएं?", "रद्द करें", "एक प्लेयर में अधिकतम 10 चित्र हो सकते हैं।", "आप अधिकतम 5 प्लेयर सहेज सकते हैं।",
+            "यह फ़ाइल इस्तेमाल नहीं की जा सकती। 10 MB तक का PNG, JPG या GIF चुनें।" }
     };
 
     string Tr(string key) =>
@@ -1490,24 +1649,7 @@ public partial class MainWindow : Window
     void ShowOptions()
     {
         if (_options != null) { _options.Activate(); return; }
-        _options = new Window
-        {
-            Title = Tr("options"),
-            FlowDirection = _lang == "ar" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
-            Width = 360,
-            Height = 220,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation = WindowStartupLocation.CenterScreen,
-            Background = new SolidColorBrush(Color.FromRgb(0x20, 0x20, 0x20)),
-            Content = new TextBlock
-            {
-                Text = Tr("optionsBody"),
-                Foreground = System.Windows.Media.Brushes.White,
-                FontSize = 14,
-                Margin = new Thickness(24),
-                TextWrapping = TextWrapping.Wrap
-            }
-        };
+        _options = new OptionsWindow(this) { FlowDirection = _lang == "ar" ? FlowDirection.RightToLeft : FlowDirection.LeftToRight };
         _options.Closed += (_, _) => _options = null;
         _options.Show();
         _options.Activate();
@@ -1916,6 +2058,7 @@ public partial class MainWindow : Window
         _debugTimer.Stop();
         _lyricsTimer.Stop();
         _lyricsRetryTimer.Stop();
+        _stickerAnim.Clear();
         StopWheelHook();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
         if (_locHook != IntPtr.Zero) UnhookWinEvent(_locHook);

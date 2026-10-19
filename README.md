@@ -30,6 +30,13 @@ Click the cover to open or close the player, drag it along the taskbar to put it
 
 Every song paints the player in its own colours.
 
+### Design your player
+
+Open **Options** in the tray menu to make the player your own: pick the background and button colours
+(or keep *Chameleon*, the colours from the cover) and put PNG, JPG or GIF images on it. Drag, resize and
+rotate them on a big preview; they always stay behind the buttons and GIFs play only while the player is
+open. Save up to 5 players and switch between them.
+
 ### Lyrics, like in Spotify
 
 <img src="docs/lyrics.gif" alt="Lyrics changing line by line in the player" width="420">
@@ -55,7 +62,7 @@ Rest the mouse on the cover for a second.
 
 <img src="docs/tray-menu.png" alt="The tray menu" width="232">
 
-Right-click the tray icon for Lyrics, Start with Windows, the side of the taskbar (left or right),
+Right-click the tray icon for Options, Lyrics, Start with Windows, the side of the taskbar (left or right),
 the language and Restart.
 
 ## Install

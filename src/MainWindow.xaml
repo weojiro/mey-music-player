@@ -26,34 +26,40 @@
             <ScaleTransform x:Name="Scale"/>
         </Grid.LayoutTransform>
 
+        <!-- Orijinal Arayüz Dizilimi Paneli -->
         <Border Background="#2B2B2B" ClipToBounds="True" CornerRadius="8" Height="40" HorizontalAlignment="Left" Width="338" x:Name="PlayerPanel">
             <Grid Margin="10,0,10,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/> <!-- 1. Medya Kontrolleri -->
+                    <ColumnDefinition Width="Auto"/> <!-- 2. Süre (0:10) -->
+                    <ColumnDefinition Width="*"/>    <!-- 3. İlerleme Çubuğu -->
+                    <ColumnDefinition Width="Auto"/> <!-- 4. Ses -->
+                    <ColumnDefinition Width="Auto"/> <!-- 5. Dikey Karıştır / Döngü -->
                 </Grid.ColumnDefinitions>
 
+                <!-- 1. Medya Kontrolleri -->
                 <StackPanel Grid.Column="0" Margin="0,0,8,0" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Content="&#xE892;" FontSize="13" Height="32" Style="{StaticResource TextButton}" Width="28" x:Name="BtnPrev"/>
                     <Button Content="&#xE768;" FontSize="15" Height="32" Margin="4,0,4,0" Style="{StaticResource TextButton}" Width="32" x:Name="BtnPlay"/>
                     <Button Content="&#xE893;" FontSize="13" Height="32" Style="{StaticResource TextButton}" Width="28" x:Name="BtnNext"/>
                 </StackPanel>
 
+                <!-- 2. Süre (0:10) -->
                 <TextBlock FontSize="11" Foreground="#CCFFFFFF" Grid.Column="1" Margin="0,0,8,0" Text="0:00" VerticalAlignment="Center" x:Name="TimeText"/>
 
+                <!-- 3. İlerleme Çubuğu -->
                 <Grid Background="Transparent" Cursor="Hand" Grid.Column="2" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" x:Name="SeekHit">
                     <Border Background="#44FFFFFF" CornerRadius="2" Height="4" VerticalAlignment="Center" x:Name="SeekTrack"/>
                     <Border Background="White" CornerRadius="2" Height="4" HorizontalAlignment="Left" VerticalAlignment="Center" x:Name="SeekFill"/>
                     <Ellipse Fill="White" Height="10" HorizontalAlignment="Left" VerticalAlignment="Center" Width="10" x:Name="SeekThumb"/>
                 </Grid>
 
+                <!-- 4. Ses Kontrolü -->
                 <Grid Background="Transparent" Cursor="Hand" Grid.Column="3" Height="32" Margin="0,0,8,0" VerticalAlignment="Center" Width="28" x:Name="VolumeHit">
                     <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Foreground="White" HorizontalAlignment="Center" Text="&#xE995;" VerticalAlignment="Center" x:Name="VolumeGlyph"/>
                 </Grid>
 
+                <!-- 5. Karıştır / Döngü -->
                 <StackPanel Grid.Column="4" HorizontalAlignment="Center" Orientation="Vertical" VerticalAlignment="Center">
                     <Button Content="&#xE8B1;" FontSize="10" Height="15" Style="{StaticResource TextButton}" Width="18" x:Name="BtnMix"/>
                     <Button Content="&#xE8EE;" FontSize="10" Height="15" Margin="0,2,0,0" Style="{StaticResource TextButton}" Width="18" x:Name="BtnLoop"/>
@@ -61,11 +67,12 @@
             </Grid>
         </Border>
 
+        <!-- Albüm Kapağı Butonu -->
         <Border Background="#333333" ClipToBounds="True" CornerRadius="8" Cursor="Hand" Height="40" HorizontalAlignment="Right" Width="40" x:Name="Cover">
             <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" Text="&#xEC4F;" VerticalAlignment="Center" x:Name="Glyph"/>
         </Border>
 
-        <!-- Kapağa ortalı, aralıklı bukalemun hover bilgi kartı -->
+        <!-- 1 Saniye Durunca Açılan Kapağa Ortalı Bukalemun Şarkı Adı Kartı -->
         <Popup AllowsTransparency="True" PlacementTarget="{Binding ElementName=Cover}" PopupAnimation="Fade" StaysOpen="True" x:Name="TitlePopup">
             <Border Background="#2B2B2B" BorderBrush="#44FFFFFF" BorderThickness="1" CornerRadius="8" Margin="0,6,0,6" MaxWidth="240" MinWidth="110" Padding="12,8" x:Name="TitlePopupBorder">
                 <TextBlock FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12" FontWeight="SemiBold" Foreground="White" MaxHeight="36" Text TextAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="TitlePopupText"/>

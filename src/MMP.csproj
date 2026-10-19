@@ -21,7 +21,8 @@
     <!-- WinForms is only used for the tray icon; keep its names out of the WPF code -->
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
-    <EmbeddedResource Include="app.ico" LogicalName="app.ico" />
+    <!-- tray icon only; the exe and its windows use app.ico (ApplicationIcon) -->
+    <EmbeddedResource Include="tray.ico" LogicalName="tray.ico" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
   </ItemGroup>
 

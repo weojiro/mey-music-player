@@ -200,8 +200,6 @@ public partial class MainWindow : Window
         Cover.MouseLeftButtonDown += (_, e) =>
         {
             _clicks++;
-            _hoverTimer.Stop();
-            TitlePopup.IsOpen = false;
             _dragMoved = false;
             _dragStartCursorX = (int)PointToScreen(e.GetPosition(this)).X;
             _dragStartCoverX = _gapX;
@@ -232,6 +230,12 @@ public partial class MainWindow : Window
             if (!Cover.IsMouseCaptured || e.LeftButton != MouseButtonState.Pressed) return;
             int dx = (int)PointToScreen(e.GetPosition(this)).X - _dragStartCursorX;
             if (!_dragMoved && Math.Abs(dx) < 5) return;       // small wobble = still a click
+            if (!_dragMoved)
+            {
+                // the card stays open through a click, only a real drag hides it
+                _hoverTimer.Stop();
+                TitlePopup.IsOpen = false;
+            }
             _dragMoved = true;
             _dragging = true;
             _dragX = Math.Clamp(_dragStartCoverX + dx, _last.Left, Math.Max(_last.Left, TrayLeft - _coverSize));
@@ -241,7 +245,11 @@ public partial class MainWindow : Window
         {
             if (!Cover.IsMouseCaptured) return;
             Cover.ReleaseMouseCapture();
-            if (_dragMoved) DropCover();
+            if (_dragMoved)
+            {
+                DropCover();
+                if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title)) _hoverTimer.Start();   // card comes back after the drop
+            }
             else ToggleExpand();
         };
         Cover.LostMouseCapture += (_, _) => _dragging = false;
@@ -1272,7 +1280,7 @@ public partial class MainWindow : Window
             {
                 var asm = typeof(MainWindow).Assembly;
                 string? resName = asm.GetManifestResourceNames()
-                    .FirstOrDefault(n => n.EndsWith("app.ico", StringComparison.OrdinalIgnoreCase));
+                    .FirstOrDefault(n => n.EndsWith("tray.ico", StringComparison.OrdinalIgnoreCase));
 
                 if (resName != null)
                 {

@@ -90,6 +90,7 @@ public partial class MainWindow : Window
     Side _side = Side.Left;
     int? _userX;                          // where the user dropped the cover (screen x); null = default spot
     string _lang = "en";
+    bool _firstRun;                       // no settings.ini yet
     bool _dragging, _dragMoved;
     int _dragStartCursorX, _dragStartCoverX, _dragX, _coverSize, _spansVersion, _posVersion, _pxVal;
     (int, int, int, int) _pxKey;
@@ -98,7 +99,7 @@ public partial class MainWindow : Window
 
     // --- tray menu ---
     readonly Forms.ToolStripMenuItem _miStartup = new(), _miOptions = new(), _miPosition = new(),
-        _miRight = new(), _miLeft = new(), _miLanguage = new(), _miClose = new();
+        _miRight = new(), _miLeft = new(), _miLanguage = new(), _miRestart = new(), _miClose = new();
     readonly Forms.ToolStripMenuItem _miVersion = new() { Enabled = false };   // greyed out, only shows the version
     readonly List<(string code, Forms.ToolStripMenuItem item)> _langItems = new();
     Forms.ContextMenuStrip? _menu;
@@ -1325,6 +1326,13 @@ public partial class MainWindow : Window
                 _langItems.Add((code, item));
                 _miLanguage.DropDownItems.Add(item);
             }
+            _miRestart.Click += (_, _) =>
+            {
+                // only one copy may run: --after-update makes the new copy wait until this one has exited
+                try { Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? "", "--after-update") { UseShellExecute = true }); }
+                catch { return; }
+                Application.Current.Shutdown();
+            };
             _miClose.Click += (_, _) => Application.Current.Shutdown();
             _miVersion.Text = $"v{Updater.Current}";
 
@@ -1335,9 +1343,10 @@ public partial class MainWindow : Window
                 // version, the window, then the on/off settings, then the submenus, Close on its own at the bottom
                 _miVersion, new Forms.ToolStripSeparator(),
                 _miOptions, new Forms.ToolStripSeparator(), _miStartup, new Forms.ToolStripSeparator(),
-                _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miClose
+                _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miRestart, _miClose
             });
             menu.Opening += (_, _) => UpdateTrayChecks();
+            TrayMenu.Style(menu);
             ApplyTrayTexts();
 
             tray.Text = "mey music player";
@@ -1351,6 +1360,13 @@ public partial class MainWindow : Window
 
             _tray = tray;
             try { if (IsStartupEnabled()) SetStartup(true); } catch { }
+            // A new install starts with Windows. The first start after an update only writes settings.ini,
+            // so people who turned it off before keep their choice.
+            if (_firstRun)
+            {
+                if (!Environment.GetCommandLineArgs().Contains("--after-update")) try { SetStartup(true); } catch { }
+                SaveSettings();
+            }
         }
         catch (Exception ex) { _mediaStatus = "tray icon failed: " + ex.Message; }
     }
@@ -1365,33 +1381,33 @@ public partial class MainWindow : Window
     static readonly string[] StrKeys =
     {
         "startup", "options", "position", "right", "left", "language", "close", "optionsBody",
-        "updTitle", "updBody", "whatsNew", "updUpdate", "updLater", "updDownloading", "updFailed"
+        "updTitle", "updBody", "whatsNew", "updUpdate", "updLater", "updDownloading", "updFailed", "restart"
     };
 
     static readonly Dictionary<string, string[]> Strings = new()
     {
         ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Settings will be added here.",
-            "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later." },
+            "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later.", "Restart" },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Ayarlar buraya eklenecek.",
-            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin." },
+            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat" },
         ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "La configuración se agregará aquí.",
-            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde." },
+            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar" },
         ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
-            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
+            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer" },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
-            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal." },
+            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten" },
         ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
-            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde." },
+            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar" },
         ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Настройки будут добавлены здесь.",
-            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже." },
+            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить" },
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将在此处添加。",
-            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。" },
+            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。", "重新启动" },
         ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。" },
+            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動" },
         ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "سيتم إضافة الإعدادات هنا.",
-            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً." },
+            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل" },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "सेटिंग्स यहां जोड़ी जाएंगी।",
-            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।" }
+            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें" }
     };
 
     string Tr(string key) =>
@@ -1405,6 +1421,7 @@ public partial class MainWindow : Window
         _miRight.Text = Tr("right");
         _miLeft.Text = Tr("left");
         _miLanguage.Text = Tr("language");
+        _miRestart.Text = Tr("restart");
         _miClose.Text = Tr("close");
         if (_menu != null) _menu.RightToLeft = _lang == "ar" ? Forms.RightToLeft.Yes : Forms.RightToLeft.No;
     }
@@ -1581,6 +1598,7 @@ public partial class MainWindow : Window
 
     void LoadSettings()
     {
+        _firstRun = !File.Exists(SettingsPath);
         try
         {
             foreach (var line in File.ReadAllLines(SettingsPath))

@@ -106,4 +106,13 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr GetModuleHandle(string? moduleName);
+
+    // Windows 11 only: rounded corners and border colour of a window
+    public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    public const int DWMWA_BORDER_COLOR = 34;
+    public const int DWMWCP_ROUND = 2;
+    public const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 }

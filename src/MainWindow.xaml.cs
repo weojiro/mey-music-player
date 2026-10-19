@@ -62,7 +62,8 @@ public partial class MainWindow : Window
     {
         FontFamily = new System.Windows.Media.FontFamily("Consolas"),
         FontSize = 13,
-        Margin = new Thickness(12)
+        Margin = new Thickness(12),
+        TextWrapping = TextWrapping.Wrap
     };
     readonly DispatcherTimer _measureTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
     readonly List<(int L, int R)> _spans = new();   // taskbar items, screen pixels
@@ -130,6 +131,13 @@ public partial class MainWindow : Window
     DateTimeOffset _tlUpdated;
     string _mediaStatus = "starting...", _title = "", _artist = "", _source = "";
     long _lastWheelSkip;                    // mouse wheel on the cover: at most one skip per 300 ms
+    string _album = "";
+
+    // --- lyrics (prototype: only with --debug, only for Spotify) ---
+    List<(TimeSpan Time, string Text)>? _lyrics;
+    string _lyricsStatus = "-", _lyricsKey = "";
+    readonly DispatcherTimer _debugTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
+    static readonly string LyricsLogPath = Path.Combine(AppDataDir, "lyrics-test.txt");
 
     // --- seeking / scrubbing ---
     const int ThumbD = 10;                  // diameter of the circle on the seek bar (design units)
@@ -356,6 +364,8 @@ public partial class MainWindow : Window
             };
             _debug.Closed += (_, _) => Application.Current.Shutdown();
             _debug.Show();
+            _debugTimer.Tick += (_, _) => Refresh();     // live time and lyrics line
+            _debugTimer.Start();
         }
 
         CreateTray();
@@ -782,7 +792,8 @@ public partial class MainWindow : Window
 
     void OnSmtc(Smtc kind)
     {
-        if (!_shown) { _mediaDirty = true; return; }
+        // the debug window keeps following the song while the taskbar is hidden (lyrics prototype)
+        if (!_shown && !_showDebug) { _mediaDirty = true; return; }
         var s = _session;
         if (s == null) return;
         try
@@ -794,7 +805,7 @@ public partial class MainWindow : Window
                     ApplyPlayback(s.GetPlaybackInfo());
                     if (_playing && _volTargets == 0 && _expanded) ReadVolume();
                     break;
-                case Smtc.Timeline: ApplyTimeline(s.GetTimelineProperties()); break;
+                case Smtc.Timeline: ApplyTimeline(s.GetTimelineProperties()); LoadLyrics(); break;   // the length can come after the title
             }
         }
         catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; }
@@ -818,7 +829,9 @@ public partial class MainWindow : Window
                 else ShowTitleCard();
             }
             _artist = props.Artist ?? "";
+            _album = props.AlbumTitle ?? "";
             _source = s.SourceAppUserModelId ?? "";
+            LoadLyrics();
             ReadVolume();
             var cover = await LoadThumbAsync(props);
             if (s != _session) return;
@@ -1672,7 +1685,51 @@ public partial class MainWindow : Window
     void Refresh()
     {
         if (_debug == null) return;
-        _info.Text = $"media : {_mediaStatus} | source : {_source}";
+        var pos = CurrentPosition();
+        var sb = new StringBuilder();
+        sb.AppendLine($"media  : {_mediaStatus} | source : {_source}");
+        sb.AppendLine();
+        sb.AppendLine($"song   : {_title}");
+        sb.AppendLine($"artist : {_artist}");
+        sb.AppendLine($"album  : {_album}");
+        sb.AppendLine($"time   : {pos.ToString(@"m\:ss\.f")} / {(_tlEnd - _tlStart).ToString(@"m\:ss")}");
+        sb.AppendLine($"lyrics : {_lyricsStatus}");
+        if (_lyrics != null)
+        {
+            sb.AppendLine();
+            int now = Lyrics.LineAt(_lyrics, pos);
+            for (int i = Math.Max(0, now - 1); i <= Math.Min(_lyrics.Count - 1, now + 2); i++)
+                sb.AppendLine($"{(i == now ? ">" : " ")} {_lyrics[i].Time.ToString(@"m\:ss\.ff")}  {_lyrics[i].Text}");
+        }
+        _info.Text = sb.ToString();
+    }
+
+    // Prototype: looks up synced lyrics for the Spotify song; results go to the debug window and lyrics-test.txt
+    async void LoadLyrics()
+    {
+        if (!_showDebug) return;
+        var dur = _tlEnd - _tlStart;
+        string key = $"{_source}|{_title}|{_artist}|{(int)dur.TotalSeconds}";
+        if (key == _lyricsKey) return;
+        _lyrics = null;
+        if (!string.Equals(ProcessKey(_source), "Spotify", StringComparison.OrdinalIgnoreCase))
+        {
+            _lyricsKey = key;
+            _lyricsStatus = "not Spotify";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_title) || dur.TotalSeconds < 1) { _lyricsStatus = "waiting for the song length"; return; }
+
+        _lyricsKey = key;
+        _lyricsStatus = "searching...";
+        Lyrics.Result r;
+        try { r = await Lyrics.FetchAsync(_title, _artist, _album, dur); }
+        catch (Exception ex) { r = new(null, "error: " + ex.Message); }
+        if (key != _lyricsKey) return;          // the song changed meanwhile
+        _lyrics = r.Lines;
+        _lyricsStatus = r.Status;
+        try { File.AppendAllText(LyricsLogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm}\t{_title}\t{_artist}\t{dur.ToString(@"m\:ss")}\t{r.Status}\n"); } catch { }
+        Refresh();
     }
 
     void OnClosed(object? sender, EventArgs e)
@@ -1683,6 +1740,7 @@ public partial class MainWindow : Window
         _zTimer.Stop();
         _updateTimer.Stop();
         _hoverTimer.Stop();
+        _debugTimer.Stop();
         StopWheelHook();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
         if (_locHook != IntPtr.Zero) UnhookWinEvent(_locHook);

@@ -135,6 +135,7 @@ public partial class MainWindow : Window
     string _mediaStatus = "starting...", _title = "", _artist = "", _source = "";
     long _lastWheelSkip;                    // mouse wheel on the cover: at most one skip per 300 ms
     string _album = "";
+    int _refreshSeq;                        // newest RefreshMedia call; older ones drop their results
 
     // --- lyrics (Spotify only, from LRCLIB; the tray toggle is off by default) ---
     const int LyricMs = 300;                // line change animation
@@ -170,7 +171,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Windows 10 font uyumluluk güvenliği
+        // Windows 10 has no Segoe Fluent Icons
         if (Environment.OSVersion.Version.Build < 22000)
         {
             var fallbackFont = new FontFamily("Segoe MDL2 Assets, Segoe UI");
@@ -225,8 +226,8 @@ public partial class MainWindow : Window
             Cover.CaptureMouse();
             Refresh();
         };
-        
-        // Kapağa orta tık (Middle Click) ile şarkıyı durdurup başlatma özelliği
+
+        // middle click on the cover = play / pause.
         // WPF has no MouseMiddleButtonDown event: MouseDown + ChangedButton is the way to catch the wheel click
         Cover.MouseDown += (_, e) =>
         {
@@ -835,13 +836,14 @@ public partial class MainWindow : Window
     async void RefreshMedia()
     {
         var s = _session;
+        int seq = ++_refreshSeq;        // quick song changes overlap: a slow cover of the last song must not win
         if (s == null) { SetNoMedia(); Refresh(); return; }
         try
         {
             ApplyPlayback(s.GetPlaybackInfo());
             ApplyTimeline(s.GetTimelineProperties());
             var props = await s.TryGetMediaPropertiesAsync();
-            if (s != _session) return;
+            if (s != _session || seq != _refreshSeq) return;
             _title = props.Title ?? "";
             if (TitlePopup.IsOpen)          // song changed under the open card (e.g. wheel on the cover)
             {
@@ -854,7 +856,7 @@ public partial class MainWindow : Window
             LoadLyrics();
             ReadVolume();
             var cover = await LoadThumbAsync(props);
-            if (s != _session) return;
+            if (s != _session || seq != _refreshSeq) return;
             ApplyCover(cover);
             _mediaStatus = "ok";
         }
@@ -971,7 +973,7 @@ public partial class MainWindow : Window
             else
             {
                 Cover.Background = _defaultCoverBrush;
-                Glyph.Text = "\uEC4F"; // Müzik Notası Simgesi
+                Glyph.Text = "\uEC4F"; // music note
                 Glyph.Visibility = Visibility.Visible;
                 ApplyPalette(DefaultBg, DefaultAccent);
             }
@@ -990,7 +992,7 @@ public partial class MainWindow : Window
         _accentBrush = Frozen(accent);
         _accentDimBrush = Frozen(Color.FromArgb(0x80, accent.R, accent.G, accent.B));
 
-        // Bukalemun Renkleri Oynatıcı ve Hover Bilgi Kartına Uygulanır
+        // chameleon colours for the player and the title card
         PlayerPanel.Background = Frozen(bg);
         TitlePopupBorder.Background = Frozen(bg);
         TitlePopupText.Foreground = _accentBrush;
@@ -1733,6 +1735,8 @@ public partial class MainWindow : Window
         UpdateProgressUi();
         ApplyVolumeUi(false);
         UpdateTimers();
+        _lyricsKey = "";
+        SetLyrics(null, "no media");        // otherwise the last line stays on screen instead of the controls
         _mediaStatus = "no media session";
     }
 

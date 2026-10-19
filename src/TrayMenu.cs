@@ -15,6 +15,7 @@ static class TrayMenu
     static readonly Color Dim = Color.FromArgb(0x9A, 0xA0, 0xA6);
     static readonly Color Line = Color.FromArgb(0x5E, 0x5E, 0x5E);
 
+    // sizes at 100% display scaling; Px() scales them, like the font, for 125%, 150%, ...
     const int TextLeft = 21;        // text starts here; the check mark sits in front of it
     const int ArrowRoom = 28;       // right side, for the submenu arrow
     const int ItemHeight = 28;
@@ -22,6 +23,8 @@ static class TrayMenu
     const int PadTop = 12, PadBottom = 8;
 
     static readonly Forms.ToolStripRenderer Renderer = new DarkRenderer();
+
+    static int Px(int value, Forms.Control? c) => (int)Math.Round(value * (c?.DeviceDpi ?? 96) / 96.0);
 
     // Applies the look to a menu and its submenus. Call after the items are added.
     public static void Style(Forms.ToolStripDropDownMenu menu)
@@ -41,20 +44,21 @@ static class TrayMenu
             if (item is Forms.ToolStripSeparator sep)
             {
                 sep.AutoSize = false;
-                sep.Height = SeparatorHeight;
+                sep.Height = Px(SeparatorHeight, menu);
                 continue;
             }
             // rows get their height from padding, so the width stays automatic
-            item.Padding = new Forms.Padding(TextLeft, 0, ArrowRoom, 0);
-            int extra = Math.Max(0, ItemHeight - item.GetPreferredSize(Size.Empty).Height);
-            item.Padding = new Forms.Padding(TextLeft, extra / 2, ArrowRoom, extra - extra / 2);
+            int left = Px(TextLeft, menu), right = Px(ArrowRoom, menu);
+            item.Padding = new Forms.Padding(left, 0, right, 0);
+            int extra = Math.Max(0, Px(ItemHeight, menu) - item.GetPreferredSize(Size.Empty).Height);
+            item.Padding = new Forms.Padding(left, extra / 2, right, extra - extra / 2);
             if (item is Forms.ToolStripMenuItem mi && mi.DropDown is Forms.ToolStripDropDownMenu sub) Style(sub);
         }
         // the drop-down ignores its own Padding: the space above and below comes from the first and last row
         if (items.Count > 0)
         {
-            items[0].Margin = new Forms.Padding(0, PadTop, 0, 0);
-            items[^1].Margin = new Forms.Padding(0, 0, 0, PadBottom);
+            items[0].Margin = new Forms.Padding(0, Px(PadTop, menu), 0, 0);
+            items[^1].Margin = new Forms.Padding(0, 0, 0, Px(PadBottom, menu));
         }
         // the drop-down does not count the rows' padding in its width: give it the widest row (texts change with the language)
         menu.Opening += (_, _) => menu.MinimumSize = new Size(
@@ -94,9 +98,10 @@ static class TrayMenu
         protected override void OnRenderMenuItemBackground(Forms.ToolStripItemRenderEventArgs e)
         {
             if (!e.Item.Selected || !e.Item.Enabled) return;
-            var r = new Rectangle(4, 0, e.Item.Width - 8, e.Item.Height);
+            int inset = Px(4, e.ToolStrip);
+            var r = new Rectangle(inset, 0, e.Item.Width - 2 * inset, e.Item.Height);
             using var path = new GraphicsPath();
-            const int d = 8;    // corner diameter of the hover highlight
+            int d = Px(8, e.ToolStrip);    // corner diameter of the hover highlight
             path.AddArc(r.Left, r.Top, d, d, 180, 90);
             path.AddArc(r.Right - d, r.Top, d, d, 270, 90);
             path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
@@ -112,20 +117,22 @@ static class TrayMenu
             bool rtl = e.Item.RightToLeft == Forms.RightToLeft.Yes;
             var color = e.Item.Enabled ? Text : Dim;
             e.TextColor = color;
+            int left = Px(TextLeft, e.ToolStrip), right = Px(ArrowRoom, e.ToolStrip);
             // the layout's text box sits at the top of the padded row: center the text over the whole row instead
             e.TextRectangle = rtl
-                ? new Rectangle(ArrowRoom, 0, e.Item.Width - TextLeft - ArrowRoom, e.Item.Height)
-                : new Rectangle(TextLeft, 0, e.Item.Width - TextLeft - ArrowRoom, e.Item.Height);
+                ? new Rectangle(right, 0, e.Item.Width - left - right, e.Item.Height)
+                : new Rectangle(left, 0, e.Item.Width - left - right, e.Item.Height);
             e.TextFormat |= Forms.TextFormatFlags.VerticalCenter | Forms.TextFormatFlags.SingleLine;
             base.OnRenderItemText(e);
 
             if (e.Item is Forms.ToolStripMenuItem { Checked: true })
             {
                 // a drawn check mark, centered in the space before the text (fonts differ between Windows 10 and 11)
-                float cx = rtl ? e.Item.Width - TextLeft / 2f : TextLeft / 2f, cy = e.Item.Height / 2f;
-                using var pen = new Pen(color, 1.4f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+                float k = (e.ToolStrip?.DeviceDpi ?? 96) / 96f;
+                float cx = rtl ? e.Item.Width - left / 2f : left / 2f, cy = e.Item.Height / 2f;
+                using var pen = new Pen(color, 1.4f * k) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.DrawLines(pen, new[] { new PointF(cx - 4, cy), new PointF(cx - 1.3f, cy + 2.8f), new PointF(cx + 4, cy - 3) });
+                e.Graphics.DrawLines(pen, new[] { new PointF(cx - 4 * k, cy), new PointF(cx - 1.3f * k, cy + 2.8f * k), new PointF(cx + 4 * k, cy - 3 * k) });
             }
         }
 

@@ -175,25 +175,12 @@ public partial class MainWindow : Window
         };
         _defaultCoverBrush = Cover.Background;
 
+        TitlePopup.Placement = PlacementMode.Custom;
+        TitlePopup.CustomPopupPlacementCallback = PlaceTitleCard;
         _hoverTimer.Tick += (_, _) =>
         {
             _hoverTimer.Stop();
-            if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title))
-            {
-                TitlePopupText.Text = _title;
-                bool atTop = _edge == "top";
-                TitlePopup.Placement = atTop ? PlacementMode.Bottom : PlacementMode.Top;
-
-                // Kartın genişliğini ölçüp kapağa göre tam yatay merkezleme (Ortalama) hesabı
-                TitlePopupBorder.Measure(new Size(240, double.PositiveInfinity));
-                double cardWidth = TitlePopupBorder.DesiredSize.Width;
-                double coverWidth = Cover.ActualWidth > 0 ? Cover.ActualWidth : 40;
-                TitlePopup.HorizontalOffset = (coverWidth / 2.0) - (cardWidth / 2.0);
-                // a Margin on the card does not move a Popup, so the gap comes from the offset (scaled like the cover)
-                TitlePopup.VerticalOffset = atTop ? CoverGap : -CoverGap;
-
-                TitlePopup.IsOpen = true;
-            }
+            if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title)) ShowTitleCard();
         };
 
         Cover.MouseEnter += (_, _) =>
@@ -483,6 +470,7 @@ public partial class MainWindow : Window
 
             SetWindowPos(_hwnd, HWND_TOPMOST, winX, winY, width, size,
                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            RepositionTitleCard();
             bool was = _shown;
             _shown = true;
             if (!was) UpdateTimers();
@@ -490,6 +478,8 @@ public partial class MainWindow : Window
         else if (_shown)
         {
             if (Cover.IsMouseOver) _hidWhileOver++;
+            _hoverTimer.Stop();
+            TitlePopup.IsOpen = false;
             SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_HIDEWINDOW);
             _shown = false;
@@ -568,6 +558,30 @@ public partial class MainWindow : Window
         Cover.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         PlayerPanel.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         PlayerPanel.Margin = left ? new Thickness(40 + CoverGap, 0, 0, 0) : new Thickness(0, 0, 40 + CoverGap, 0);
+    }
+
+    // The title card is centered on the cover, above it (below it when the taskbar is at the top).
+    // WPF passes the real sizes, already scaled to the taskbar, so the gap is scaled by the cover size too.
+    CustomPopupPlacement[] PlaceTitleCard(Size popup, Size target, Point offset)
+    {
+        double gap = CoverGap * target.Width / 40;
+        double y = _edge == "top" ? target.Height + gap : -popup.Height - gap;
+        return new[] { new CustomPopupPlacement(new Point((target.Width - popup.Width) / 2, y), PopupPrimaryAxis.None) };
+    }
+
+    void ShowTitleCard()
+    {
+        TitlePopupText.Text = _title;
+        if (!TitlePopup.IsOpen) TitlePopup.IsOpen = true;
+        else Dispatcher.BeginInvoke(new Action(RepositionTitleCard), DispatcherPriority.Loaded);   // after the new text is measured
+    }
+
+    // A Popup only places itself when it opens or an offset changes, not when the window under it moves
+    void RepositionTitleCard()
+    {
+        if (!TitlePopup.IsOpen) return;
+        TitlePopup.HorizontalOffset += 0.01;
+        TitlePopup.HorizontalOffset -= 0.01;
     }
 
     void KeepOnTop()
@@ -790,6 +804,11 @@ public partial class MainWindow : Window
             var props = await s.TryGetMediaPropertiesAsync();
             if (s != _session) return;
             _title = props.Title ?? "";
+            if (TitlePopup.IsOpen)          // song changed under the open card (e.g. wheel on the cover)
+            {
+                if (string.IsNullOrWhiteSpace(_title)) TitlePopup.IsOpen = false;
+                else ShowTitleCard();
+            }
             _artist = props.Artist ?? "";
             _source = s.SourceAppUserModelId ?? "";
             ReadVolume();
@@ -1630,6 +1649,7 @@ public partial class MainWindow : Window
         _repeat = Windows.Media.MediaPlaybackAutoRepeatMode.None;
         _tlPos = _tlStart = _tlEnd = TimeSpan.Zero;
         _title = _artist = _source = "";
+        TitlePopup.IsOpen = false;
         foreach (var b in new[] { BtnPrev, BtnPlay, BtnNext, BtnMix, BtnLoop })
             b.IsEnabled = false;
         BtnPlay.Content = "\uE768";

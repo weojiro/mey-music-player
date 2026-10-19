@@ -148,6 +148,18 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Windows 10 font uyumluluk güvenliği
+        if (Environment.OSVersion.Version.Build < 22000)
+        {
+            var fallbackFont = new FontFamily("Segoe MDL2 Assets, Segoe UI");
+            BtnPrev.FontFamily = fallbackFont;
+            BtnPlay.FontFamily = fallbackFont;
+            BtnNext.FontFamily = fallbackFont;
+            VolumeGlyph.FontFamily = fallbackFont;
+            Glyph.FontFamily = fallbackFont;
+        }
+
         _usePoll = Environment.GetCommandLineArgs().Contains("--poll");
         _showDebug = Environment.GetCommandLineArgs().Contains("--debug");
         LoadSettings();
@@ -170,7 +182,7 @@ public partial class MainWindow : Window
                 bool atTop = _edge == "top";
                 TitlePopup.Placement = atTop ? PlacementMode.Bottom : PlacementMode.Top;
 
-                // Kartın genişliğini ölçüp kapağa (40px) göre tam yatay merkezleme (Ortalama) hesabı yapıyoruz:
+                // Kartın genişliğini ölçüp kapağa göre tam yatay merkezleme (Ortalama) hesabı
                 TitlePopupBorder.Measure(new Size(240, double.PositiveInfinity));
                 double cardWidth = TitlePopupBorder.DesiredSize.Width;
                 double coverWidth = Cover.ActualWidth > 0 ? Cover.ActualWidth : 40;
@@ -1259,7 +1271,25 @@ public partial class MainWindow : Window
         ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Settings will be added here.",
             "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later." },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Ayarlar buraya eklenecek.",
-            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin." }
+            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin." },
+        ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "La configuración se agregará aquí.",
+            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde." },
+        ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
+            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
+        ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
+            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal." },
+        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
+            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde." },
+        ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Настройки будут добавлены здесь.",
+            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже." },
+        ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将在此处添加。",
+            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。" },
+        ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
+            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後mで再度お試しください。" },
+        ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الوضع", "يمين", "يسار", "اللغة", "إغلاق", "سيتم إضافة الإعدادات هنا.",
+            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً." },
+        ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "सेटिंग्स यहां जोड़ी जाएंगी।",
+            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "نیا کیا है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।" }
     };
 
     string Tr(string key) =>

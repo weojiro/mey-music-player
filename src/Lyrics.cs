@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
@@ -6,10 +7,36 @@ using System.Text.RegularExpressions;
 
 namespace TaskbarPlayerProto;
 
-// Synced lyrics from LRCLIB (lrclib.net). Spotify only; for now only shown in the debug window.
+// Synced lyrics from LRCLIB (lrclib.net), Spotify only. Found lyrics are kept on disk, so a song is asked for once.
 static class Lyrics
 {
     static readonly HttpClient Http = CreateClient();
+
+    static readonly string CacheDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MMP", "lyrics");
+
+    static string CacheFile(string key) =>
+        Path.Combine(CacheDir, Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(key))) + ".lrc");
+
+    public static List<(TimeSpan Time, string Text)>? FromCache(string key)
+    {
+        try
+        {
+            string file = CacheFile(key);
+            return File.Exists(file) ? Parse(File.ReadAllText(file)) : null;
+        }
+        catch { return null; }
+    }
+
+    public static void ToCache(string key, string lrc)
+    {
+        try
+        {
+            Directory.CreateDirectory(CacheDir);
+            File.WriteAllText(CacheFile(key), lrc);
+        }
+        catch { }
+    }
 
     static HttpClient CreateClient()
     {
@@ -18,7 +45,7 @@ static class Lyrics
         return client;
     }
 
-    public sealed record Result(List<(TimeSpan Time, string Text)>? Lines, string Status);
+    public sealed record Result(List<(TimeSpan Time, string Text)>? Lines, string Status, string Lrc = "");
 
     // Exact lookup first, then a search. A result only counts when its length is within 2 s of the song:
     // otherwise the timings belong to another version (remix, live, radio edit).
@@ -69,7 +96,7 @@ static class Lyrics
             return new(null, instrumental ? "instrumental" : plain ? "only unsynced lyrics" : "no lyrics");
         }
         var lines = Parse(synced);
-        return lines.Count > 0 ? new(lines, $"found ({how}, {lines.Count} lines)") : new(null, "synced lyrics are empty");
+        return lines.Count > 0 ? new(lines, $"found ({how}, {lines.Count} lines)", synced) : new(null, "synced lyrics are empty");
     }
 
     // "[01:23.45] text"; one line can carry several timestamps

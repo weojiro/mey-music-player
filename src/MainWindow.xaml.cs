@@ -13,6 +13,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using NAudio.CoreAudioApi;
@@ -99,7 +100,7 @@ public partial class MainWindow : Window
 
     // --- tray menu ---
     readonly Forms.ToolStripMenuItem _miStartup = new(), _miOptions = new(), _miPosition = new(),
-        _miRight = new(), _miLeft = new(), _miLanguage = new(), _miRestart = new(), _miClose = new();
+        _miRight = new(), _miLeft = new(), _miLanguage = new(), _miRestart = new(), _miClose = new(), _miLyrics = new();
     readonly Forms.ToolStripMenuItem _miVersion = new() { Enabled = false };   // greyed out, only shows the version
     readonly List<(string code, Forms.ToolStripMenuItem item)> _langItems = new();
     Forms.ContextMenuStrip? _menu;
@@ -135,9 +136,17 @@ public partial class MainWindow : Window
     long _lastWheelSkip;                    // mouse wheel on the cover: at most one skip per 300 ms
     string _album = "";
 
-    // --- lyrics (prototype: only with --debug, only for Spotify) ---
+    // --- lyrics (Spotify only, from LRCLIB; the tray toggle is off by default) ---
+    const int LyricMs = 300;                // line change animation
+    const double LyricShift = 14;           // design units a line moves when it comes in or leaves
+    bool _lyricsOn;
     List<(TimeSpan Time, string Text)>? _lyrics;
-    string _lyricsStatus = "-", _lyricsKey = "";
+    string _lyricsStatus = "-", _lyricsKey = "", _lyricsRetryKey = "";
+    int _lyricsRetries;
+    (int Line, int Part) _lyricShown = (-2, 0);         // what is on screen; -2 = nothing yet (show without animation)
+    TextBlock? _lyricFront;                             // LyricA or LyricB, whichever is on screen
+    readonly DispatcherTimer _lyricsTimer = new();      // one shot, set to the time of the next line
+    readonly DispatcherTimer _lyricsRetryTimer = new() { Interval = TimeSpan.FromSeconds(30) };
     readonly DispatcherTimer _debugTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     static readonly string LyricsLogPath = Path.Combine(AppDataDir, "lyrics-test.txt");
 
@@ -266,6 +275,11 @@ public partial class MainWindow : Window
         _measureTimer.Tick += (_, _) => { _measureTimer.Stop(); RunMeasure(); };
         _progressTimer.Tick += (_, _) => UpdateProgressUi();
         _seekCommitTimer.Tick += (_, _) => { _seekCommitTimer.Stop(); CommitSeek(_pendingSeek); };
+        _lyricsTimer.Tick += (_, _) => { _lyricsTimer.Stop(); UpdateLyricsUi(); };
+        _lyricsRetryTimer.Tick += (_, _) => { _lyricsRetryTimer.Stop(); _lyricsKey = ""; LoadLyrics(); };
+        _lyricFront = LyricA;
+        PlayerPanel.MouseEnter += (_, _) => ApplyLyricsLayer();     // hovering the player brings the controls back
+        PlayerPanel.MouseLeave += (_, _) => ApplyLyricsLayer();
         RenderOptions.SetBitmapScalingMode(Cover, BitmapScalingMode.HighQuality);
 
         BtnPlay.Click += (_, _) => { _ = _session?.TryTogglePlayPauseAsync(); };
@@ -715,6 +729,7 @@ public partial class MainWindow : Window
             SaveSettings();
         }
         _expanded = !_expanded;
+        if (_expanded) _lyricShown = (-2, 0);       // the line on screen appears with the player, without a line change animation
         _animFrom = _t;
         _animTo = _expanded ? 1 : 0;
         _animSw.Restart();
@@ -748,6 +763,9 @@ public partial class MainWindow : Window
 
         if (_shown && !_zTimer.IsEnabled) _zTimer.Start();
         else if (!_shown && _zTimer.IsEnabled) _zTimer.Stop();
+
+        if (_shown && _expanded) UpdateLyricsUi();      // also re-times the next line after play / pause
+        else _lyricsTimer.Stop();
     }
 
     async void InitMedia()
@@ -983,6 +1001,7 @@ public partial class MainWindow : Window
         SeekThumb.Fill = _accentBrush;
         SeekTrack.Background = Frozen(Color.FromArgb(0x44, accent.R, accent.G, accent.B));
         TimeText.Foreground = Frozen(Color.FromArgb(0xCC, accent.R, accent.G, accent.B));
+        LyricA.Foreground = LyricB.Foreground = _accentBrush;
         UpdateToggleColors();
         _paletteInfo = $"bg {Hex(bg)} accent {Hex(accent)}";
     }
@@ -1139,6 +1158,7 @@ public partial class MainWindow : Window
         SeekThumb.Margin = new Thickness(x, 0, 0, 0);
         SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
         SeekFill.Width = has ? Math.Max(0, x + ThumbD / 2.0) : 0;
+        UpdateLyricsUi();       // seeking moves the lyrics too
     }
 
     void ScrubTo(double mouseX)
@@ -1316,6 +1336,15 @@ public partial class MainWindow : Window
                 UpdateTrayChecks();
             };
             _miOptions.Click += (_, _) => ShowOptions();
+            _miLyrics.Click += (_, _) =>
+            {
+                _lyricsOn = !_lyricsOn;
+                SaveSettings();
+                UpdateTrayChecks();
+                _lyricsKey = "";
+                if (_lyricsOn) LoadLyrics();
+                else SetLyrics(null, "off");
+            };
             _miRight.Click += (_, _) => SetSide(Side.Right);
             _miLeft.Click += (_, _) => SetSide(Side.Left);
             _miPosition.DropDownItems.AddRange(new Forms.ToolStripItem[] { _miRight, _miLeft });
@@ -1342,7 +1371,7 @@ public partial class MainWindow : Window
             {
                 // version, the window, then the on/off settings, then the submenus, Close on its own at the bottom
                 _miVersion, new Forms.ToolStripSeparator(),
-                _miOptions, new Forms.ToolStripSeparator(), _miStartup, new Forms.ToolStripSeparator(),
+                _miOptions, new Forms.ToolStripSeparator(), _miLyrics, _miStartup, new Forms.ToolStripSeparator(),
                 _miPosition, _miLanguage, new Forms.ToolStripSeparator(), _miRestart, _miClose
             });
             menu.Opening += (_, _) => UpdateTrayChecks();
@@ -1381,33 +1410,33 @@ public partial class MainWindow : Window
     static readonly string[] StrKeys =
     {
         "startup", "options", "position", "right", "left", "language", "close", "optionsBody",
-        "updTitle", "updBody", "whatsNew", "updUpdate", "updLater", "updDownloading", "updFailed", "restart"
+        "updTitle", "updBody", "whatsNew", "updUpdate", "updLater", "updDownloading", "updFailed", "restart", "lyrics"
     };
 
     static readonly Dictionary<string, string[]> Strings = new()
     {
         ["en"] = new[] { "Start with Windows", "Options", "Position", "Right", "Left", "Language", "Close", "Settings will be added here.",
-            "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later.", "Restart" },
+            "Update available", "Version {0} is available. You are using version {1}.", "What's new", "Update", "Later", "Downloading update...", "The update could not be installed. Please try again later.", "Restart", "Lyrics" },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Ayarlar buraya eklenecek.",
-            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat" },
+            "Güncelleme mevcut", "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...", "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat", "Şarkı sözleri" },
         ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "La configuración se agregará aquí.",
-            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar" },
+            "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar", "Letras" },
         ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
-            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer" },
+            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer", "Paroles" },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
-            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten" },
+            "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten", "Songtexte" },
         ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
-            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar" },
+            "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar", "Letras" },
         ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Настройки будут добавлены здесь.",
-            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить" },
+            "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить", "Тексты песен" },
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "设置将在此处添加。",
-            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。", "重新启动" },
+            "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。", "重新启动", "歌词" },
         ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "設定はここに追加されます。",
-            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動" },
+            "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で", "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動", "歌詞" },
         ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "سيتم إضافة الإعدادات هنا.",
-            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل" },
+            "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.", "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل", "كلمات الأغاني" },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "सेटिंग्स यहां जोड़ी जाएंगी।",
-            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें" }
+            "अपडेट उपलब्ध है", "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...", "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें", "गीत के बोल" }
     };
 
     string Tr(string key) =>
@@ -1415,6 +1444,7 @@ public partial class MainWindow : Window
 
     void ApplyTrayTexts()
     {
+        _miLyrics.Text = Tr("lyrics");
         _miStartup.Text = Tr("startup");
         _miOptions.Text = Tr("options");
         _miPosition.Text = Tr("position");
@@ -1429,6 +1459,7 @@ public partial class MainWindow : Window
     void UpdateTrayChecks()
     {
         try { _miStartup.Checked = IsStartupEnabled(); } catch { }
+        _miLyrics.Checked = _lyricsOn;
         _miRight.Checked = _side == Side.Right;
         _miLeft.Checked = _side == Side.Left;
         foreach (var (code, item) in _langItems) item.Checked = code == _lang;
@@ -1609,6 +1640,7 @@ public partial class MainWindow : Window
                 if (k == "side") _side = v == "Right" ? Side.Right : Side.Left;
                 else if (k == "lang" && Strings.ContainsKey(v)) _lang = v;
                 else if (k == "userX" && int.TryParse(v, out int x)) _userX = x;
+                else if (k == "lyrics") _lyricsOn = v == "1";
             }
         }
         catch { }
@@ -1623,7 +1655,8 @@ public partial class MainWindow : Window
             {
                 $"side={_side}",
                 $"lang={_lang}",
-                $"userX={(_userX is int x ? x.ToString() : "")}"
+                $"userX={(_userX is int x ? x.ToString() : "")}",
+                $"lyrics={(_lyricsOn ? 1 : 0)}"
             });
         }
         catch { }
@@ -1725,32 +1758,143 @@ public partial class MainWindow : Window
         _info.Text = sb.ToString();
     }
 
-    // Prototype: looks up synced lyrics for the Spotify song; results go to the debug window and lyrics-test.txt
+    bool IsSpotify => string.Equals(ProcessKey(_source), "Spotify", StringComparison.OrdinalIgnoreCase);
+
+    bool LyricsActive => _lyricsOn && _lyrics != null && IsSpotify;
+
+    // Finds synced lyrics for the Spotify song: disk cache first, then LRCLIB. Nothing is asked while lyrics are off
+    // (the debug window still looks them up).
     async void LoadLyrics()
     {
-        if (!_showDebug) return;
+        if (!_lyricsOn && !_showDebug) return;
         var dur = _tlEnd - _tlStart;
-        string key = $"{_source}|{_title}|{_artist}|{(int)dur.TotalSeconds}";
+        string song = $"{_title}|{_artist}|{(int)dur.TotalSeconds}";
+        string key = _source + "|" + song;
         if (key == _lyricsKey) return;
-        _lyrics = null;
-        if (!string.Equals(ProcessKey(_source), "Spotify", StringComparison.OrdinalIgnoreCase))
+        _lyricsKey = key;
+        if (key != _lyricsRetryKey) { _lyricsRetryKey = key; _lyricsRetries = 0; _lyricsRetryTimer.Stop(); }
+        if (!IsSpotify) { SetLyrics(null, "not Spotify"); return; }
+        if (string.IsNullOrWhiteSpace(_title) || dur.TotalSeconds < 1)
         {
-            _lyricsKey = key;
-            _lyricsStatus = "not Spotify";
+            _lyricsKey = "";        // look again when the length arrives
+            SetLyrics(null, "waiting for the song length");
             return;
         }
-        if (string.IsNullOrWhiteSpace(_title) || dur.TotalSeconds < 1) { _lyricsStatus = "waiting for the song length"; return; }
 
-        _lyricsKey = key;
-        _lyricsStatus = "searching...";
+        var cached = Lyrics.FromCache(song);
+        if (cached != null) { SetLyrics(cached, $"found (cache, {cached.Count} lines)"); return; }
+
+        SetLyrics(null, "searching...");
         Lyrics.Result r;
+        bool failed = false;
         try { r = await Lyrics.FetchAsync(_title, _artist, _album, dur); }
-        catch (Exception ex) { r = new(null, "error: " + ex.Message); }
+        catch (Exception ex) { r = new(null, "error: " + ex.Message); failed = true; }
         if (key != _lyricsKey) return;          // the song changed meanwhile
-        _lyrics = r.Lines;
-        _lyricsStatus = r.Status;
-        try { File.AppendAllText(LyricsLogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm}\t{_title}\t{_artist}\t{dur.ToString(@"m\:ss")}\t{r.Status}\n"); } catch { }
+        if (r.Lines != null) Lyrics.ToCache(song, r.Lrc);
+        if (failed && _lyricsRetries++ < 3) _lyricsRetryTimer.Start();     // LRCLIB busy (503) or offline: again in 30 s
+        SetLyrics(r.Lines, r.Status);
+        if (_showDebug)
+            try { File.AppendAllText(LyricsLogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm}\t{_title}\t{_artist}\t{dur.ToString(@"m\:ss")}\t{r.Status}\n"); } catch { }
+    }
+
+    void SetLyrics(List<(TimeSpan Time, string Text)>? lines, string status)
+    {
+        _lyrics = lines;
+        _lyricsStatus = status;
+        _lyricShown = (-2, 0);
+        ApplyLyricsLayer();
+        UpdateLyricsUi();
         Refresh();
+    }
+
+    // Lyrics stand in for the controls while the mouse is away from the player
+    void ApplyLyricsLayer()
+    {
+        bool active = LyricsActive;
+        bool lyrics = active && !PlayerPanel.IsMouseOver;
+        if (active) LyricsLayer.Visibility = Visibility.Visible;
+        var toLyrics = new DoubleAnimation(lyrics ? 1 : 0, TimeSpan.FromMilliseconds(150));
+        toLyrics.Completed += (_, _) => { if (!LyricsActive) LyricsLayer.Visibility = Visibility.Collapsed; };
+        LyricsLayer.BeginAnimation(OpacityProperty, toLyrics);
+        ControlsGrid.BeginAnimation(OpacityProperty, new DoubleAnimation(lyrics ? 0 : 1, TimeSpan.FromMilliseconds(150)));
+    }
+
+    // Shows the line being sung (♪ between lines) and sets the timer for the next change.
+    // A line too long for the player is shown in two halves, each for half of the line's time.
+    void UpdateLyricsUi()
+    {
+        _lyricsTimer.Stop();
+        if (!LyricsActive || _lyrics == null) return;
+        var pos = CurrentPosition();
+        int i = Lyrics.LineAt(_lyrics, pos);
+        string text = i >= 0 ? _lyrics[i].Text : "";
+        var start = i >= 0 ? _lyrics[i].Time : TimeSpan.Zero;
+        var next = i + 1 < _lyrics.Count ? _lyrics[i + 1].Time : _tlEnd - _tlStart;
+        var due = next;
+        int part = 0;
+        if (text.Length > 0 && SplitToFit(text) is var (first, second))
+        {
+            var mid = start + (next - start) / 2;
+            if (pos < mid) { text = first; due = mid; }
+            else { text = second; part = 1; }
+        }
+        if (text.Length == 0) text = "♪";
+
+        if ((i, part) != _lyricShown)
+        {
+            ShowLyric(text, animate: _lyricShown.Line != -2 && _shown && _expanded);
+            _lyricShown = (i, part);
+        }
+        if (_playing && _shown && _expanded && due > pos)
+        {
+            _lyricsTimer.Interval = due - pos + TimeSpan.FromMilliseconds(15);
+            _lyricsTimer.Start();
+        }
+    }
+
+    // The new line comes up from below while the old one leaves upwards, both fading (like Spotify)
+    void ShowLyric(string text, bool animate)
+    {
+        var old = _lyricFront ?? LyricA;
+        var cur = old == LyricA ? LyricB : LyricA;
+        _lyricFront = cur;
+        cur.Text = text;
+        if (animate)
+        {
+            SlideLyric(old, 0, -LyricShift, 0);
+            SlideLyric(cur, LyricShift, 0, 1);
+        }
+        else
+        {
+            SlideLyric(old, 0, 0, 0, instant: true);
+            SlideLyric(cur, 0, 0, 1, instant: true);
+        }
+    }
+
+    static void SlideLyric(TextBlock line, double fromY, double toY, double toOpacity, bool instant = false)
+    {
+        var move = (TranslateTransform)line.RenderTransform;
+        var length = TimeSpan.FromMilliseconds(instant ? 0 : LyricMs);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        move.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(fromY, toY, length) { EasingFunction = ease });
+        line.BeginAnimation(OpacityProperty, new DoubleAnimation(toOpacity, length) { EasingFunction = ease });
+    }
+
+    // null when the line fits, otherwise its two halves, split at the space nearest the middle
+    (string, string)? SplitToFit(string text)
+    {
+        double room = LyricsLayer.ActualWidth > 0 ? LyricsLayer.ActualWidth : 338 - 24;
+        var size = new FormattedText(text, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight,
+            new Typeface(LyricA.FontFamily, LyricA.FontStyle, LyricA.FontWeight, LyricA.FontStretch),
+            LyricA.FontSize, System.Windows.Media.Brushes.White, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        if (size.WidthIncludingTrailingWhitespace <= room) return null;
+        int mid = text.Length / 2;
+        for (int d = 0; d < mid; d++)
+        {
+            if (text[mid - d] == ' ') return (text[..(mid - d)].Trim(), text[(mid - d + 1)..].Trim());
+            if (mid + d < text.Length && text[mid + d] == ' ') return (text[..(mid + d)].Trim(), text[(mid + d + 1)..].Trim());
+        }
+        return null;        // one long word: the ellipsis has to do
     }
 
     void OnClosed(object? sender, EventArgs e)
@@ -1762,6 +1906,8 @@ public partial class MainWindow : Window
         _updateTimer.Stop();
         _hoverTimer.Stop();
         _debugTimer.Stop();
+        _lyricsTimer.Stop();
+        _lyricsRetryTimer.Stop();
         StopWheelHook();
         if (_tray != null) { _tray.Visible = false; _tray.Dispose(); }
         if (_locHook != IntPtr.Zero) UnhookWinEvent(_locHook);

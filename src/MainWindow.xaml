@@ -38,7 +38,8 @@
 
         <!-- Orijinal Arayüz Dizilimi Paneli -->
         <Border Background="#2B2B2B" ClipToBounds="True" CornerRadius="8" Height="40" HorizontalAlignment="Left" Width="338" x:Name="PlayerPanel">
-            <Grid Margin="10,0,10,0">
+            <Grid>
+            <Grid Margin="10,0,10,0" x:Name="ControlsGrid">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/> <!-- 1. Medya Kontrolleri -->
                     <ColumnDefinition Width="Auto"/> <!-- 2. Süre (0:10) -->
@@ -74,6 +75,17 @@
                     <Button Content="&#xE8B1;" FontSize="10" Height="15" Style="{StaticResource TextButton}" Width="18" x:Name="BtnMix"/>
                     <Button Content="&#xE8EE;" FontSize="10" Height="15" Margin="0,2,0,0" Style="{StaticResource TextButton}" Width="18" x:Name="BtnLoop"/>
                 </StackPanel>
+            </Grid>
+
+            <!-- Lyrics over the controls: the two lines take turns when the line changes (old one up and out, new one in from below) -->
+            <Grid ClipToBounds="True" IsHitTestVisible="False" Margin="12,0,12,0" Opacity="0" Visibility="Collapsed" x:Name="LyricsLayer">
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricA">
+                    <TextBlock.RenderTransform><TranslateTransform/></TextBlock.RenderTransform>
+                </TextBlock>
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" Opacity="0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricB">
+                    <TextBlock.RenderTransform><TranslateTransform/></TextBlock.RenderTransform>
+                </TextBlock>
+            </Grid>
             </Grid>
         </Border>
 

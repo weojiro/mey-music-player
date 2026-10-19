@@ -26,8 +26,11 @@ version and what's new, with **Update** and **Later**. If the app says .NET is m
 - Click the cover to open or close the player. Drag the cover along the taskbar to move it.
 - Mouse wheel on the cover: forward plays the next song, back the previous one. Middle click on the cover plays / pauses.
 - Mouse wheel on the time bar seeks, on the speaker changes the volume, a click on the speaker mutes.
-- Tray icon: left click plays / pauses, mouse wheel changes the volume. Right click: the version (greyed out), Options, Start with Windows,
-  Position (Right / Left), Language, Restart, Close. Start with Windows is on for a new install.
+- Tray icon: left click plays / pauses, mouse wheel changes the volume. Right click: the version (greyed out), Options, Lyrics,
+  Start with Windows, Position (Right / Left), Language, Restart, Close. Start with Windows is on for a new install.
+- Lyrics (off by default, Spotify only): the open player shows the line being sung instead of the controls; move the
+  mouse over the player to get the controls back. The synced lyrics come from [LRCLIB](https://lrclib.net), so the
+  song's title, artist and album are sent there; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
 - 11 languages: English, Türkçe, Español, Français, Deutsch, Português (Brasil), Русский, 简体中文, 日本語,
   العربية, हिन्दी.
 

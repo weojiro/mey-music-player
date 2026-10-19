@@ -146,7 +146,7 @@ public partial class MainWindow : Window
     (int Line, int Part) _lyricShown = (-2, 0);         // what is on screen; -2 = nothing yet (show without animation)
     TextBlock? _lyricFront;                             // LyricA or LyricB, whichever is on screen
     readonly DispatcherTimer _lyricsTimer = new();      // one shot, set to the time of the next line
-    readonly DispatcherTimer _lyricsRetryTimer = new() { Interval = TimeSpan.FromSeconds(30) };
+    readonly DispatcherTimer _lyricsRetryTimer = new();
     readonly DispatcherTimer _debugTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     static readonly string LyricsLogPath = Path.Combine(AppDataDir, "lyrics-test.txt");
 
@@ -1791,7 +1791,11 @@ public partial class MainWindow : Window
         catch (Exception ex) { r = new(null, "error: " + ex.Message); failed = true; }
         if (key != _lyricsKey) return;          // the song changed meanwhile
         if (r.Lines != null) Lyrics.ToCache(song, r.Lrc);
-        if (failed && _lyricsRetries++ < 3) _lyricsRetryTimer.Start();     // LRCLIB busy (503) or offline: again in 30 s
+        if (failed && _lyricsRetries < 3)       // LRCLIB busy (503) or offline: again after 5, 15, 45 s
+        {
+            _lyricsRetryTimer.Interval = TimeSpan.FromSeconds(5 * Math.Pow(3, _lyricsRetries++));
+            _lyricsRetryTimer.Start();
+        }
         SetLyrics(r.Lines, r.Status);
         if (_showDebug)
             try { File.AppendAllText(LyricsLogPath, $"{DateTime.Now:yyyy-MM-dd HH:mm}\t{_title}\t{_artist}\t{dur.ToString(@"m\:ss")}\t{r.Status}\n"); } catch { }
@@ -1875,7 +1879,7 @@ public partial class MainWindow : Window
     {
         var move = (TranslateTransform)line.RenderTransform;
         var length = TimeSpan.FromMilliseconds(instant ? 0 : LyricMs);
-        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };     // starts and ends gently, like Spotify's scroll
         move.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(fromY, toY, length) { EasingFunction = ease });
         line.BeginAnimation(OpacityProperty, new DoubleAnimation(toOpacity, length) { EasingFunction = ease });
     }

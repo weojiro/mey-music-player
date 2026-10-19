@@ -79,10 +79,10 @@
 
             <!-- Lyrics over the controls: the two lines take turns when the line changes (old one up and out, new one in from below) -->
             <Grid ClipToBounds="True" IsHitTestVisible="False" Margin="12,0,12,0" Opacity="0" Visibility="Collapsed" x:Name="LyricsLayer">
-                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricA">
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" TextAlignment="Center" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricA">
                     <TextBlock.RenderTransform><TranslateTransform/></TextBlock.RenderTransform>
                 </TextBlock>
-                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" Opacity="0" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricB">
+                <TextBlock FontFamily="Segoe UI Variable Display, Segoe UI" FontSize="15" FontWeight="Bold" Foreground="White" Opacity="0" TextAlignment="Center" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="LyricB">
                     <TextBlock.RenderTransform><TranslateTransform/></TextBlock.RenderTransform>
                 </TextBlock>
             </Grid>

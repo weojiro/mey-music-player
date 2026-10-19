@@ -1,42 +1,120 @@
+<div align="center">
+
 # mey music player
 
-A small media player that lives on the Windows taskbar. It shows the cover of what is playing
-(Spotify, YouTube in the browser, any app that uses the Windows media controls), opens into a player with
-previous / play / next, a seek bar, volume and mix / loop, and takes its colors from the cover.
+**What you're listening to, right on your Windows taskbar.**
 
-Works on Windows 10 (version 1809 or newer, 64-bit) and Windows 11.
+<img src="docs/open-close.gif" alt="The cover on the taskbar opening into the player" width="452">
+
+[**Download**](../../releases/latest) · [Türkçe](README.tr.md)
+
+</div>
+
+mey music player (MMP) puts the cover of whatever is playing on your taskbar: Spotify, YouTube in your
+browser, or any app that uses the Windows media controls. Click the cover and a small player slides open
+with the controls, the time and, for Spotify, the lyrics. Its colours come from the cover, so it always
+matches the music.
+
+## Features
+
+### A player on the taskbar
+
+<img src="docs/player.png" alt="The player with its controls" width="452">
+
+Previous, play / pause, next, a seek bar, the volume of the app that is playing, shuffle and repeat.
+Click the cover to open or close the player, drag it along the taskbar to put it where you like.
+
+### Colours from the cover
+
+<img src="docs/chameleon.png" alt="The player in the colours of four different covers" width="452">
+
+Every song paints the player in its own colours.
+
+### Lyrics, like in Spotify
+
+<img src="docs/lyrics.gif" alt="Lyrics changing line by line in the player" width="420">
+
+Turn on **Lyrics** in the tray menu and the open player shows the line being sung. The next line comes
+up from below as the old one fades away. Move the mouse over the player to get the buttons back.
+Works with Spotify.
+
+### The song's name at a glance
+
+<img src="docs/title-card.png" alt="The song's name above the cover" width="220">
+
+Rest the mouse on the cover for a second.
+
+### Quick controls
+
+- **Mouse wheel on the cover:** next / previous song
+- **Middle click on the cover:** play / pause
+- **Mouse wheel on the time bar:** skip 5 seconds; **on the speaker:** volume; **click the speaker:** mute
+- **Tray icon:** left click plays / pauses, the mouse wheel changes the volume
+
+### Tray menu
+
+<img src="docs/tray-menu.png" alt="The tray menu" width="232">
+
+Right-click the tray icon for Lyrics, Start with Windows, the side of the taskbar (left or right),
+the language and Restart.
 
 ## Install
 
-1. Open the [Releases](../../releases) page and download **MMP.zip** from the newest release.
+1. Download **MMP.zip** from the [latest release](../../releases/latest).
 2. Extract it and double-click **MMP Launcher.bat**.
 3. When it says "Installation complete!", start the app with the **mey music player** shortcut on your desktop.
 
-The launcher installs the .NET Desktop Runtime 8 (only if it is missing) and the latest `MMP.exe`.
-Windows may show an "unknown publisher" warning the first time: choose *More info* and then *Run anyway*.
+The launcher also installs the .NET Desktop Runtime 8 if it is missing. MMP starts with Windows from then on
+(you can turn that off in the tray menu).
 
-## Updates
+Works on Windows 10 (version 1809 or newer, 64-bit) and Windows 11.
 
-The app checks for a newer release when it starts and then once a day. If there is one, a window shows the
-version and what's new, with **Update** and **Later**. If the app says .NET is missing, run
-`MMP Launcher.bat` again.
+**Updates** are built in: the app checks for a new version when it starts and once a day, shows what's new
+and updates itself with one click.
 
-## Using it
+## Questions
 
-- Click the cover to open or close the player. Drag the cover along the taskbar to move it.
-- Mouse wheel on the cover: forward plays the next song, back the previous one. Middle click on the cover plays / pauses.
-- Mouse wheel on the time bar seeks, on the speaker changes the volume, a click on the speaker mutes.
-- Tray icon: left click plays / pauses, mouse wheel changes the volume. Right click: the version (greyed out), Options, Lyrics,
-  Start with Windows, Position (Right / Left), Language, Restart, Close. Start with Windows is on for a new install.
-- Lyrics (off by default, Spotify only): the open player shows the line being sung instead of the controls; move the
-  mouse over the player to get the controls back. The synced lyrics come from [LRCLIB](https://lrclib.net), so the
-  song's title, artist and album are sent there; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
-- 11 languages: English, Türkçe, Español, Français, Deutsch, Português (Brasil), Русский, 简体中文, 日本語,
-  العربية, हिन्दी.
+**Windows says "Windows protected your PC" / unknown publisher.**
+The app is not signed with a paid certificate. Choose *More info* and then *Run anyway*.
 
-## Publishing a new version
+**Which apps does it work with?**
+Anything that shows up in the Windows media controls (the media box in the volume / quick settings flyout):
+Spotify, browsers playing YouTube, X, SoundCloud and so on, and most music and video players.
+Lyrics are for Spotify only.
 
-1. Change the code in `src/` and upload it to this repo.
+**The volume buttons don't move the slider inside Spotify.**
+MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser, all tabs
+share one volume.
+
+**What does it send over the internet?**
+It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
+go to [LRCLIB](https://lrclib.net) to find its lyrics; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
+Nothing else.
+
+**It says .NET is missing.**
+Run **MMP Launcher.bat** again.
+
+## Languages
+
+English, Türkçe, Español, Français, Deutsch, Português (Brasil), Русский, 简体中文, 日本語, العربية, हिन्दी.
+Pick one in the tray menu under *Language*.
+
+## For developers
+
+```
+src/        the app (C# / WPF)
+launcher/   MMP Launcher.bat + launcher.ps1 (what users download)
+tools/      developer helpers
+docs/       the pictures in this README
+.github/    the workflow that builds the releases
+```
+
+`tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 8 SDK if needed).
+`tools/debug.bat` starts the installed app with a debug window.
+
+### Publishing a new version
+
+1. Push the changes in `src/` to this repo.
 2. **Releases → Draft a new release.** Create a tag like `v0.2.0` (always `v` + three numbers).
 3. Write the release notes with one section per language, for example:
 
@@ -54,14 +132,6 @@ version and what's new, with **Update** and **Later**. If the app says .NET is m
 4. Click **Publish release**. After a few minutes GitHub builds the app and attaches `MMP.exe`,
    `MMP.exe.sha256` and `MMP.zip` to the release; only then do users see the update.
 
-## Building it yourself
+## License
 
-`tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 8 SDK if needed).
-`tools/debug.bat` starts the installed app with a debug window.
-
-```
-src/        the app (C# / WPF)
-launcher/   MMP Launcher.bat + launcher.ps1 (what users download)
-tools/      developer helpers
-.github/    the workflow that builds the releases
-```
+[MIT](LICENSE) © weojiro

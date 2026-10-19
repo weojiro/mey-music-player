@@ -8,6 +8,7 @@
 <meta name="keywords" content="mey music player, MMP, music player, windows music player, taskbar music player, spotify mini player, now playing, windows 11, windows 10">
 <link rel="canonical" href="https://weojiro.github.io/mey-music-player/">
 <meta name="theme-color" content="#0e0e0f">
+<meta name="google-site-verification" content="ssLB-Pjzecgm90yjvxGbofLa2MPtjm_O1YmMyCUfVG0">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="mey music player">
@@ -50,7 +51,7 @@
   --r: 14px;
   --wrap: 1120px;
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; caret-color: transparent; }   /* no text cursor anywhere: the page has nothing to type into */
 html { scroll-behavior: smooth; }
 body {
   background: var(--ground); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6;
@@ -67,7 +68,7 @@ p { margin: 0; }
 
 /* ---------- nav: a little player with a seek bar for the page ---------- */
 .nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--ground) 82%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
-.nav-in { display: flex; align-items: center; gap: 18px; height: 64px; }
+.nav-in { display: flex; align-items: center; gap: 18px; height: 64px; max-width: none; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap; }
 /* the mark is the app's own cover square: a music note on a cover painted by the song playing */
 .brand-mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none;

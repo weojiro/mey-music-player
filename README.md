@@ -84,7 +84,8 @@ Lyrics are for Spotify only.
 
 **The volume buttons don't move the slider inside Spotify.**
 MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser, all tabs
-share one volume.
+share one volume. *Good to know:* in Firefox the volume can't be changed from MMP (Firefox doesn't tell
+Windows which app it is), but everything else works.
 
 **What does it send over the internet?**
 It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
@@ -111,26 +112,6 @@ docs/       the pictures in this README
 
 `tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 8 SDK if needed).
 `tools/debug.bat` starts the installed app with a debug window.
-
-### Publishing a new version
-
-1. Push the changes in `src/` to this repo.
-2. **Releases → Draft a new release.** Create a tag like `v0.2.0` (always `v` + three numbers).
-3. Write the release notes with one section per language, for example:
-
-   ```
-   ## en
-   - Added something
-   - Fixed something
-
-   ## tr
-   - Bir şey eklendi
-   - Bir şey düzeltildi
-   ```
-
-   The update window shows the section of the user's language, or `en` if there is none.
-4. Click **Publish release**. After a few minutes GitHub builds the app and attaches `MMP.exe`,
-   `MMP.exe.sha256` and `MMP.zip` to the release; only then do users see the update.
 
 ## License
 

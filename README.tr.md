@@ -83,7 +83,8 @@ Spotify, YouTube, X, SoundCloud gibi siteleri çalan tarayıcılar ve çoğu mü
 
 **Ses butonları Spotify'ın içindeki ses çubuğunu oynatmıyor.**
 MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda bütün
-sekmeler tek bir sesi paylaşır.
+sekmeler tek bir sesi paylaşır. *Ek bilgi:* Firefox'ta ses MMP'den değiştirilemez (Firefox Windows'a
+hangi uygulama olduğunu söylemiyor), geri kalan her şey çalışır.
 
 **İnternete ne gönderiyor?**
 Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
@@ -100,7 +101,7 @@ Tray menüsünde *Dil*'den seç.
 
 ## Geliştiriciler için
 
-Kodun yapısı, build alma ve yeni sürüm yayınlama [İngilizce README](README.md#for-developers)'de.
+Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
 
 ## Lisans
 

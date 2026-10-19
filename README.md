@@ -70,7 +70,7 @@ Rest the mouse on the cover for a second.
 <img src="docs/tray-menu.png" alt="The tray menu" width="232">
 
 Right-click the tray icon for Options, Lyrics, Start with Windows, the side of the taskbar (left or right),
-the language and Restart.
+the language, Restart and Close.
 
 ## Install
 
@@ -108,6 +108,17 @@ Nothing else.
 
 **It says .NET is missing.**
 Run **MMP Launcher.bat** again.
+
+**My taskbar is on the side or on another screen.**
+For now MMP sits on the taskbar of the main screen, at the bottom or the top.
+
+**Something doesn't work.**
+MMP writes unexpected errors to `%LOCALAPPDATA%\MMP\error.log`. It stays on your PC; attach it when you
+[open an issue](../../issues).
+
+**How do I remove it?**
+Turn off *Start with Windows* and choose *Close* in the tray menu, then delete the `%LOCALAPPDATA%\MMP`
+folder (the app, its settings and your saved players) and the shortcut on your desktop.
 
 ## Languages
 

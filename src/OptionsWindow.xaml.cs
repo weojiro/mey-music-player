@@ -124,6 +124,7 @@ public partial class OptionsWindow : Window
         _saveTimer.Tick += (_, _) => Flush();
         _messageTimer.Tick += (_, _) => { _messageTimer.Stop(); MessageText.Visibility = Visibility.Collapsed; };
         PreviewKeyDown += OnKey;        // before the scroll viewer takes the arrow keys
+        PreviewMouseLeftButtonDown += OnPageClick;
         MaxHeight = SystemParameters.WorkArea.Height;   // taller pages scroll
         StateChanged += (_, _) => _pvAnim.Run(WindowState != WindowState.Minimized);
         SourceInitialized += (_, _) => DarkTitleBar();
@@ -649,6 +650,15 @@ public partial class OptionsWindow : Window
     }
 
     Image? SelectedImage => _pvImages.FirstOrDefault(i => ReferenceEquals(i.Tag, SelectedSpec));
+
+    // a click anywhere but on a picture, its handles, the layer list or Remove drops the selection
+    void OnPageClick(object sender, MouseButtonEventArgs e)
+    {
+        if (_selected < 0 || e.OriginalSource is not DependencyObject d) return;
+        for (; d != null; d = d is Visual ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is Image { Tag: StickerSpec } || d == _sizeHandle || d == _turnHandle || d == LayerCard || d == RemoveButton) return;
+        Select(-1);
+    }
 
     void Select(int index)
     {

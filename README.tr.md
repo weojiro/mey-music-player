@@ -69,7 +69,7 @@ Fareyi bir saniye kapağın üstünde tut.
 <img src="docs/tray-menu.png" alt="Tray menüsü" width="232">
 
 Tray ikonuna sağ tıklayınca: Ayarlar, Şarkı sözleri, Windows ile başlat, görev çubuğunun hangi tarafı (sol / sağ),
-dil ve Yeniden başlat.
+dil, Yeniden başlat ve Kapat.
 
 ## Kurulum
 
@@ -107,6 +107,17 @@ saklanır. Başka bir şey gönderilmez.
 
 **".NET eksik" diyor.**
 **MMP Launcher.bat**'ı tekrar çalıştır.
+
+**Görev çubuğum yanda ya da başka bir ekranda.**
+Şimdilik MMP ana ekranın görev çubuğunda, altta ya da üstte durur.
+
+**Bir şey çalışmıyor.**
+MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya bilgisayarında kalır;
+[bir issue açarken](../../issues) ekleyebilirsin.
+
+**Nasıl kaldırırım?**
+Tray menüsünde *Windows ile başlat*'ı kapat ve *Kapat*'ı seç, sonra `%LOCALAPPDATA%\MMP` klasörünü
+(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil.
 
 ## Diller
 

@@ -1645,6 +1645,7 @@ public partial class MainWindow : Window
         UpdateTrayChecks();
         SaveSettings();
         Update();
+        CoverChanged?.Invoke();     // the options preview puts the cover on the same side
     }
 
     void SetLanguage(string lang)

@@ -149,8 +149,9 @@
             <TextBlock Margin="0,20,0,8" Style="{StaticResource Section}" x:Name="PlayersText"/>
             <WrapPanel x:Name="PlayerChips"/>
 
-            <!-- the preview: the real player's layout at 1x / 2x / 3x; pictures can be dragged, resized and rotated here -->
-            <Border Background="{StaticResource Card}" CornerRadius="12" Margin="0,14,0,0" Padding="24,28">
+            <!-- the preview: the real player's layout at 1x / 2x / 3x; pictures can be dragged, resized and rotated here.
+                 Above the rows below it, so the handles of a big picture get the clicks, not the swatches under them. -->
+            <Border Background="{StaticResource Card}" CornerRadius="12" Margin="0,14,0,0" Padding="24,28" Panel.ZIndex="1">
                 <Grid FlowDirection="LeftToRight" HorizontalAlignment="Center" x:Name="PreviewHost">
                     <Grid.LayoutTransform>
                         <ScaleTransform ScaleX="3" ScaleY="3" x:Name="PreviewScale"/>

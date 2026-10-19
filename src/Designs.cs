@@ -58,16 +58,27 @@ sealed class Designs
             if (File.Exists(FilePath))
             {
                 var d = JsonSerializer.Deserialize<Designs>(File.ReadAllText(FilePath), Json) ?? new Designs();
-                d.Players = d.Players.Take(MaxPlayers).ToList();
+                d.Players = (d.Players ?? new()).Where(p => p != null).Take(MaxPlayers).ToList();
                 foreach (var p in d.Players)
-                    p.Stickers = p.Stickers.Where(s => File.Exists(ImagePath(s.File))).Take(MaxStickers).ToList();
+                {
+                    p.Name ??= "";
+                    p.Stickers = (p.Stickers ?? new()).Where(s => s != null && File.Exists(ImagePath(s.File ?? ""))).Take(MaxStickers).ToList();
+                }
                 if (d.Current == null) d.Active = null;
                 return d;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            // a broken file is kept aside and its pictures are not cleaned up, so nothing is lost for good
+            ErrorLog.Write("players load", ex);
+            try { File.Copy(FilePath, FilePath + ".broken", true); } catch { }
+            return new Designs { _keepImages = true };
+        }
         return new Designs();
     }
+
+    bool _keepImages;
 
     public void Save()
     {
@@ -97,10 +108,11 @@ sealed class Designs
     {
         try
         {
-            if (!Directory.Exists(ImagesDir)) return;
+            if (_keepImages || !Directory.Exists(ImagesDir)) return;
             var used = Players.SelectMany(p => p.Stickers).Select(s => s.File).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var f in Directory.GetFiles(ImagesDir))
-                if (!used.Contains(Path.GetFileName(f)))
+                // a picture copied a moment ago may still be loading before it joins a player
+                if (!used.Contains(Path.GetFileName(f)) && DateTime.UtcNow - File.GetCreationTimeUtc(f) > TimeSpan.FromMinutes(1))
                     try { File.Delete(f); } catch { }
         }
         catch { }

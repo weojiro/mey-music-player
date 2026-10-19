@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     const int GapPx = 2;          // space above/below the cover inside the taskbar
     const int MarginPx = 8;       // space left/right of the cover
     const double DesignW = 382;   // full player width in design units (cover is 40 tall)
+    const double CoverGap = 4;    // design units between the cover and the player, and between the cover and the title card
     const int AnimMs = 180;       // open/close animation length
 
     static readonly string AppDataDir = Path.Combine(
@@ -187,6 +188,8 @@ public partial class MainWindow : Window
                 double cardWidth = TitlePopupBorder.DesiredSize.Width;
                 double coverWidth = Cover.ActualWidth > 0 ? Cover.ActualWidth : 40;
                 TitlePopup.HorizontalOffset = (coverWidth / 2.0) - (cardWidth / 2.0);
+                // a Margin on the card does not move a Popup, so the gap comes from the offset (scaled like the cover)
+                TitlePopup.VerticalOffset = atTop ? CoverGap : -CoverGap;
 
                 TitlePopup.IsOpen = true;
             }
@@ -554,7 +557,7 @@ public partial class MainWindow : Window
         Content.RenderTransformOrigin = new Point(left ? 0 : 1, 0);
         Cover.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         PlayerPanel.HorizontalAlignment = left ? HorizontalAlignment.Left : HorizontalAlignment.Right;
-        PlayerPanel.Margin = left ? new Thickness(44, 0, 0, 0) : new Thickness(0, 0, 44, 0);
+        PlayerPanel.Margin = left ? new Thickness(40 + CoverGap, 0, 0, 0) : new Thickness(0, 0, 40 + CoverGap, 0);
     }
 
     void KeepOnTop()
@@ -789,7 +792,7 @@ public partial class MainWindow : Window
         Refresh();
     }
 
-    static async Task<BitmapImage?> LoadThumbAsync(GlobalSystemMediaTransportControlsSessionMediaProperties props)
+    static async Task<BitmapSource?> LoadThumbAsync(GlobalSystemMediaTransportControlsSessionMediaProperties props)
     {
         var thumb = props.Thumbnail;
         if (thumb == null) return null;
@@ -805,7 +808,42 @@ public partial class MainWindow : Window
         bi.StreamSource = ms;
         bi.EndInit();
         bi.Freeze();
-        return bi;
+        return CropToCover(bi);
+    }
+
+    // Spotify on Windows 10 hands over a 300x300 transparent PNG: the cover shrunk into the top and its logo
+    // underneath. Keep only the first opaque block when it is a square cover; normal thumbnails come back as they are.
+    static BitmapSource CropToCover(BitmapSource src)
+    {
+        var fmt = new FormatConvertedBitmap(src, PixelFormats.Bgra32, null, 0);
+        int w = fmt.PixelWidth, h = fmt.PixelHeight, stride = w * 4;
+        var px = new byte[h * stride];
+        fmt.CopyPixels(px, stride, 0);
+
+        bool RowOpaque(int y)
+        {
+            for (int x = 0; x < w; x++) if (px[y * stride + x * 4 + 3] >= 250) return true;
+            return false;
+        }
+
+        int top = 0;
+        while (top < h && !RowOpaque(top)) top++;
+        if (top == h) return src;
+        int bottom = top;
+        while (bottom + 1 < h && RowOpaque(bottom + 1)) bottom++;
+
+        int left = w, right = -1;
+        for (int y = top; y <= bottom; y++)
+            for (int x = 0; x < w; x++)
+                if (px[y * stride + x * 4 + 3] >= 250) { if (x < left) left = x; if (x > right) right = x; }
+
+        int cw = right - left + 1, ch = bottom - top + 1;
+        if (cw == w && ch == h) return src;                                   // nothing around it
+        if (cw < w / 3 || ch < h / 3) return src;                             // too small to be the cover
+        if (Math.Abs(cw - ch) > Math.Max(cw, ch) / 10) return src;            // covers are square
+        var crop = new CroppedBitmap(fmt, new Int32Rect(left, top, cw, ch));
+        crop.Freeze();
+        return crop;
     }
 
     BitmapSource? TryGetAppIcon(string aumid)
@@ -842,7 +880,7 @@ public partial class MainWindow : Window
         return null;
     }
 
-    void ApplyCover(BitmapImage? cover)
+    void ApplyCover(BitmapSource? cover)
     {
         if (cover != null)
         {

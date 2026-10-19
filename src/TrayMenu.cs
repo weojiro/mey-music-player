@@ -21,13 +21,16 @@ static class TrayMenu
     const int ItemHeight = 28;
     const int SeparatorHeight = 15;
     const int PadTop = 12, PadBottom = 8;
+    const int SubPad = 4;           // above and below the rows of a submenu
 
     static readonly Forms.ToolStripRenderer Renderer = new DarkRenderer();
 
     static int Px(int value, Forms.Control? c) => (int)Math.Round(value * (c?.DeviceDpi ?? 96) / 96.0);
 
     // Applies the look to a menu and its submenus. Call after the items are added.
-    public static void Style(Forms.ToolStripDropDownMenu menu)
+    public static void Style(Forms.ToolStripDropDownMenu menu) => Style(menu, false);
+
+    static void Style(Forms.ToolStripDropDownMenu menu, bool sub)
     {
         menu.Renderer = Renderer;
         menu.BackColor = Back;
@@ -52,14 +55,21 @@ static class TrayMenu
             item.Padding = new Forms.Padding(left, 0, right, 0);
             int extra = Math.Max(0, Px(ItemHeight, menu) - item.GetPreferredSize(Size.Empty).Height);
             item.Padding = new Forms.Padding(left, extra / 2, right, extra - extra / 2);
-            if (item is Forms.ToolStripMenuItem mi && mi.DropDown is Forms.ToolStripDropDownMenu sub) Style(sub);
+            if (item is Forms.ToolStripMenuItem mi && mi.DropDown is Forms.ToolStripDropDownMenu child) Style(child, true);
         }
         // the drop-down ignores its own Padding: the space above and below comes from the first and last row
         if (items.Count > 0)
         {
-            items[0].Margin = new Forms.Padding(0, Px(PadTop, menu), 0, 0);
-            items[^1].Margin = new Forms.Padding(0, 0, 0, Px(PadBottom, menu));
+            items[0].Margin = new Forms.Padding(0, Px(sub ? SubPad : PadTop, menu), 0, 0);
+            items[^1].Margin = new Forms.Padding(0, 0, 0, Px(sub ? SubPad : PadBottom, menu));
         }
+        // a submenu opens level with its parent row's top: move it up so its first row lines up with that row
+        // (the drop-down ignores a new Top, so the window itself is moved; 1 more for the drop-down's own top edge)
+        if (sub) menu.Opened += (_, _) =>
+        {
+            if (GetWindowRect(menu.Handle, out RECT r))
+                SetWindowPos(menu.Handle, IntPtr.Zero, r.Left, r.Top - Px(SubPad + 1, menu), 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOZORDER);
+        };
         // the drop-down does not count the rows' padding in its width: give it the widest row (texts change with the language)
         menu.Opening += (_, _) => menu.MinimumSize = new Size(
             items.Where(i => i is not Forms.ToolStripSeparator).Select(i => i.GetPreferredSize(Size.Empty).Width).DefaultIfEmpty(0).Max(), 0);

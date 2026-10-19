@@ -219,8 +219,11 @@ public partial class MainWindow : Window
         };
         
         // Kapağa orta tık (Middle Click) ile şarkıyı durdurup başlatma özelliği
-        Cover.MouseMiddleButtonDown += (_, _) =>
+        // WPF has no MouseMiddleButtonDown event: MouseDown + ChangedButton is the way to catch the wheel click
+        Cover.MouseDown += (_, e) =>
         {
+            if (e.ChangedButton != MouseButton.Middle) return;
+            e.Handled = true;
             _ = _session?.TryTogglePlayPauseAsync();
         };
 

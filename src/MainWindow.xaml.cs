@@ -169,6 +169,13 @@ public partial class MainWindow : Window
                 TitlePopupText.Text = _title;
                 bool atTop = _edge == "top";
                 TitlePopup.Placement = atTop ? PlacementMode.Bottom : PlacementMode.Top;
+
+                // Kartın genişliğini ölçüp kapağa (40px) göre tam yatay merkezleme (Ortalama) hesabı yapıyoruz:
+                TitlePopupBorder.Measure(new Size(240, double.PositiveInfinity));
+                double cardWidth = TitlePopupBorder.DesiredSize.Width;
+                double coverWidth = Cover.ActualWidth > 0 ? Cover.ActualWidth : 40;
+                TitlePopup.HorizontalOffset = (coverWidth / 2.0) - (cardWidth / 2.0);
+
                 TitlePopup.IsOpen = true;
             }
         };

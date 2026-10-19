@@ -6,118 +6,123 @@
 
 <img src="docs/open-close.gif" alt="Görev çubuğundaki kapak oynatıcıya açılıyor" width="452">
 
-[**İndir**](../../releases/latest) · [English](README.md)
+[**İndir**](../../releases/latest) · [Web sitesi](https://weojiro.github.io/mey-music-player/) · [English](README.md)
 
 </div>
 
-mey music player (MMP), o an çalan şeyin kapağını görev çubuğuna koyar: Spotify, tarayıcıdaki YouTube
-ya da Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı
-açılır; butonlar, süre ve Spotify'da şarkı sözleri oradadır. Renklerini kapaktan alır, böylece her zaman
-müziğe uyar.
+mey music player (MMP), Windows görev çubuğu için ücretsiz ve açık kaynak bir müzik oynatıcı. O an çalan
+şeyin kapağını görev çubuğundaki ikonlarının yanına koyar: Spotify, tarayıcıdaki YouTube, SoundCloud ya da
+Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı açılır;
+butonlar, süre ve Spotify'da şarkı sözleri oradadır. Renklerini kapaktan alır, böylece her zaman müziğe uyar.
 
 ## Özellikler
 
-### Görev çubuğunda bir oynatıcı
-
-<img src="docs/player.png" alt="Butonlarıyla oynatıcı" width="452">
-
-Önceki, çal / duraklat, sonraki, ilerleme çubuğu, çalan uygulamanın sesi, karıştır ve tekrarla.
-Oynatıcıyı açıp kapatmak için kapağa tıkla, istediğin yere koymak için görev çubuğunda sürükle.
-
-### Kapaktan gelen renkler
-
-<img src="docs/chameleon.png" alt="Dört farklı kapağın renklerinde oynatıcı" width="452">
-
-Her şarkı oynatıcıyı kendi renklerine boyar.
+<table>
+<tr>
+<td width="50%"><img src="docs/player.png" alt="Butonlarıyla oynatıcı" width="100%"><br>
+<b>Görev çubuğunda bir oynatıcı.</b> Önceki, çal / duraklat, sonraki, ilerleme çubuğu, çalan uygulamanın
+sesi, karıştır ve tekrarla. İstediğin yere koymak için kapağı görev çubuğunda sürükle.</td>
+<td width="50%"><img src="docs/chameleon.png" alt="Dört farklı kapağın renklerinde oynatıcı" width="100%"><br>
+<b>Kapaktan gelen renkler.</b> Her şarkı oynatıcıyı kendi renklerine boyar.</td>
+</tr>
+<tr>
+<td><img src="docs/lyrics.gif" alt="Oynatıcıda satır satır değişen şarkı sözleri" width="100%"><br>
+<b>Spotify'daki gibi şarkı sözleri.</b> Tray menüsünden <i>Şarkı sözleri</i>ni aç, açık oynatıcı o an
+söylenen satırı gösterir. Butonlar için fareyi üstüne getir.</td>
+<td><img src="docs/title-card.png" alt="Kapağın üstünde şarkının adı" width="200"><br>
+<b>Şarkının adı bir bakışta.</b> Fareyi bir saniye kapağın üstünde tut.</td>
+</tr>
+</table>
 
 ### Oynatıcını tasarla
 
-<img src="docs/design-flame.gif" alt="Alt kenarında hareketli alev olan bir oynatıcı görev çubuğunda açılıyor" width="452">
+<img src="docs/design-demo.gif" alt="Yeni bir oynatıcıya ad, renkler, dönen bir plak GIF'i ve bir şimşek PNG'si ekleniyor; resimler taşınıyor, büyütülüyor ve döndürülüyor" width="760">
 
-Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç: arka plan ve buton renklerini seç
-(ya da kapaktan gelen renkler için *Bukalemun*'da bırak) ve üstüne PNG, JPG veya GIF resimler koy. Büyük bir
-önizlemede sürükle, boyutlandır ve döndür; hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek
-seç. Resimler hep butonların arkasında kalır, GIF'ler sadece oynatıcı açıkken oynar. 5 oynatıcıya kadar kaydedip
-aralarında geçiş yapabilirsin.
+Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 
-<img src="docs/design-options.png" alt="Oynatıcının büyük önizlemesi, renk seçenekleri ve resim listesiyle Ayarlar penceresi" width="640">
-
-<img src="docs/designs.png" alt="Kaydedilmiş üç oynatıcı: alev, notalı mor ve gökkuşağı" width="452">
-
-### Spotify'daki gibi şarkı sözleri
-
-<img src="docs/lyrics.gif" alt="Oynatıcıda satır satır değişen şarkı sözleri" width="420">
-
-Tray menüsünden **Şarkı sözleri**ni aç, açık oynatıcı o an söylenen satırı gösterir. Eski satır solarken
-yenisi alttan gelir. Butonlar için fareyi oynatıcının üstüne getir. Spotify ile çalışır.
-
-### Şarkının adı bir bakışta
-
-<img src="docs/title-card.png" alt="Kapağın üstünde şarkının adı" width="220">
-
-Fareyi bir saniye kapağın üstünde tut.
+- arka plan ve buton renklerini seç ya da kapaktan gelen renkler için *Bukalemun*'da bırak;
+- PNG, JPG veya GIF resimler ekle, büyük önizlemede sürükle, boyutlandır ve döndür;
+- hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
+- 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
 
 ### Hızlı kontroller
 
-- **Kapakta fare tekerleği:** sonraki / önceki şarkı
-- **Kapağa orta tık:** çal / duraklat
-- **İlerleme çubuğunda tekerlek:** 5 saniye ileri / geri; **ses ikonunda:** ses; **ses ikonuna tık:** sessiz
-- **Tray ikonu:** sol tık çalar / duraklatır, tekerlek sesi değiştirir
+| Nerede | Ne yapar |
+|---|---|
+| Kapakta fare tekerleği | sonraki / önceki şarkı |
+| Kapağa orta tık | çal / duraklat |
+| İlerleme çubuğunda tekerlek | 5 saniye ileri ya da geri |
+| Ses ikonunda tekerlek | ses; tıklayınca sessiz |
+| Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
 
-### Tray menüsü
-
-<img src="docs/tray-menu.png" alt="Tray menüsü" width="232">
-
-Tray ikonuna sağ tıklayınca: Ayarlar, Şarkı sözleri, Windows ile başlat, görev çubuğunun hangi tarafı (sol / sağ),
-dil, Yeniden başlat ve Kapat.
+Tray ikonuna sağ tıklayınca: Ayarlar, Şarkı sözleri, Windows ile başlat, görev çubuğunun tarafı, dil,
+Yeniden başlat ve Kapat.
 
 ## Kurulum
 
 1. [Son sürümden](../../releases/latest) **MMP.zip**'i indir.
-2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla.
+2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla. Eksikse .NET Desktop Runtime 8'i de kurar.
 3. "Installation complete!" yazınca uygulamayı masaüstündeki **mey music player** kısayoluyla aç.
 
-Launcher eksikse .NET Desktop Runtime 8'i de kurar. MMP bundan sonra Windows ile birlikte açılır
-(tray menüsünden kapatabilirsin).
-
-Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
-
-**Güncellemeler** uygulamanın içinde: açılışta ve günde bir kez yeni sürüme bakar, yenilikleri gösterir
-ve tek tıkla kendini günceller.
+MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin) ve kendini günceller: açılışta
+ve günde bir kez yeni sürüme bakar. Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
 
 ## Sorular
 
-**Windows "Bilgisayarınız korundu" / bilinmeyen yayıncı diyor.**
+<details>
+<summary><b>Windows "Bilgisayarınız korundu" / bilinmeyen yayıncı diyor.</b></summary>
+
 Uygulama ücretli bir sertifikayla imzalanmadı. *Ek bilgi*'ye, sonra *Yine de çalıştır*'a tıkla.
+</details>
 
-**Hangi uygulamalarla çalışıyor?**
-Windows medya kontrollerinde görünen her şeyle (ses / hızlı ayarlar menüsündeki medya kutusu):
-Spotify, YouTube, X, SoundCloud gibi siteleri çalan tarayıcılar ve çoğu müzik ve video oynatıcı.
-Şarkı sözleri sadece Spotify'da.
+<details>
+<summary><b>Hangi uygulamalarla çalışıyor?</b></summary>
 
-**Ses butonları Spotify'ın içindeki ses çubuğunu oynatmıyor.**
+Windows medya kontrollerinde görünen her şeyle (ses / hızlı ayarlar menüsündeki medya kutusu): Spotify,
+YouTube ya da SoundCloud çalan tarayıcılar ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify'da.
+</details>
+
+<details>
+<summary><b>Ses ayarı Spotify'ın içindeki ses çubuğunu oynatmıyor.</b></summary>
+
 MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda bütün
-sekmeler tek bir sesi paylaşır. *Ek bilgi:* Firefox'ta ses MMP'den değiştirilemez (Firefox Windows'a
-hangi uygulama olduğunu söylemiyor), geri kalan her şey çalışır.
+sekmeler tek bir sesi paylaşır. Firefox'ta ses MMP'den değiştirilemez (Firefox Windows'a hangi uygulama
+olduğunu söylemiyor), geri kalan her şey çalışır.
+</details>
 
-**İnternete ne gönderiyor?**
+<details>
+<summary><b>İnternete ne gönderiyor?</b></summary>
+
 Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
 albümü ve süresi [LRCLIB](https://lrclib.net)'e gider; bulunan sözler `%LOCALAPPDATA%\MMP\lyrics` içinde
 saklanır. Başka bir şey gönderilmez.
+</details>
 
-**".NET eksik" diyor.**
-**MMP Launcher.bat**'ı tekrar çalıştır.
+<details>
+<summary><b>Görev çubuğum yanda ya da başka bir ekranda.</b></summary>
 
-**Görev çubuğum yanda ya da başka bir ekranda.**
 Şimdilik MMP ana ekranın görev çubuğunda, altta ya da üstte durur.
+</details>
 
-**Bir şey çalışmıyor.**
+<details>
+<summary><b>".NET eksik" diyor.</b></summary>
+
+**MMP Launcher.bat**'ı tekrar çalıştır.
+</details>
+
+<details>
+<summary><b>Bir şey çalışmıyor.</b></summary>
+
 MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya bilgisayarında kalır;
 [bir issue açarken](../../issues) ekleyebilirsin.
+</details>
 
-**Nasıl kaldırırım?**
+<details>
+<summary><b>Nasıl kaldırırım?</b></summary>
+
 Tray menüsünde *Windows ile başlat*'ı kapat ve *Kapat*'ı seç, sonra `%LOCALAPPDATA%\MMP` klasörünü
 (uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil.
+</details>
 
 ## Diller
 

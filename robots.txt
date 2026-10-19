@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://weojiro.github.io/mey-music-player/sitemap.xml

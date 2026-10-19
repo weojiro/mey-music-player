@@ -217,6 +217,13 @@ public partial class MainWindow : Window
             Cover.CaptureMouse();
             Refresh();
         };
+        
+        // Kapağa orta tık (Middle Click) ile şarkıyı durdurup başlatma özelliği
+        Cover.MouseMiddleButtonDown += (_, _) =>
+        {
+            _ = _session?.TryTogglePlayPauseAsync();
+        };
+
         Cover.MouseMove += (_, e) =>
         {
             if (!Cover.IsMouseCaptured || e.LeftButton != MouseButtonState.Pressed) return;
@@ -1275,7 +1282,7 @@ public partial class MainWindow : Window
         ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "La configuración se agregará aquí.",
             "Actualización disponible", "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...", "No se pudo instalar la actualización. Inténtalo de nuevo más tarde." },
         ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Les paramètres seront ajoutés ici.",
-            "Mise à jour disponible", "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
+            "Mise à jour disponible", "La version {0} är disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
             "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal." },
         ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",

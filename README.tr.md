@@ -15,6 +15,10 @@ mey music player (MMP), Windows görev çubuğu için ücretsiz ve açık kaynak
 Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı açılır;
 butonlar, süre ve Spotify'da şarkı sözleri oradadır. Renklerini kapaktan alır, böylece her zaman müziğe uyar.
 
+## Tutorial
+
+[<img src="docs/tutorial.png" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=PsI_AHPoIt4)
+
 ## Özellikler
 
 <table>

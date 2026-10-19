@@ -15,6 +15,10 @@ whatever is playing next to your taskbar icons: Spotify, YouTube in your browser
 uses the Windows media controls. Click the cover and a small player slides open with the controls, the time
 and, for Spotify, the lyrics. Its colours come from the cover, so it always matches the music.
 
+## Tutorial
+
+[<img src="docs/tutorial.png" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=PsI_AHPoIt4)
+
 ## Features
 
 <table>

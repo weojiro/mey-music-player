@@ -82,7 +82,7 @@
             <TextBlock x:Name="Glyph" Text="&#xEC4F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
 
-        <!-- 1 Saniye Durunca Açılan Bukalemun Şarkı Adı Kartı -->
+        <!-- 1 Saniye Durunca Açılan Kapağa Ortalı Bukalemun Şarkı Adı Kartı -->
         <Popup x:Name="TitlePopup" PlacementTarget="{Binding ElementName=Cover}" AllowsTransparency="True" PopupAnimation="Fade" StaysOpen="True">
             <Border x:Name="TitlePopupBorder" Background="#2B2B2B" BorderBrush="#44FFFFFF" BorderThickness="1" CornerRadius="8" Padding="12,8" MinWidth="110" MaxWidth="240" Margin="4">
                 <TextBlock x:Name="TitlePopupText" Text="" FontFamily="Segoe UI Variable Text, Segoe UI" FontWeight="SemiBold" FontSize="12" Foreground="White" TextWrapping="Wrap" MaxHeight="36" TextTrimming="CharacterEllipsis" TextAlignment="Center" VerticalAlignment="Center"/>

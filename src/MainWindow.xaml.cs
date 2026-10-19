@@ -1285,7 +1285,7 @@ public partial class MainWindow : Window
             "Mise à jour disponible", "La version {0} är disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard", "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard." },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Einstellungen werden hier hinzugefügt.",
             "Update verfügbar", "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...", "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal." },
-        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas aqui.",
+        ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "As configurações serão adicionadas hier.",
             "Atualização disponível", "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...", "A atualização não pôde ser instalada. Tente novamente mais tarde." },
         ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Настройки будут добавлены здесь.",
             "Доступно обновление", "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...", "Не удалось установить обновление. Повторите попытку позже." },

@@ -32,11 +32,17 @@ Her şarkı oynatıcıyı kendi renklerine boyar.
 
 ### Oynatıcını tasarla
 
+<img src="docs/design-flame.gif" alt="Alt kenarında hareketli alev olan bir oynatıcı görev çubuğunda açılıyor" width="452">
+
 Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç: arka plan ve buton renklerini seç
 (ya da kapaktan gelen renkler için *Bukalemun*'da bırak) ve üstüne PNG, JPG veya GIF resimler koy. Büyük bir
 önizlemede sürükle, boyutlandır ve döndür; hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek
 seç. Resimler hep butonların arkasında kalır, GIF'ler sadece oynatıcı açıkken oynar. 5 oynatıcıya kadar kaydedip
 aralarında geçiş yapabilirsin.
+
+<img src="docs/design-options.png" alt="Oynatıcının büyük önizlemesi, renk seçenekleri ve resim listesiyle Ayarlar penceresi" width="640">
+
+<img src="docs/designs.png" alt="Kaydedilmiş üç oynatıcı: alev, notalı mor ve gökkuşağı" width="452">
 
 ### Spotify'daki gibi şarkı sözleri
 

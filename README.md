@@ -32,11 +32,17 @@ Every song paints the player in its own colours.
 
 ### Design your player
 
+<img src="docs/design-flame.gif" alt="A player with an animated flame along its bottom edge opening on the taskbar" width="452">
+
 Open **Options** in the tray menu to make the player your own: pick the background and button colours
 (or keep *Chameleon*, the colours from the cover) and put PNG, JPG or GIF images on it. Drag, resize and
 rotate them on a big preview and drag them up or down in the image list to choose which one is in front;
 they always stay behind the buttons and GIFs play only while the player is open. Save up to 5 players and
 switch between them.
+
+<img src="docs/design-options.png" alt="The Options window with a big preview of the player, colour swatches and the image list" width="640">
+
+<img src="docs/designs.png" alt="Three saved players: a flame, purple with notes, and a rainbow" width="452">
 
 ### Lyrics, like in Spotify
 

@@ -56,7 +56,7 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 - **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır;
 - **Her zaman üstte**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
-- **Göster / gizle**: Ctrl + Shift + X oynatıcıyı gizler ya da gösterir. Başka bir kısayol seçmek için üstüne tıkla.
+- **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas.
 
 Oyun imleci gizlerken (araba sürerken, nişan alırken) tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç
 geri gelince (oyunun menüsünde) oynatıcıyı her zamanki gibi kullanıp taşıyabilirsin. Yine de kullanmak için
@@ -71,7 +71,7 @@ geri gelince (oyunun menüsünde) oynatıcıyı her zamanki gibi kullanıp taş�
 | İlerleme çubuğunda tekerlek | 5 saniye ileri ya da geri |
 | Ses ikonunda tekerlek | ses; tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
-| Ctrl + Shift + X | oynatıcıyı gizler / gösterir |
+| Ctrl + Alt | basınca oynatıcıyı gizler / gösterir; basılı tutunca oyunda oynatıcıyı kullanabilirsin |
 
 Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, görev çubuğunun
 tarafı, dil, Yeniden başlat ve Kapat.

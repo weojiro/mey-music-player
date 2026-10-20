@@ -143,7 +143,7 @@ internal static class NativeMethods
     public const int WS_EX_TRANSPARENT = 0x00000020;
     public const int CURSOR_SHOWING = 0x1;
     public const int CURSOR_SUPPRESSED = 0x2;      // touch or pen input: the cursor is not drawn, but the user can still tap
-    public const int VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12;
+    public const int VK_CONTROL = 0x11, VK_MENU = 0x12;
 
     [StructLayout(LayoutKind.Sequential)]
     public struct CURSORINFO
@@ -159,20 +159,4 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern short GetAsyncKeyState(int vk);
-
-    // --- show / hide shortcut ---
-    public const int WM_HOTKEY = 0x0312;
-    public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
-
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
-
-    [DllImport("user32.dll")]
-    public static extern bool UnregisterHotKey(IntPtr hwnd, int id);
-
-    [DllImport("user32.dll")]
-    public static extern uint MapVirtualKey(uint code, uint mapType);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int GetKeyNameText(int lParam, System.Text.StringBuilder text, int size);
 }

@@ -161,7 +161,7 @@ internal static class NativeMethods
     public static extern short GetAsyncKeyState(int vk);
 
     // --- shortcuts with a key (Ctrl + Alt + X): the system sees them in every app and games don't get the key ---
-    public const int WM_HOTKEY = 0x0312;
+    public const int WM_HOTKEY = 0x0312, WM_DISPLAYCHANGE = 0x007E;
     public const uint MOD_ALT = 0x1, MOD_CONTROL = 0x2, MOD_SHIFT = 0x4, MOD_WIN = 0x8, MOD_NOREPEAT = 0x4000;
 
     [DllImport("user32.dll", SetLastError = true)]

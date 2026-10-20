@@ -904,6 +904,7 @@ public partial class OptionsWindow : Window
         Deactivated += (_, _) => StopCapture();
         Closed += (_, _) => StopCapture();
         ShowShortcuts();
+        if (_main.ShortcutBusy) ShowShortcutMessage("hotkeyBusy");      // another app took the keys before MMP started
     }
 
     // the mouse shortcut only works with "show over games": greyed out with a note while that is off

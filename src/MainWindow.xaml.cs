@@ -2028,9 +2028,12 @@ public partial class MainWindow : Window
                 else if (k is "showKey" or "cursorKey" && v.Split(',') is [var m, var c]
                          && uint.TryParse(m, out uint mods) && uint.TryParse(c, out uint vk))
                 {
-                    var key = _keys[k == "showKey" ? 0 : 1];
-                    key.Mods = mods & (MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_WIN);
-                    key.Vk = vk;
+                    // only what Options can make: a key with Ctrl / Alt / Win (or an F key), or two modifiers on their own
+                    mods &= MOD_ALT | MOD_CONTROL | MOD_SHIFT | MOD_WIN;
+                    int count = new[] { MOD_CONTROL, MOD_ALT, MOD_SHIFT }.Count(x => (mods & x) != 0);
+                    bool valid = vk == 0 ? count >= 2 && (mods & MOD_WIN) == 0
+                        : vk < 0xFF && ((mods & (MOD_CONTROL | MOD_ALT | MOD_WIN)) != 0 || vk is >= 0x70 and <= 0x87);
+                    if (valid) (_keys[k == "showKey" ? 0 : 1].Mods, _keys[k == "showKey" ? 0 : 1].Vk) = (mods, vk);
                 }
                 else if (k == "onTop") _onTop = v == "1";
             }
@@ -2121,10 +2124,12 @@ public partial class MainWindow : Window
     {
         public uint Mods, Vk;           // Vk 0: modifiers only (Ctrl + Alt), polled
         public bool Down, Spoiled;
+        public bool Busy;               // another app has these keys: RegisterHotKey failed
         public long At;
     }
 
     internal string ShortcutText(int which) => KeyText(_keys[which].Mods, _keys[which].Vk);
+    internal bool ShortcutBusy => _keys.Any(k => k.Busy);
 
     void ShortcutPressed(int which)
     {
@@ -2139,7 +2144,9 @@ public partial class MainWindow : Window
         {
             UnregisterHotKey(_hwnd, i + 1);
             _keys[i].Down = false;
-            if (!_keysPaused && _keys[i].Vk != 0) RegisterHotKey(_hwnd, i + 1, _keys[i].Mods | MOD_NOREPEAT, _keys[i].Vk);
+            if (!_keysPaused && _keys[i].Vk != 0)
+                _keys[i].Busy = !RegisterHotKey(_hwnd, i + 1, _keys[i].Mods | MOD_NOREPEAT, _keys[i].Vk);
+            else if (_keys[i].Vk == 0) _keys[i].Busy = false;
         }
         bool poll = !_keysPaused && _keys.Any(k => k.Vk == 0);
         if (poll && !_keyTimer.IsEnabled) _keyTimer.Start();
@@ -2204,6 +2211,8 @@ public partial class MainWindow : Window
             _lastHotkeyAt = Environment.TickCount64;
             ShortcutPressed(wParam.ToInt32() - 1);
         }
+        // a game switched the screen to another resolution (or back): free move puts the cover in its corner again
+        else if (msg == WM_DISPLAYCHANGE) OnDisplayChanged(null, EventArgs.Empty);
         return IntPtr.Zero;
     }
 

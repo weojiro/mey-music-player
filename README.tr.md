@@ -53,14 +53,17 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 
 Yine **Ayarlar**'da, *Yerleşim* altında:
 
-- **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır;
+- **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Bir oyun çözünürlüğü değiştirse de ekrandaki
+  yerini korur. Açıldığında oynatıcı hep ekranın içinde kalır;
 - **Her zaman üstte**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
-- **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas.
+- **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas;
+- **Fareyi oyundan al**: tam ekran oyunda **Ctrl + Alt + X**'e basınca fare oyundan çıkar; şarkı geçebilir ya da
+  başka bir şey kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. *Her zaman üstte* açıkken çalışır.
 
-Oyun imleci gizlerken (araba sürerken, nişan alırken) tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç
-geri gelince (oyunun menüsünde) oynatıcıyı her zamanki gibi kullanıp taşıyabilirsin. Yine de kullanmak için
-**Ctrl + Alt**'a basılı tut.
+Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Oyun imleci gizlerken (araba sürerken, nişan alırken)
+tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç geri gelince (oyunun menüsünde) oynatıcıyı her zamanki
+gibi kullanıp taşıyabilirsin.
 
 ### Hızlı kontroller
 
@@ -71,7 +74,8 @@ geri gelince (oyunun menüsünde) oynatıcıyı her zamanki gibi kullanıp taş�
 | İlerleme çubuğunda tekerlek | 5 saniye ileri ya da geri |
 | Ses ikonunda tekerlek | ses; tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
-| Ctrl + Alt | basınca oynatıcıyı gizler / gösterir; basılı tutunca oyunda oynatıcıyı kullanabilirsin |
+| Ctrl + Alt | oynatıcıyı gizler / gösterir |
+| Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Her zaman üstte* açıkken) |
 
 Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, görev çubuğunun
 tarafı, dil, Yeniden başlat ve Kapat.

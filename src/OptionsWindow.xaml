@@ -298,13 +298,23 @@
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="FreeMoveHint"/>
                     <CheckBox Margin="0,16,0,0" Style="{StaticResource Switch}" x:Name="OnTopBox"/>
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="OnTopHint"/>
-                    <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                    <!-- the two shortcuts: click one, then press the new keys -->
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
                         <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" x:Name="HotkeyText"/>
-                        <Border Background="#2D2D2D" CornerRadius="8" Height="32" Padding="14,0">
-                            <TextBlock FlowDirection="LeftToRight" Text="Ctrl + Alt" VerticalAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
+                        <Button Grid.Column="1" HorizontalAlignment="Left" MinWidth="150" Style="{StaticResource Btn}" x:Name="ShowKeyButton"/>
+                        <TextBlock Grid.Row="1" Margin="0,8,12,0" VerticalAlignment="Center" x:Name="CursorKeyText"/>
+                        <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" Margin="0,8,0,0" MinWidth="150" Style="{StaticResource Btn}" x:Name="CursorKeyButton"/>
+                    </Grid>
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
+                    <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
                 </StackPanel>
             </Grid>
         </StackPanel>

@@ -32,7 +32,7 @@ sealed class Designs
 {
     public const int MaxPlayers = 5;
     public const int MaxStickers = 10;
-    public const long MaxFileBytes = 10 * 1024 * 1024;
+    public const long MaxFileBytes = 50 * 1024 * 1024;
 
     static readonly string Dir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MMP", "players");

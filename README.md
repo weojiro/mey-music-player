@@ -53,13 +53,16 @@ Open **Options** in the tray menu to make the player your own:
 
 Also in **Options**, under *Placement*:
 
-- **Free move**: drag the cover anywhere on the screen. When it opens, the player always stays on the screen;
+- **Free move**: drag the cover anywhere on the screen. It keeps its place on the screen, also when a game
+  changes the resolution. When it opens, the player always stays on the screen;
 - **Always on top**: the player stays visible over full-screen apps and games. If it doesn't show in a game,
   choose borderless or windowed full screen in the game's settings;
-- **Show / hide**: press **Ctrl + Alt** to hide or show the player.
+- **Show / hide**: press **Ctrl + Alt** to hide or show the player;
+- **Mouse out of the game**: press **Ctrl + Alt + X** in a full-screen game to get the mouse out of it, to skip a
+  song or use anything else. Press it again or click the game to go back. Works when *Always on top* is on.
 
-While a game hides the cursor (driving, aiming), clicks go straight to the game, not to the player. When the
-cursor is back (the game's menu), you can use and move the player as usual. Hold **Ctrl + Alt** to use it anyway.
+Click a shortcut in Options to change it. While a game hides the cursor (driving, aiming), clicks go straight to
+the game, not to the player. When the cursor is back (the game's menu), you can use and move the player as usual.
 
 ### Quick controls
 
@@ -70,7 +73,8 @@ cursor is back (the game's menu), you can use and move the player as usual. Hold
 | Mouse wheel on the seek bar | 5 seconds back or forward |
 | Mouse wheel on the speaker | volume; a click mutes |
 | Tray icon | a click plays / pauses, the wheel changes the volume |
-| Ctrl + Alt | a press hides / shows the player; holding it lets you use the player in a game |
+| Ctrl + Alt | hides / shows the player |
+| Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Always on top*) |
 
 Right-click the tray icon for Options, Hide player, Lyrics, Start with Windows, the side of the taskbar, the
 language, Restart and Close.

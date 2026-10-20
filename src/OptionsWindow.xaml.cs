@@ -876,7 +876,11 @@ public partial class OptionsWindow : Window
         QueueSave();
     }
 
-    // ---------- placement: free move, always on top, the show / hide shortcut ----------
+    // ---------- placement: free move, always on top, the two shortcuts ----------
+
+    int _capturing = -1;            // the shortcut waiting for new keys (0 show / hide, 1 cursor), -1 none
+    uint _capMods;                  // the most modifiers held at once while waiting
+    bool _capKey;                   // a key other than a modifier was pressed while waiting
 
     void SetupPlacement()
     {
@@ -886,15 +890,112 @@ public partial class OptionsWindow : Window
         OnTopBox.Content = T("onTop");
         OnTopHint.Text = T("onTopHint");
         HotkeyText.Text = T("hotkey");
+        CursorKeyText.Text = T("cursorKey");
         HotkeyHint.Text = T("hotkeyHint");
         FreeMoveBox.IsChecked = _main.FreeMove;
         OnTopBox.IsChecked = _main.AlwaysOnTop;
         FreeMoveBox.Click += (_, _) => _main.SetFree(FreeMoveBox.IsChecked == true);
         OnTopBox.Click += (_, _) => _main.SetOnTop(OnTopBox.IsChecked == true);
+        ShowKeyButton.Click += (_, _) => ToggleCapture(0);
+        CursorKeyButton.Click += (_, _) => ToggleCapture(1);
+        PreviewKeyUp += OnKeyUp;
+        Deactivated += (_, _) => StopCapture();
+        Closed += (_, _) => StopCapture();
+        ShowShortcuts();
+    }
+
+    void ShowShortcuts()
+    {
+        foreach (var (b, i) in new[] { (ShowKeyButton, 0), (CursorKeyButton, 1) })
+        {
+            bool waiting = _capturing == i;
+            b.Content = waiting ? T("hotkeyPress") : _main.ShortcutText(i);
+            b.Background = new SolidColorBrush(waiting ? Light : ChipBack);
+            b.Foreground = new SolidColorBrush(waiting ? Ink : Light);
+        }
+    }
+
+    void ShowShortcutMessage(string? textKey)
+    {
+        HotkeyMessage.Text = textKey == null ? "" : T(textKey);
+        HotkeyMessage.Visibility = textKey == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    void ToggleCapture(int which)
+    {
+        bool same = _capturing == which;
+        StopCapture();
+        if (same) return;
+        _capturing = which;
+        _capMods = 0;
+        _capKey = false;
+        _main.PauseShortcuts();         // so pressing the old keys is seen here, not shows / hides the player
+        ShowShortcutMessage(null);
+        ShowShortcuts();
+    }
+
+    void StopCapture()
+    {
+        if (_capturing < 0) return;
+        _capturing = -1;
+        _main.ResumeShortcuts();
+        ShowShortcuts();
+    }
+
+    void SetShortcut(uint mods, uint vk)
+    {
+        int which = _capturing;
+        string? error = _main.TrySetShortcut(which, mods, vk);
+        StopCapture();
+        ShowShortcutMessage(error);
+    }
+
+    static uint ModsNow()
+    {
+        var m = Keyboard.Modifiers;
+        return (m.HasFlag(ModifierKeys.Control) ? MOD_CONTROL : 0) | (m.HasFlag(ModifierKeys.Alt) ? MOD_ALT : 0)
+            | (m.HasFlag(ModifierKeys.Shift) ? MOD_SHIFT : 0) | (m.HasFlag(ModifierKeys.Windows) ? MOD_WIN : 0);
+    }
+
+    // New keys: Ctrl, Alt or Win with a key, or an F key on its own (Shift + a letter would stop the user typing
+    // capitals). Two of Ctrl, Alt and Shift pressed and let go with nothing else is a shortcut of modifiers only.
+    void CaptureKey(KeyEventArgs e)
+    {
+        e.Handled = true;
+        Key key = e.Key == Key.System ? e.SystemKey : e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key;
+        if (key == Key.Escape) { StopCapture(); return; }
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
+            or Key.LWin or Key.RWin or Key.None or Key.DeadCharProcessed)
+        {
+            _capMods |= ModsNow();
+            return;
+        }
+        _capKey = true;
+        uint mods = ModsNow();
+        uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+        bool fKey = key >= Key.F1 && key <= Key.F24;
+        if (vk == 0 || (mods & (MOD_CONTROL | MOD_ALT | MOD_WIN)) == 0 && !fKey) { ShowShortcutMessage("hotkeyBad"); return; }
+        SetShortcut(mods, vk);
+    }
+
+    void OnKeyUp(object sender, KeyEventArgs e)
+    {
+        if (_capturing < 0) return;
+        e.Handled = true;
+        if (Keyboard.Modifiers != ModifierKeys.None) return;        // wait until all are let go
+        uint mods = _capMods;
+        bool key = _capKey;
+        _capMods = 0;
+        _capKey = false;
+        if (key || mods == 0) return;
+        int count = new[] { MOD_CONTROL, MOD_ALT, MOD_SHIFT }.Count(m => (mods & m) != 0);
+        if (count >= 2 && (mods & MOD_WIN) == 0) SetShortcut(mods, 0);
+        else ShowShortcutMessage("hotkeyBad");
     }
 
     void OnKey(object sender, KeyEventArgs e)
     {
+        if (_capturing >= 0) { CaptureKey(e); return; }
         if (Keyboard.FocusedElement is TextBox || ConfirmLayer.Visibility == Visibility.Visible) return;
         if (e.Key == Key.Escape) { Select(-1); return; }
         if (SelectedSpec is not { } s) return;

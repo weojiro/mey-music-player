@@ -31,8 +31,8 @@ playing, shuffle and repeat. Drag the cover along the taskbar to put it where yo
 </tr>
 <tr>
 <td><img src="docs/lyrics.gif" alt="Lyrics changing line by line in the player" width="100%"><br>
-<b>Lyrics, like in Spotify.</b> Turn on <i>Lyrics</i> in the tray menu and the open player shows the line
-being sung. Move the mouse over it to get the buttons back.</td>
+<b>Lyrics, like in Spotify.</b> The open player shows the line being sung; turn it off under <i>Lyrics</i> in
+the tray menu. Move the mouse over it to get the buttons back.</td>
 <td><img src="docs/title-card.png" alt="The song's name above the cover" width="200"><br>
 <b>The song's name at a glance.</b> Rest the mouse on the cover for a second.</td>
 </tr>

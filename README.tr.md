@@ -31,8 +31,8 @@ sesi, karıştır ve tekrarla. İstediğin yere koymak için kapağı görev çu
 </tr>
 <tr>
 <td><img src="docs/lyrics.gif" alt="Oynatıcıda satır satır değişen şarkı sözleri" width="100%"><br>
-<b>Spotify'daki gibi şarkı sözleri.</b> Tray menüsünden <i>Şarkı sözleri</i>ni aç, açık oynatıcı o an
-söylenen satırı gösterir. Butonlar için fareyi üstüne getir.</td>
+<b>Spotify'daki gibi şarkı sözleri.</b> Açık oynatıcı o an söylenen satırı gösterir; tray menüsündeki
+<i>Şarkı sözleri</i>nden kapatabilirsin. Butonlar için fareyi üstüne getir.</td>
 <td><img src="docs/title-card.png" alt="Kapağın üstünde şarkının adı" width="200"><br>
 <b>Şarkının adı bir bakışta.</b> Fareyi bir saniye kapağın üstünde tut.</td>
 </tr>

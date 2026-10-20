@@ -144,10 +144,10 @@ public partial class MainWindow : Window
     string _album = "";
     int _refreshSeq;                        // newest RefreshMedia call; older ones drop their results
 
-    // --- lyrics (Spotify only, from LRCLIB; the tray toggle is off by default) ---
+    // --- lyrics (Spotify only, from LRCLIB; the tray toggle is on by default) ---
     const int LyricMs = 300;                // line change animation
     const double LyricShift = 14;           // design units a line moves when it comes in or leaves
-    bool _lyricsOn;
+    bool _lyricsOn = true;                  // a settings.ini without "lyrics=" (first run) keeps it on
     List<(TimeSpan Time, string Text)>? _lyrics;
     string _lyricsStatus = "-", _lyricsKey = "", _lyricsRetryKey = "";
     int _lyricsRetries;
@@ -1828,7 +1828,8 @@ public partial class MainWindow : Window
     {
         string exe = Environment.ProcessPath ?? "";
         string bat = Path.Combine(Path.GetDirectoryName(exe) ?? "", "MMP Launcher.bat");
-        return File.Exists(bat) ? $"cmd.exe /c start \"\" /min \"{bat}\" /run" : $"\"{exe}\"";
+        // "start" alone would open the .bat with cmd /k, leaving its window (in System32) open after it is done
+        return File.Exists(bat) ? $"cmd.exe /c start \"\" /min cmd.exe /c \"\"{bat}\" /run\"" : $"\"{exe}\"";
     }
 
     static void SetStartup(bool on)

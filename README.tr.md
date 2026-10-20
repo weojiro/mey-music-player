@@ -45,7 +45,7 @@ sesi, karıştır ve tekrarla. İstediğin yere koymak için kapağı görev çu
 Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 
 - arka plan ve buton renklerini seç ya da kapaktan gelen renkler için *Bukalemun*'da bırak;
-- *Saydamlık* kaydırıcısıyla oynatıcıyı saydam yap (en fazla %90): hepsini birlikte ya da arka planı, butonları ve
+- *Saydamlık* kaydırıcısıyla oynatıcıyı saydam yap: hepsini birlikte ya da arka planı, butonları ve
   kapağı ayrı ayrı;
 - PNG, JPG veya GIF resimler ekle, büyük önizlemede sürükle, boyutlandır ve döndür;
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;

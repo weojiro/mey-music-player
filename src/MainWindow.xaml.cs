@@ -1211,14 +1211,16 @@ public partial class MainWindow : Window
     internal void ApplyDesignColors()
     {
         var d = _designs.Current;
-        double bg = Solid(d?.BgClear), buttons = Solid(d?.ButtonsClear);
+        double bg = Solid(d?.BgClear), buttons = Solid(Math.Min(d?.ButtonsClear ?? 0, Designs.MaxButtonsClear));
         ApplyPalette(Designs.ParseColor(d?.Bg) ?? _chamBg, Designs.ParseColor(d?.Buttons) ?? _chamAccent, bg, buttons);
         StickerLayer.Opacity = bg;                  // the pictures sit on the background and fade with it
         Cover.Opacity = Solid(d?.CoverClear);
     }
 
     // how solid a part is, from its transparency in percent
-    internal static double Solid(int? clear) => 1 - Math.Clamp(clear ?? 0, 0, Designs.MaxClear) / 100.0;
+    // At 100 % it is 1 / 255, not 0: a fully clear pixel lets clicks through to what is behind, a nearly clear one
+    // cannot be seen but still takes them (an invisible cover still opens the player)
+    internal static double Solid(int? clear) => Math.Max(1 / 255.0, 1 - Math.Clamp(clear ?? 0, 0, Designs.MaxClear) / 100.0);
 
     // --- for the options window ---
     internal Designs DesignStore => _designs;
@@ -1344,7 +1346,9 @@ public partial class MainWindow : Window
             b.Freeze();
             return b;
         }
-        Color A(Color c, int alpha, double solid) => Color.FromArgb((byte)Math.Round(alpha * solid), c.R, c.G, c.B);
+        // never rounded down to 0 (see Solid): a dim part (shuffle off, the seek track) stays clickable at 100 %
+        Color A(Color c, int alpha, double solid) =>
+            Color.FromArgb((byte)(alpha == 0 ? 0 : Math.Max(1, Math.Round(alpha * solid))), c.R, c.G, c.B);
 
         _accentBrush = Frozen(A(accent, 0xFF, accentSolid));
         _accentDimBrush = Frozen(A(accent, 0x80, accentSolid));

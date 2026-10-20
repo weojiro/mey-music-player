@@ -45,7 +45,7 @@ the tray menu. Move the mouse over it to get the buttons back.</td>
 Open **Options** in the tray menu to make the player your own:
 
 - pick the background and button colours, or keep *Chameleon*, the colours from the cover;
-- make the player see-through with the *Transparency* slider (up to 90 %): all together, or the background,
+- make the player see-through with the *Transparency* slider: all together, or the background,
   the buttons and the cover one by one;
 - add PNG, JPG or GIF images, then drag, resize and turn them on a big preview;
 - drag them up or down in the image list to choose which one is in front. They always stay behind the buttons;

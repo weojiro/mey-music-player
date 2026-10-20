@@ -189,6 +189,7 @@ public partial class OptionsWindow : Window
         ClearBgSlider.ValueChanged += (_, e) => SetClear(1, e.NewValue);
         ClearButtonsSlider.ValueChanged += (_, e) => SetClear(2, e.NewValue);
         ClearCoverSlider.ValueChanged += (_, e) => SetClear(3, e.NewValue);
+        ClearButtonsSlider.Maximum = Designs.MaxButtonsClear;
     }
 
     // the sliders of the player being edited; "all" shows one slider, else one each
@@ -222,9 +223,10 @@ public partial class OptionsWindow : Window
         if (Current == null && v == 0) return;          // the default player is solid already
         var p = EnsurePlayer();
         if (p == null) { RefreshClear(); return; }
-        if (which == 0) p.BgClear = p.ButtonsClear = p.CoverClear = v;
+        // the buttons go up to 90 %, also with one slider for all
+        if (which == 0) { p.BgClear = p.CoverClear = v; p.ButtonsClear = Math.Min(v, Designs.MaxButtonsClear); }
         else if (which == 1) p.BgClear = v;
-        else if (which == 2) p.ButtonsClear = v;
+        else if (which == 2) p.ButtonsClear = Math.Min(v, Designs.MaxButtonsClear);
         else p.CoverClear = v;
         RefreshClear();
         RefreshColors();
@@ -240,7 +242,7 @@ public partial class OptionsWindow : Window
         if (p == null) { RefreshClear(); return; }
         p.ClearApart = apart;
         // back to one slider: all three take the background's value, so what is seen matches the slider
-        if (!apart) p.ButtonsClear = p.CoverClear = p.BgClear;
+        if (!apart) { p.CoverClear = p.BgClear; p.ButtonsClear = Math.Min(p.BgClear, Designs.MaxButtonsClear); }
         RefreshClear();
         RefreshColors();
         _main.ApplyDesignColors();
@@ -437,7 +439,7 @@ public partial class OptionsWindow : Window
     {
         var (bg, a) = EffectiveColors();
         // the design's transparency, as on the taskbar
-        double bs = MainWindow.Solid(Current?.BgClear), ks = MainWindow.Solid(Current?.ButtonsClear);
+        double bs = MainWindow.Solid(Current?.BgClear), ks = MainWindow.Solid(Math.Min(Current?.ButtonsClear ?? 0, Designs.MaxButtonsClear));
         Brush Of(byte alpha) => new SolidColorBrush(Color.FromArgb((byte)Math.Round(alpha * ks), a.R, a.G, a.B));
         PvPanel.Background = new SolidColorBrush(Color.FromArgb((byte)Math.Round(bg.A * bs), bg.R, bg.G, bg.B));
         PvStickers.Opacity = bs;

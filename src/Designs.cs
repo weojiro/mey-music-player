@@ -26,7 +26,7 @@ sealed class PlayerSpec
     public string? Buttons { get; set; }
     public List<StickerSpec> Stickers { get; set; } = new();
 
-    // transparency in percent (0 = solid, up to MaxClear); the background one also covers the pictures and the title
+    // transparency in percent (0 = solid, 100 = cannot be seen); the background one also covers the pictures and the title
     // card, the buttons one the time, the lyrics and the song's name
     public int BgClear { get; set; }
     public int ButtonsClear { get; set; }
@@ -54,8 +54,9 @@ sealed class Designs
     public const int MaxPlayers = 5;
     public const int MaxStickers = 10;
     public const long MaxFileBytes = 25 * 1024 * 1024;
-    // at most 90 % see-through: the player stays visible and clickable (a fully clear pixel lets clicks through)
-    public const int MaxClear = 90;
+    // up to 100 % see-through; even then the player keeps a trace too faint to see, so it can still be clicked
+    public const int MaxClear = 100;
+    public const int MaxButtonsClear = 90;      // the buttons always stay a little visible
 
     static readonly string Dir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MMP", "players");

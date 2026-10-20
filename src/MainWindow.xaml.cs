@@ -122,6 +122,17 @@ public partial class MainWindow : Window
 
     // mouse out of the game (shortcut 1)
     bool _mouseOut, _playerFocused;
+
+    // ... or, in a game that changed the screen's resolution, a cursor drawn in the player
+    bool _cursorMode, _cursorAnchored, _vDown, _hadClip;
+    FrameworkElement? _vPress;            // what the drawn cursor pressed (cover, seek bar, speaker, a button)
+    RECT _savedClip;
+    double _vx, _vy;                      // the drawn cursor, screen pixels
+    long _lastCursorInput;
+    IntPtr _cursorHook;
+    LowLevelMouseProc? _cursorProc;
+    readonly DispatcherTimer _cursorIdleTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    const int CursorIdleMs = 15000;       // the mouse goes back to the game after this long without moving
     Window? _focusWin;                    // tiny MMP window that holds the focus meanwhile
     IntPtr _gameWin;                      // the app that had the focus: it gets it back
 
@@ -458,6 +469,7 @@ public partial class MainWindow : Window
 
         HwndSource.FromHwnd(_hwnd)?.AddHook(WndProc);
         _keyTimer.Tick += (_, _) => PollShortcuts();
+        _cursorIdleTimer.Tick += (_, _) => { if (Environment.TickCount64 - _lastCursorInput > CursorIdleMs) SetCursorMode(false); };
         RegisterShortcuts();
 
         CreateTray();
@@ -505,6 +517,7 @@ public partial class MainWindow : Window
         }
         else if (evt == EVENT_SYSTEM_FOREGROUND)
         {
+            SetCursorMode(false);       // another app took the screen: the mouse goes back
             Update();
         }
     }
@@ -531,7 +544,11 @@ public partial class MainWindow : Window
         _edge = atBottom ? "bottom" : atTop ? "top" : "side";
 
         bool taskbarVisible = (atBottom && r.Top < _screenH - 3) || (atTop && r.Bottom > 3);
-        bool visible = taskbarVisible && !_hidden && (_onTop || !IsFullScreenAppActive());
+        bool fullScreen = IsFullScreenAppActive();
+        // "show over games": over a full-screen game the cover stays in its place on the taskbar,
+        // also when the taskbar hides itself under the game
+        bool overGame = _onTop && fullScreen && (atBottom || atTop);
+        bool visible = (taskbarVisible || overGame) && !_hidden && (_onTop || !fullScreen);
 
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
@@ -549,7 +566,9 @@ public partial class MainWindow : Window
             int coverX = _dragging ? _dragX
                 : _t > 0 ? restX + (int)Math.Round((OpenX(restX, size, r.Left) - restX) * _t)
                 : restX;
-            Place(coverX, r.Top + (r.Height - size) / 2, size, fullW);
+            // a hidden taskbar is moved off the screen: the cover goes where the taskbar is when it shows
+            int barTop = taskbarVisible ? r.Top : atBottom ? _screenH - h : 0;
+            Place(coverX, barTop + (h - size) / 2, size, fullW);
         }
         else HideWindow();
 
@@ -647,6 +666,7 @@ public partial class MainWindow : Window
         }
         _winW = size + (int)Math.Round((fullW - size) * _t);    // what is drawn, for both sides
         _winX = winX;
+        if (_cursorMode) MoveDrawnCursor();         // the player moved or opened under the drawn cursor
 
         SetWindowPos(_hwnd, HWND_TOPMOST, winX, coverY, width, size,
             SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -659,6 +679,7 @@ public partial class MainWindow : Window
     void HideWindow()
     {
         if (!_shown && !IsWindowVisible(_hwnd)) return;     // WPF shows the window at start even when the taskbar is hidden
+        SetCursorMode(false);
         if (Cover.IsMouseOver) _hidWhileOver++;
         _hoverTimer.Stop();
         TitlePopup.IsOpen = false;
@@ -1685,7 +1706,7 @@ public partial class MainWindow : Window
         "chameleon", "customColor", "images", "addImage", "imageHint", "editHint", "remove",
         "reset", "resetAsk", "deleteAsk", "cancel", "maxImages", "maxPlayers", "badImage", "layersHint", "imageN",
         "hide", "placement", "freeMove", "freeMoveHint", "onTop", "onTopHint", "hotkey", "hotkeyHint",
-        "cursorKey", "hotkeyPress", "hotkeyBusy", "hotkeyBad", "hotkeySame"
+        "cursorKey", "hotkeyPress", "hotkeyBusy", "hotkeyBad", "hotkeySame", "needsOnTop"
     };
 
     static readonly Dictionary<string, string[]> Strings = new()
@@ -1698,7 +1719,7 @@ public partial class MainWindow : Window
             "Drag an image to move it, its corner to resize it and the dot above it to rotate it. Mouse wheel: size. Delete: remove.", "Remove", "Reset", "Reset this player to the default colours and remove its images?", "Delete this player?", "Cancel",
             "A player can have up to 10 images.", "You can save up to 5 players.", "This file can't be used. Choose a PNG, JPG or GIF up to 25 MB.",
             "Drag to reorder. The top image is in front.", "Image {0}",
-            "Hide player", "Placement", "Free move", "Drag the cover anywhere on the screen. When it opens, the player always stays on the screen.", "Always on top", "Stays visible over full-screen apps and games. If it doesn't show in a game, choose borderless or windowed full screen in the game's settings.", "Show / hide", "Click a shortcut to change it. While a game hides the cursor, clicks go to the game. The second shortcut takes the mouse out of a full-screen game, so you can use the player or anything else; press it again or click the game to go back. It works when Always on top is on.", "Mouse out of the game", "Press a shortcut...", "Another app uses this shortcut. Choose another one.", "Use Ctrl, Alt or Win with a key, two of Ctrl, Alt and Shift on their own, or an F key.", "The other shortcut already uses these keys." },
+            "Hide player", "Placement", "Free move", "Drag the cover anywhere on the screen. When it opens, the player always stays on the screen.", "Show over games", "Also stays visible over full-screen games and apps. While a game hides the cursor, clicks go to the game. If it doesn't show in a game, choose borderless or windowed full screen in the game's settings.", "Show / hide", "Click a shortcut to change it. While a game hides the cursor, clicks go to the game. The second shortcut takes the mouse out of a full-screen game, so you can use the player or anything else; press it again or click the game to go back. It works when Show over games is on.", "Mouse out of the game", "Press a shortcut...", "Another app uses this shortcut. Choose another one.", "Use Ctrl, Alt or Win with a key, two of Ctrl, Alt and Shift on their own, or an F key.", "The other shortcut already uses these keys.", "Turn on Show over games to use this." },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Güncelleme mevcut",
             "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsunuz.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...",
             "Güncelleme yüklenemedi. Lütfen daha sonra tekrar deneyin.", "Yeniden başlat", "Şarkı sözleri", "Oynatıcını tasarla",
@@ -1710,7 +1731,7 @@ public partial class MainWindow : Window
             "Bu oynatıcı silinsin mi?", "Vazgeç", "Bir oynatıcıda en fazla 10 resim olabilir.", "En fazla 5 oynatıcı kaydedebilirsin.",
             "Bu dosya kullanılamıyor. En fazla 25 MB'lık bir PNG, JPG veya GIF seç.",
             "Sıralamak için sürükle. En üstteki resim en öndedir.", "Resim {0}",
-            "Oynatıcıyı gizle", "Yerleşim", "Serbest hareket", "Kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır.", "Her zaman üstte", "Tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç.", "Göster / gizle", "Değiştirmek için bir kısayola tıkla. Oyun imleci gizlerken tıklamalar oyuna gider. İkinci kısayol fareyi tam ekran oyundan alır; oynatıcıyı ya da başka bir şeyi kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. Her zaman üstte açıkken çalışır.", "Fareyi oyundan al", "Bir kısayola bas...", "Bu kısayolu başka bir uygulama kullanıyor. Başka bir tane seç.", "Bir tuşla birlikte Ctrl, Alt veya Win, tek başına Ctrl, Alt ve Shift'ten ikisi ya da bir F tuşu kullan.", "Bu tuşları diğer kısayol kullanıyor." },
+            "Oynatıcıyı gizle", "Yerleşim", "Serbest hareket", "Kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır.", "Oyunların üstünde göster", "Tam ekran oyunların ve uygulamaların üstünde de görünür. Oyun imleci gizlerken tıklamalar oyuna gider. Bir oyunda görünmüyorsa oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç.", "Göster / gizle", "Değiştirmek için bir kısayola tıkla. Oyun imleci gizlerken tıklamalar oyuna gider. İkinci kısayol fareyi tam ekran oyundan alır; oynatıcıyı ya da başka bir şeyi kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. Oyunların üstünde göster açıkken çalışır.", "Fareyi oyundan al", "Bir kısayola bas...", "Bu kısayolu başka bir uygulama kullanıyor. Başka bir tane seç.", "Bir tuşla birlikte Ctrl, Alt veya Win, tek başına Ctrl, Alt ve Shift'ten ikisi ya da bir F tuşu kullan.", "Bu tuşları diğer kısayol kullanıyor.", "Bunun için Oyunların üstünde göster'i aç." },
         ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "Actualización disponible",
             "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...",
             "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar", "Letras", "Diseña tu reproductor",
@@ -1722,7 +1743,7 @@ public partial class MainWindow : Window
             "¿Eliminar este reproductor?", "Cancelar", "Un reproductor puede tener hasta 10 imágenes.", "Puedes guardar hasta 5 reproductores.",
             "Este archivo no se puede usar. Elige un PNG, JPG o GIF de hasta 25 MB.",
             "Arrastra para ordenar. La imagen de arriba queda delante.", "Imagen {0}",
-            "Ocultar reproductor", "Ubicación", "Movimiento libre", "Arrastra la portada a cualquier parte de la pantalla. Al abrirse, el reproductor siempre queda dentro de la pantalla.", "Siempre visible", "Se ve encima de las aplicaciones y juegos a pantalla completa. Si no aparece en un juego, elige pantalla completa sin bordes o en ventana en los ajustes del juego.", "Mostrar / ocultar", "Haz clic en un atajo para cambiarlo. Mientras un juego oculta el cursor, los clics van al juego. El segundo atajo saca el ratón de un juego a pantalla completa para que puedas usar el reproductor o cualquier otra cosa; vuelve a pulsarlo o haz clic en el juego para volver. Funciona con Siempre visible activado.", "Sacar el ratón del juego", "Pulsa un atajo...", "Otra aplicación usa este atajo. Elige otro.", "Usa Ctrl, Alt o Win con una tecla, dos de Ctrl, Alt y Mayús solas, o una tecla F.", "El otro atajo ya usa estas teclas." },
+            "Ocultar reproductor", "Ubicación", "Movimiento libre", "Arrastra la portada a cualquier parte de la pantalla. Al abrirse, el reproductor siempre queda dentro de la pantalla.", "Mostrar sobre los juegos", "También se ve encima de juegos y aplicaciones a pantalla completa. Mientras un juego oculta el cursor, los clics van al juego. Si no aparece en un juego, elige pantalla completa sin bordes o en ventana en los ajustes del juego.", "Mostrar / ocultar", "Haz clic en un atajo para cambiarlo. Mientras un juego oculta el cursor, los clics van al juego. El segundo atajo saca el ratón de un juego a pantalla completa para que puedas usar el reproductor o cualquier otra cosa; vuelve a pulsarlo o haz clic en el juego para volver. Funciona con Mostrar sobre los juegos activado.", "Sacar el ratón del juego", "Pulsa un atajo...", "Otra aplicación usa este atajo. Elige otro.", "Usa Ctrl, Alt o Win con una tecla, dos de Ctrl, Alt y Mayús solas, o una tecla F.", "El otro atajo ya usa estas teclas.", "Activa Mostrar sobre los juegos para usarlo." },
         ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Mise à jour disponible",
             "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard",
             "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer", "Paroles",
@@ -1735,7 +1756,7 @@ public partial class MainWindow : Window
             "Un lecteur peut avoir jusqu'à 10 images.", "Vous pouvez enregistrer jusqu'à 5 lecteurs.",
             "Ce fichier ne peut pas être utilisé. Choisissez un PNG, JPG ou GIF de 25 Mo maximum.",
             "Faites glisser pour réordonner. L'image du haut est devant.", "Image {0}",
-            "Masquer le lecteur", "Emplacement", "Déplacement libre", "Faites glisser la pochette n'importe où sur l'écran. À l'ouverture, le lecteur reste toujours à l'écran.", "Toujours au premier plan", "Reste visible au-dessus des applications et des jeux en plein écran. S'il n'apparaît pas dans un jeu, choisissez le plein écran sans bordure ou fenêtré dans les paramètres du jeu.", "Afficher / masquer", "Cliquez sur un raccourci pour le changer. Quand un jeu masque le curseur, les clics vont au jeu. Le second raccourci sort la souris d'un jeu en plein écran pour utiliser le lecteur ou autre chose ; appuyez de nouveau ou cliquez sur le jeu pour y revenir. Fonctionne quand Toujours au premier plan est activé.", "Sortir la souris du jeu", "Appuyez sur un raccourci...", "Une autre application utilise ce raccourci. Choisissez-en un autre.", "Utilisez Ctrl, Alt ou Win avec une touche, deux touches parmi Ctrl, Alt et Maj seules, ou une touche F.", "L'autre raccourci utilise déjà ces touches." },
+            "Masquer le lecteur", "Emplacement", "Déplacement libre", "Faites glisser la pochette n'importe où sur l'écran. À l'ouverture, le lecteur reste toujours à l'écran.", "Afficher par-dessus les jeux", "Reste aussi visible par-dessus les jeux et applications en plein écran. Quand un jeu masque le curseur, les clics vont au jeu. S'il n'apparaît pas dans un jeu, choisissez le plein écran sans bordure ou fenêtré dans les paramètres du jeu.", "Afficher / masquer", "Cliquez sur un raccourci pour le changer. Quand un jeu masque le curseur, les clics vont au jeu. Le second raccourci sort la souris d'un jeu en plein écran pour utiliser le lecteur ou autre chose ; appuyez de nouveau ou cliquez sur le jeu pour y revenir. Fonctionne quand Afficher par-dessus les jeux est activé.", "Sortir la souris du jeu", "Appuyez sur un raccourci...", "Une autre application utilise ce raccourci. Choisissez-en un autre.", "Utilisez Ctrl, Alt ou Win avec une touche, deux touches parmi Ctrl, Alt et Maj seules, ou une touche F.", "L'autre raccourci utilise déjà ces touches.", "Activez Afficher par-dessus les jeux pour l'utiliser." },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Update verfügbar",
             "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...",
             "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten", "Songtexte",
@@ -1747,7 +1768,7 @@ public partial class MainWindow : Window
             "Diesen Player löschen?", "Abbrechen", "Ein Player kann bis zu 10 Bilder haben.", "Sie können bis zu 5 Player speichern.",
             "Diese Datei kann nicht verwendet werden. Wählen Sie ein PNG, JPG oder GIF bis 25 MB.",
             "Zum Sortieren ziehen. Das oberste Bild liegt vorne.", "Bild {0}",
-            "Player ausblenden", "Platzierung", "Frei bewegen", "Ziehen Sie das Cover an eine beliebige Stelle auf dem Bildschirm. Beim Öffnen bleibt der Player immer auf dem Bildschirm.", "Immer im Vordergrund", "Bleibt über Vollbild-Apps und Spielen sichtbar. Wenn er in einem Spiel nicht erscheint, wählen Sie in den Spieleinstellungen randloses Vollbild oder den Fenstermodus.", "Ein- / ausblenden", "Klicken Sie auf ein Tastenkürzel, um es zu ändern. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Das zweite Kürzel holt die Maus aus einem Vollbildspiel, damit Sie den Player oder etwas anderes bedienen können; drücken Sie es erneut oder klicken Sie ins Spiel, um zurückzukehren. Funktioniert, wenn Immer im Vordergrund an ist.", "Maus aus dem Spiel holen", "Tastenkürzel drücken...", "Eine andere App verwendet dieses Tastenkürzel. Wählen Sie ein anderes.", "Verwenden Sie Strg, Alt oder Win mit einer Taste, zwei von Strg, Alt und Umschalt allein oder eine F-Taste.", "Das andere Tastenkürzel verwendet diese Tasten bereits." },
+            "Player ausblenden", "Platzierung", "Frei bewegen", "Ziehen Sie das Cover an eine beliebige Stelle auf dem Bildschirm. Beim Öffnen bleibt der Player immer auf dem Bildschirm.", "Über Spielen anzeigen", "Bleibt auch über Vollbildspielen und -apps sichtbar. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Wenn er in einem Spiel nicht erscheint, wählen Sie in den Spieleinstellungen randloses Vollbild oder den Fenstermodus.", "Ein- / ausblenden", "Klicken Sie auf ein Tastenkürzel, um es zu ändern. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Das zweite Kürzel holt die Maus aus einem Vollbildspiel, damit Sie den Player oder etwas anderes bedienen können; drücken Sie es erneut oder klicken Sie ins Spiel, um zurückzukehren. Funktioniert, wenn Über Spielen anzeigen an ist.", "Maus aus dem Spiel holen", "Tastenkürzel drücken...", "Eine andere App verwendet dieses Tastenkürzel. Wählen Sie ein anderes.", "Verwenden Sie Strg, Alt oder Win mit einer Taste, zwei von Strg, Alt und Umschalt allein oder eine F-Taste.", "Das andere Tastenkürzel verwendet diese Tasten bereits.", "Schalten Sie Über Spielen anzeigen ein, um dies zu nutzen." },
         ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "Atualização disponível",
             "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...",
             "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar", "Letras", "Crie seu player",
@@ -1759,7 +1780,7 @@ public partial class MainWindow : Window
             "Excluir este player?", "Cancelar", "Um player pode ter até 10 imagens.", "Você pode salvar até 5 players.",
             "Este arquivo não pode ser usado. Escolha um PNG, JPG ou GIF de até 25 MB.",
             "Arraste para reordenar. A imagem de cima fica na frente.", "Imagem {0}",
-            "Ocultar player", "Posicionamento", "Movimento livre", "Arraste a capa para qualquer lugar da tela. Ao abrir, o player sempre fica dentro da tela.", "Sempre visível", "Fica visível sobre apps e jogos em tela cheia. Se não aparecer em um jogo, escolha tela cheia sem bordas ou em janela nas configurações do jogo.", "Mostrar / ocultar", "Clique em um atalho para mudá-lo. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. O segundo atalho tira o mouse de um jogo em tela cheia para você usar o player ou qualquer outra coisa; pressione de novo ou clique no jogo para voltar. Funciona com Sempre visível ativado.", "Tirar o mouse do jogo", "Pressione um atalho...", "Outro app usa este atalho. Escolha outro.", "Use Ctrl, Alt ou Win com uma tecla, duas entre Ctrl, Alt e Shift sozinhas, ou uma tecla F.", "O outro atalho já usa estas teclas." },
+            "Ocultar player", "Posicionamento", "Movimento livre", "Arraste a capa para qualquer lugar da tela. Ao abrir, o player sempre fica dentro da tela.", "Mostrar sobre os jogos", "Também fica visível sobre jogos e apps em tela cheia. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. Se não aparecer em um jogo, escolha tela cheia sem bordas ou em janela nas configurações do jogo.", "Mostrar / ocultar", "Clique em um atalho para mudá-lo. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. O segundo atalho tira o mouse de um jogo em tela cheia para você usar o player ou qualquer outra coisa; pressione de novo ou clique no jogo para voltar. Funciona com Mostrar sobre os jogos ativado.", "Tirar o mouse do jogo", "Pressione um atalho...", "Outro app usa este atalho. Escolha outro.", "Use Ctrl, Alt ou Win com uma tecla, duas entre Ctrl, Alt e Shift sozinhas, ou uma tecla F.", "O outro atalho já usa estas teclas.", "Ative Mostrar sobre os jogos para usar isto." },
         ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Доступно обновление",
             "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...",
             "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить", "Тексты песен", "Оформите свой плеер",
@@ -1771,20 +1792,20 @@ public partial class MainWindow : Window
             "Удалить этот плеер?", "Отмена", "У плеера может быть до 10 изображений.", "Можно сохранить до 5 плееров.",
             "Этот файл нельзя использовать. Выберите PNG, JPG или GIF до 25 МБ.",
             "Перетащите, чтобы изменить порядок. Верхнее изображение — впереди.", "Изображение {0}",
-            "Скрыть плеер", "Размещение", "Свободное перемещение", "Перетащите обложку в любое место экрана. При открытии плеер всегда остаётся на экране.", "Поверх всех окон", "Виден поверх полноэкранных приложений и игр. Если в игре его не видно, выберите в настройках игры полноэкранный режим без рамки или оконный режим.", "Показать / скрыть", "Нажмите на сочетание, чтобы изменить его. Пока игра скрывает курсор, щелчки идут в игру. Второе сочетание выводит мышь из полноэкранной игры, чтобы пользоваться плеером или чем-то ещё; нажмите его снова или щёлкните по игре, чтобы вернуться. Работает, когда включено «Поверх всех окон».", "Вывести мышь из игры", "Нажмите сочетание клавиш...", "Это сочетание использует другое приложение. Выберите другое.", "Используйте Ctrl, Alt или Win с клавишей, две из Ctrl, Alt и Shift без других клавиш или клавишу F.", "Эти клавиши уже заняты другим сочетанием." },
+            "Скрыть плеер", "Размещение", "Свободное перемещение", "Перетащите обложку в любое место экрана. При открытии плеер всегда остаётся на экране.", "Показывать поверх игр", "Виден и поверх полноэкранных игр и приложений. Пока игра скрывает курсор, щелчки идут в игру. Если в игре его не видно, выберите в настройках игры полноэкранный режим без рамки или оконный режим.", "Показать / скрыть", "Нажмите на сочетание, чтобы изменить его. Пока игра скрывает курсор, щелчки идут в игру. Второе сочетание выводит мышь из полноэкранной игры, чтобы пользоваться плеером или чем-то ещё; нажмите его снова или щёлкните по игре, чтобы вернуться. Работает, когда включено «Показывать поверх игр».", "Вывести мышь из игры", "Нажмите сочетание клавиш...", "Это сочетание использует другое приложение. Выберите другое.", "Используйте Ctrl, Alt или Win с клавишей, две из Ctrl, Alt и Shift без других клавиш или клавишу F.", "Эти клавиши уже заняты другим сочетанием.", "Включите «Показывать поверх игр», чтобы пользоваться этим." },
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。",
             "重新启动", "歌词", "设计你的播放器", "更改会自动保存。", "播放器", "默认", "自定义播放器", "新建播放器", "名称", "删除播放器", "背景", "按钮", "变色龙：取自封面的颜色", "自定义颜色", "图片", "添加图片",
             "PNG、JPG 或 GIF，最大 25 MB。每个播放器最多 10 张图片。", "拖动图片可移动，拖动角可调整大小，拖动上方的圆点可旋转。鼠标滚轮：大小。Delete：移除。", "移除", "重置",
             "将此播放器重置为默认颜色并移除其图片？", "删除此播放器？", "取消", "每个播放器最多可以有 10 张图片。", "最多可以保存 5 个播放器。", "无法使用此文件。请选择不超过 25 MB 的 PNG、JPG 或 GIF。",
             "拖动以排序。最上面的图片在最前面。", "图片 {0}",
-            "隐藏播放器", "位置", "自由移动", "将封面拖到屏幕上的任意位置。打开时，播放器始终保持在屏幕内。", "始终置顶", "在全屏应用和游戏上方保持可见。如果在游戏中不显示，请在游戏设置中选择无边框或窗口化全屏。", "显示 / 隐藏", "点击快捷键即可更改。游戏隐藏光标时，点击会传给游戏。第二个快捷键让鼠标离开全屏游戏，以便使用播放器或其他内容；再按一次或点击游戏即可返回。开启“始终置顶”时可用。", "让鼠标离开游戏", "请按下快捷键...", "其他应用正在使用此快捷键。请选择其他快捷键。", "请使用 Ctrl、Alt 或 Win 加一个键、单独使用 Ctrl、Alt、Shift 中的两个，或使用 F 键。", "另一个快捷键已在使用这些键。" },
+            "隐藏播放器", "位置", "自由移动", "将封面拖到屏幕上的任意位置。打开时，播放器始终保持在屏幕内。", "在游戏上方显示", "在全屏游戏和应用上方也保持可见。游戏隐藏光标时，点击会传给游戏。如果在游戏中不显示，请在游戏设置中选择无边框或窗口化全屏。", "显示 / 隐藏", "点击快捷键即可更改。游戏隐藏光标时，点击会传给游戏。第二个快捷键让鼠标离开全屏游戏，以便使用播放器或其他内容；再按一次或点击游戏即可返回。开启“在游戏上方显示”时可用。", "让鼠标离开游戏", "请按下快捷键...", "其他应用正在使用此快捷键。请选择其他快捷键。", "请使用 Ctrl、Alt 或 Win 加一个键、单独使用 Ctrl、Alt、Shift 中的两个，或使用 F 键。", "另一个快捷键已在使用这些键。", "请开启“在游戏上方显示”以使用此功能。" },
         ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で",
             "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動", "歌詞", "プレーヤーをデザイン", "変更は自動的に保存されます。", "プレーヤー", "デフォルト", "カスタムプレーヤー",
             "新しいプレーヤー", "名前", "プレーヤーを削除", "背景", "ボタン", "カメレオン：カバーの色", "カスタムカラー", "画像", "画像を追加", "PNG、JPG、GIF（25 MB まで）。1 つのプレーヤーに画像は 10 枚まで。",
             "画像をドラッグして移動、角でサイズ変更、上の点で回転します。マウスホイール：サイズ。Delete：取り除く。", "取り除く", "リセット", "このプレーヤーをデフォルトの色に戻し、画像を取り除きますか？",
             "このプレーヤーを削除しますか？", "キャンセル", "1 つのプレーヤーに画像は 10 枚までです。", "プレーヤーは 5 つまで保存できます。", "このファイルは使用できません。25 MB までの PNG、JPG、GIF を選んでください。",
             "ドラッグで並べ替え。いちばん上の画像が最前面です。", "画像 {0}",
-            "プレーヤーを隠す", "配置", "自由に移動", "カバーを画面上の好きな場所にドラッグします。開いたときもプレーヤーは常に画面内に収まります。", "常に手前に表示", "全画面のアプリやゲームの上にも表示されます。ゲームで表示されない場合は、ゲームの設定でボーダーレスまたはウィンドウ化された全画面を選んでください。", "表示 / 非表示", "ショートカットをクリックすると変更できます。ゲームがカーソルを隠している間はクリックがゲームに届きます。2 つ目のショートカットは全画面ゲームからマウスを出し、プレーヤーやほかのものを使えるようにします。戻るにはもう一度押すか、ゲームをクリックしてください。「常に手前に表示」がオンのときに使えます。", "マウスをゲームから出す", "ショートカットを押してください...", "このショートカットは別のアプリが使用しています。別のものを選んでください。", "Ctrl、Alt、Win とキーの組み合わせ、Ctrl・Alt・Shift のうち 2 つだけ、または F キーを使ってください。", "もう一方のショートカットがこのキーを使っています。" },
+            "プレーヤーを隠す", "配置", "自由に移動", "カバーを画面上の好きな場所にドラッグします。開いたときもプレーヤーは常に画面内に収まります。", "ゲームの上に表示", "全画面のゲームやアプリの上にも表示されます。ゲームがカーソルを隠している間はクリックがゲームに届きます。ゲームで表示されない場合は、ゲームの設定でボーダーレスまたはウィンドウ化された全画面を選んでください。", "表示 / 非表示", "ショートカットをクリックすると変更できます。ゲームがカーソルを隠している間はクリックがゲームに届きます。2 つ目のショートカットは全画面ゲームからマウスを出し、プレーヤーやほかのものを使えるようにします。戻るにはもう一度押すか、ゲームをクリックしてください。「ゲームの上に表示」がオンのときに使えます。", "マウスをゲームから出す", "ショートカットを押してください...", "このショートカットは別のアプリが使用しています。別のものを選んでください。", "Ctrl、Alt、Win とキーの組み合わせ、Ctrl・Alt・Shift のうち 2 つだけ、または F キーを使ってください。", "もう一方のショートカットがこのキーを使っています。", "使うには「ゲームの上に表示」をオンにしてください。" },
         ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.",
             "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل",
             "كلمات الأغاني", "صمّم مشغّلك", "يتم حفظ التغييرات تلقائياً.", "المشغّلات", "الافتراضي", "مشغّل مخصّص", "مشغّل جديد", "الاسم",
@@ -1794,7 +1815,7 @@ public partial class MainWindow : Window
             "يمكن أن يحتوي المشغّل على 10 صور كحد أقصى.", "يمكنك حفظ 5 مشغّلات كحد أقصى.",
             "لا يمكن استخدام هذا الملف. اختر صورة PNG أو JPG أو GIF حتى 25 ميغابايت.",
             "اسحب لإعادة الترتيب. الصورة العليا تكون في المقدمة.", "صورة {0}",
-            "إخفاء المشغّل", "الموقع", "تحريك حر", "اسحب الغلاف إلى أي مكان على الشاشة. عند الفتح يبقى المشغّل دائماً داخل الشاشة.", "دائماً في المقدمة", "يبقى ظاهراً فوق التطبيقات والألعاب بملء الشاشة. إذا لم يظهر في لعبة، فاختر ملء الشاشة بلا حدود أو في نافذة من إعدادات اللعبة.", "إظهار / إخفاء", "انقر على اختصار لتغييره. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. الاختصار الثاني يُخرج الماوس من لعبة بملء الشاشة لتستخدم المشغّل أو أي شيء آخر؛ اضغطه مرة أخرى أو انقر على اللعبة للعودة. يعمل عند تفعيل «دائماً في المقدمة».", "إخراج الماوس من اللعبة", "اضغط اختصاراً...", "يستخدم تطبيق آخر هذا الاختصار. اختر اختصاراً آخر.", "استخدم Ctrl أو Alt أو Win مع مفتاح، أو اثنين من Ctrl وAlt وShift وحدهما، أو مفتاح F.", "الاختصار الآخر يستخدم هذه المفاتيح بالفعل." },
+            "إخفاء المشغّل", "الموقع", "تحريك حر", "اسحب الغلاف إلى أي مكان على الشاشة. عند الفتح يبقى المشغّل دائماً داخل الشاشة.", "العرض فوق الألعاب", "يبقى ظاهراً أيضاً فوق الألعاب والتطبيقات بملء الشاشة. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. إذا لم يظهر في لعبة، فاختر ملء الشاشة بلا حدود أو في نافذة من إعدادات اللعبة.", "إظهار / إخفاء", "انقر على اختصار لتغييره. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. الاختصار الثاني يُخرج الماوس من لعبة بملء الشاشة لتستخدم المشغّل أو أي شيء آخر؛ اضغطه مرة أخرى أو انقر على اللعبة للعودة. يعمل عند تفعيل «العرض فوق الألعاب».", "إخراج الماوس من اللعبة", "اضغط اختصاراً...", "يستخدم تطبيق آخر هذا الاختصار. اختر اختصاراً آخر.", "استخدم Ctrl أو Alt أو Win مع مفتاح، أو اثنين من Ctrl وAlt وShift وحدهما، أو مفتاح F.", "الاختصار الآخر يستخدم هذه المفاتيح بالفعل.", "فعّل «العرض فوق الألعاب» لاستخدام هذا." },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "अपडेट उपलब्ध है",
             "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...",
             "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें", "गीत के बोल", "अपना प्लेयर डिज़ाइन करें",
@@ -1805,7 +1826,7 @@ public partial class MainWindow : Window
             "इस प्लेयर को हटाएं?", "रद्द करें", "एक प्लेयर में अधिकतम 10 चित्र हो सकते हैं।", "आप अधिकतम 5 प्लेयर सहेज सकते हैं।",
             "यह फ़ाइल इस्तेमाल नहीं की जा सकती। 25 MB तक का PNG, JPG या GIF चुनें।",
             "क्रम बदलने के लिए खींचें। सबसे ऊपर वाला चित्र सबसे आगे होता है।", "चित्र {0}",
-            "प्लेयर छिपाएं", "जगह", "मुक्त रूप से हिलाएं", "कवर को स्क्रीन पर कहीं भी खींचें। खुलने पर प्लेयर हमेशा स्क्रीन के अंदर रहता है।", "हमेशा सबसे ऊपर", "फ़ुल-स्क्रीन ऐप्स और गेम के ऊपर दिखता रहता है। अगर किसी गेम में न दिखे, तो गेम की सेटिंग में बॉर्डरलेस या विंडो वाली फ़ुल स्क्रीन चुनें।", "दिखाएं / छिपाएं", "बदलने के लिए किसी शॉर्टकट पर क्लिक करें। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। दूसरा शॉर्टकट माउस को फ़ुल-स्क्रीन गेम से बाहर लाता है, ताकि आप प्लेयर या कुछ और इस्तेमाल कर सकें; वापस जाने के लिए इसे फिर से दबाएं या गेम पर क्लिक करें। यह तब काम करता है जब हमेशा सबसे ऊपर चालू हो।", "माउस को गेम से बाहर लाएं", "कोई शॉर्टकट दबाएं...", "यह शॉर्टकट कोई दूसरा ऐप इस्तेमाल कर रहा है। कोई दूसरा चुनें।", "किसी कुंजी के साथ Ctrl, Alt या Win, अकेले Ctrl, Alt और Shift में से दो, या कोई F कुंजी इस्तेमाल करें।", "दूसरा शॉर्टकट पहले से ये कुंजियां इस्तेमाल कर रहा है।" }
+            "प्लेयर छिपाएं", "जगह", "मुक्त रूप से हिलाएं", "कवर को स्क्रीन पर कहीं भी खींचें। खुलने पर प्लेयर हमेशा स्क्रीन के अंदर रहता है।", "गेम के ऊपर दिखाएं", "फ़ुल-स्क्रीन गेम और ऐप्स के ऊपर भी दिखता रहता है। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। अगर किसी गेम में न दिखे, तो गेम की सेटिंग में बॉर्डरलेस या विंडो वाली फ़ुल स्क्रीन चुनें।", "दिखाएं / छिपाएं", "बदलने के लिए किसी शॉर्टकट पर क्लिक करें। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। दूसरा शॉर्टकट माउस को फ़ुल-स्क्रीन गेम से बाहर लाता है, ताकि आप प्लेयर या कुछ और इस्तेमाल कर सकें; वापस जाने के लिए इसे फिर से दबाएं या गेम पर क्लिक करें। यह तब काम करता है जब गेम के ऊपर दिखाएं चालू हो।", "माउस को गेम से बाहर लाएं", "कोई शॉर्टकट दबाएं...", "यह शॉर्टकट कोई दूसरा ऐप इस्तेमाल कर रहा है। कोई दूसरा चुनें।", "किसी कुंजी के साथ Ctrl, Alt या Win, अकेले Ctrl, Alt और Shift में से दो, या कोई F कुंजी इस्तेमाल करें।", "दूसरा शॉर्टकट पहले से ये कुंजियां इस्तेमाल कर रहा है।", "इसे इस्तेमाल करने के लिए गेम के ऊपर दिखाएं चालू करें।" }
     };
 
     string Tr(string key) =>
@@ -2080,7 +2101,7 @@ public partial class MainWindow : Window
     internal void SetOnTop(bool on)
     {
         _onTop = on;
-        if (!on) SetMouseOut(false);
+        if (!on) { SetMouseOut(false); SetCursorMode(false); }
         SaveSettings();
         Update();
     }
@@ -2088,6 +2109,7 @@ public partial class MainWindow : Window
     void SetHidden(bool hidden)
     {
         _hidden = hidden;
+        if (hidden) SetCursorMode(false);
         UpdateTrayChecks();
         Update();
     }
@@ -2106,7 +2128,7 @@ public partial class MainWindow : Window
     void ShortcutPressed(int which)
     {
         if (which == 0) SetHidden(!_hidden);
-        else SetMouseOut(!_mouseOut);
+        else ToggleMouse();
     }
 
     void RegisterShortcuts()
@@ -2302,12 +2324,197 @@ public partial class MainWindow : Window
         return w;
     }
 
+    // ---------- cursor drawn in the player (a game that changed the screen's resolution) ----------
+
+    void ToggleMouse()
+    {
+        if (_cursorMode) { SetCursorMode(false); return; }
+        if (_mouseOut) { SetMouseOut(false); return; }
+        if (!_onTop) return;
+        if (GameChangedResolution()) SetCursorMode(true);
+        else SetMouseOut(true);
+    }
+
+    // A full-screen game running at another resolution than the screen's own (1080p on a 1440p screen) drops to the
+    // desktop as soon as it loses the focus, so the focus must stay with it
+    bool GameChangedResolution()
+    {
+        if (!IsFullScreenAppActive()) return false;
+        IntPtr fg = GetForegroundWindow();
+        if (!GetWindowRect(fg, out RECT r)) return false;
+        var info = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
+        IntPtr mon = MonitorFromPoint(new POINT { X = r.Left + r.Width / 2, Y = r.Top + r.Height / 2 }, MONITOR_DEFAULTTONEAREST);
+        if (mon == IntPtr.Zero || !GetMonitorInfoEx(mon, ref info)) return false;
+        var now = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
+        var own = new DEVMODE { dmSize = (short)Marshal.SizeOf<DEVMODE>() };
+        if (!EnumDisplaySettings(info.szDevice, ENUM_CURRENT_SETTINGS, ref now) ||
+            !EnumDisplaySettings(info.szDevice, ENUM_REGISTRY_SETTINGS, ref own)) return false;
+        return now.dmPelsWidth != own.dmPelsWidth || now.dmPelsHeight != own.dmPelsHeight;
+    }
+
+    // The game keeps the focus and gets none of the mouse: moves and clicks stop at a low-level hook and drive a cursor
+    // drawn in the player instead. The shortcut again, hiding the player, another app taking the screen or 15 s without
+    // touching the mouse gives the mouse back to the game.
+    void SetCursorMode(bool on)
+    {
+        if (on == _cursorMode) return;
+        if (on)
+        {
+            if (_hidden) SetHidden(false);
+            if (!_shown) return;
+            _cursorProc ??= CursorProc;
+            string? module = Process.GetCurrentProcess().MainModule?.ModuleName;
+            _cursorHook = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(module), 0);
+            if (_cursorHook == IntPtr.Zero) return;
+            _cursorMode = true;
+            _vDown = _cursorAnchored = false;
+            _vPress = null;
+            _lastCursorInput = Environment.TickCount64;
+            // a game can hold the cursor in a tiny box; let go of it so the mouse steps can be seen
+            _hadClip = GetClipCursor(out _savedClip);
+            ClipCursor(IntPtr.Zero);
+            SetClickThrough(false);
+            PlayerCursor.Visibility = Visibility.Visible;
+            MoveDrawnCursor();
+            ApplyLyricsLayer();                         // the buttons, not the lyrics, while the cursor is there
+            _cursorIdleTimer.Start();
+        }
+        else
+        {
+            _cursorMode = false;
+            _cursorIdleTimer.Stop();
+            if (_cursorHook != IntPtr.Zero) UnhookWindowsHookEx(_cursorHook);
+            _cursorHook = IntPtr.Zero;
+            if (_vPress == Cover && _dragMoved) DropCover();           // a drag that was going on ends where it is
+            if (_scrubbing && _vPress == SeekHit) { _scrubbing = false; CommitSeek(_pendingSeek); }
+            _vDown = false;
+            _vPress = null;
+            if (_hadClip) ClipCursor(ref _savedClip);
+            PlayerCursor.Visibility = Visibility.Collapsed;
+            ApplyLyricsLayer();
+            Mouse.Synchronize();                        // the real mouse is not over the player: hover effects end
+        }
+    }
+
+    IntPtr CursorProc(int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode < 0 || !_cursorMode) return CallNextHookEx(_cursorHook, nCode, wParam, lParam);
+        var d = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+        int msg = wParam.ToInt32();
+        _lastCursorInput = Environment.TickCount64;
+        if (msg == WM_MOUSEMOVE)
+        {
+            // the real cursor stays where it is (the move is dropped); the step it would have made moves the drawn one
+            GetCursorPos(out POINT cur);
+            _vx += d.pt.X - cur.X;
+            _vy += d.pt.Y - cur.Y;
+            _cursorAnchored = true;
+            MoveDrawnCursor();
+        }
+        if (msg is WM_MOUSEMOVE or WM_LBUTTONDOWN or WM_LBUTTONUP or WM_MBUTTONDOWN or WM_MOUSEWHEEL)
+        {
+            short delta = (short)((d.mouseData >> 16) & 0xFFFF);
+            Dispatcher.BeginInvoke(new Action(() => VirtualMouse(msg, delta)));     // out of the hook quickly
+        }
+        return (IntPtr)1;       // the game (and every other app) gets nothing while the cursor is in the player
+    }
+
+    // What the player would do with a real mouse at the drawn cursor. WPF itself drops mouse messages while the real
+    // cursor is somewhere else, so the drawn cursor finds what is under it and does it.
+    void VirtualMouse(int msg, short delta)
+    {
+        if (!_cursorMode) return;
+        double f = _coverSize / 40.0;
+        var pt = new Point((_vx - _winX) / f, (_vy - _gapY) / f);      // in the player's design units
+        var at = new Point(_vx, _vy);
+        switch (msg)
+        {
+            case WM_MOUSEMOVE:
+                if (_vPress == Cover) CoverDragTo(at);
+                else if (_vPress == SeekHit && _scrubbing) ScrubTo(Content.TranslatePoint(pt, SeekHit).X);
+                break;
+            case WM_LBUTTONDOWN:
+                _vDown = true;
+                _vPress = TargetAt(pt);
+                if (_vPress == Cover) CoverPress(at);
+                else if (_vPress == SeekHit && _session != null && _tlEnd - _tlStart > TimeSpan.Zero)
+                {
+                    _scrubbing = true;
+                    ScrubTo(Content.TranslatePoint(pt, SeekHit).X);
+                }
+                break;
+            case WM_LBUTTONUP:
+                _vDown = false;
+                var pressed = _vPress;
+                _vPress = null;
+                if (pressed == Cover) CoverRelease();
+                else if (pressed == SeekHit && _scrubbing)
+                {
+                    ScrubTo(Content.TranslatePoint(pt, SeekHit).X);
+                    _scrubbing = false;
+                    CommitSeek(_pendingSeek);
+                }
+                else if (pressed != null && TargetAt(pt) == pressed)
+                {
+                    if (pressed == VolumeHit) ToggleMute();
+                    else if (pressed is Button b) b.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent, b));
+                }
+                break;
+            case WM_MBUTTONDOWN:
+                if (TargetAt(pt) == Cover) _ = _session?.TryTogglePlayPauseAsync();
+                break;
+            case WM_MOUSEWHEEL:
+                var over = TargetAt(pt);
+                if (over == Cover) CoverWheel(delta);
+                else if (over == SeekHit) SeekBy(TimeSpan.FromSeconds(delta > 0 ? 5 : -5));
+                else if (over == VolumeHit) ChangeVolume(delta > 0 ? 0.05f : -0.05f);
+                break;
+        }
+    }
+
+    // the cover, the seek bar, the speaker or a button under the drawn cursor
+    FrameworkElement? TargetAt(Point pt)
+    {
+        for (var d = Content.InputHitTest(pt) as DependencyObject; d != null;
+             d = d is Visual ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+        {
+            if (d == Cover || d == SeekHit || d == VolumeHit) return (FrameworkElement)d;
+            if (d is Button b) return b;
+            if (d == Content) break;
+        }
+        return null;
+    }
+
+    // keeps the drawn cursor on the player (on the screen while the cover is dragged) and draws it there
+    void MoveDrawnCursor()
+    {
+        double f = _coverSize / 40.0;
+        if (!_cursorAnchored)
+        {
+            // until the mouse moves: on the cover
+            _vx = _gapX + _coverSize / 2.0;
+            _vy = _gapY + _coverSize / 2.0;
+        }
+        RECT r;
+        if (_vDown && _vPress == Cover) r = MonitorAt((int)_vx, (int)_vy);
+        else
+        {
+            int left = _side == Side.Left ? _gapX : _gapX + _coverSize - _winW;
+            r = new RECT { Left = left, Top = _gapY, Right = left + _winW, Bottom = _gapY + _coverSize };
+        }
+        _vx = Math.Clamp(_vx, r.Left, Math.Max(r.Left, r.Right - 1));
+        _vy = Math.Clamp(_vy, r.Top, Math.Max(r.Top, r.Bottom - 1));
+        Canvas.SetLeft(PlayerCursor, (_vx - _winX) / f);
+        Canvas.SetTop(PlayerCursor, (_vy - _gapY) / f);
+    }
+
     // While a game hides the cursor (driving, aiming), clicks and the mouse go through the player to the game.
     // When the cursor is shown (the game's menu, the desktop), the player can be used and dragged as usual.
     // Over the player Windows shows the player's own cursor, so the game's cursor is only seen while the mouse is
     // somewhere else, or while clicks already pass through (then the game is under the mouse).
     void UpdateClickThrough()
     {
+        if (_cursorMode) return;        // the drawn cursor uses the player, whatever the game does with its cursor
         var ci = new CURSORINFO { cbSize = Marshal.SizeOf<CURSORINFO>() };
         if (!GetCursorInfo(ref ci)) return;
         // what is drawn: the cover and the open part of the player (with the cover on the right, the window is wider)
@@ -2470,7 +2677,7 @@ public partial class MainWindow : Window
     void ApplyLyricsLayer()
     {
         bool active = LyricsActive;
-        bool lyrics = active && (!PlayerPanel.IsMouseOver || _clickThrough);
+        bool lyrics = active && (!PlayerPanel.IsMouseOver || _clickThrough) && !_cursorMode;
         if (active) LyricsLayer.Visibility = Visibility.Visible;
         var toLyrics = new DoubleAnimation(lyrics ? 1 : 0, TimeSpan.FromMilliseconds(150));
         toLyrics.Completed += (_, _) => { if (!LyricsActive) LyricsLayer.Visibility = Visibility.Collapsed; };
@@ -2565,6 +2772,7 @@ public partial class MainWindow : Window
         _cursorTimer.Stop();
         _keyTimer.Stop();
         SetMouseOut(false);
+        SetCursorMode(false);
         if (_hwnd != IntPtr.Zero) { UnregisterHotKey(_hwnd, 1); UnregisterHotKey(_hwnd, 2); }
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplayChanged;
         _updateTimer.Stop();

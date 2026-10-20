@@ -313,6 +313,8 @@
                         <TextBlock Grid.Row="1" Margin="0,8,12,0" VerticalAlignment="Center" x:Name="CursorKeyText"/>
                         <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" Margin="0,8,0,0" MinWidth="150" Style="{StaticResource Btn}" x:Name="CursorKeyButton"/>
                     </Grid>
+                    <!-- shown while "show over games" is off: the mouse shortcut only works with it -->
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="CursorKeyNote"/>
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
                     <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
                 </StackPanel>

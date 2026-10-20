@@ -895,13 +895,25 @@ public partial class OptionsWindow : Window
         FreeMoveBox.IsChecked = _main.FreeMove;
         OnTopBox.IsChecked = _main.AlwaysOnTop;
         FreeMoveBox.Click += (_, _) => _main.SetFree(FreeMoveBox.IsChecked == true);
-        OnTopBox.Click += (_, _) => _main.SetOnTop(OnTopBox.IsChecked == true);
+        OnTopBox.Click += (_, _) => { _main.SetOnTop(OnTopBox.IsChecked == true); ShowCursorKeyState(); };
+        CursorKeyNote.Text = T("needsOnTop");
+        ShowCursorKeyState();
         ShowKeyButton.Click += (_, _) => ToggleCapture(0);
         CursorKeyButton.Click += (_, _) => ToggleCapture(1);
         PreviewKeyUp += OnKeyUp;
         Deactivated += (_, _) => StopCapture();
         Closed += (_, _) => StopCapture();
         ShowShortcuts();
+    }
+
+    // the mouse shortcut only works with "show over games": greyed out with a note while that is off
+    void ShowCursorKeyState()
+    {
+        bool on = _main.AlwaysOnTop;
+        if (!on && _capturing == 1) StopCapture();
+        CursorKeyButton.IsEnabled = on;
+        CursorKeyText.Opacity = on ? 1 : 0.45;
+        CursorKeyNote.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
     }
 
     void ShowShortcuts()

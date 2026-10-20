@@ -55,11 +55,11 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 
 - **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Bir oyun çözünürlüğü değiştirse de ekrandaki
   yerini korur. Açıldığında oynatıcı hep ekranın içinde kalır;
-- **Her zaman üstte**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
+- **Oyunların üstünde göster**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
 - **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas;
 - **Fareyi oyundan al**: tam ekran oyunda **Ctrl + Alt + X**'e basınca fare oyundan çıkar; şarkı geçebilir ya da
-  başka bir şey kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. *Her zaman üstte* açıkken çalışır.
+  başka bir şey kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. *Oyunların üstünde göster* açıkken çalışır.
 
 Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Oyun imleci gizlerken (araba sürerken, nişan alırken)
 tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç geri gelince (oyunun menüsünde) oynatıcıyı her zamanki
@@ -75,7 +75,7 @@ gibi kullanıp taşıyabilirsin.
 | Ses ikonunda tekerlek | ses; tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
-| Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Her zaman üstte* açıkken) |
+| Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
 
 Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, görev çubuğunun
 tarafı, dil, Yeniden başlat ve Kapat.

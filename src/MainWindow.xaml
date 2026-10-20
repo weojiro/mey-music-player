@@ -98,6 +98,11 @@
             <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="18" Foreground="White" HorizontalAlignment="Center" Text="&#xEC4F;" VerticalAlignment="Center" x:Name="Glyph"/>
         </Border>
 
+        <!-- The cursor drawn in the player while Ctrl + Alt + X gives it the mouse in a game that changed the resolution -->
+        <Canvas IsHitTestVisible="False" Panel.ZIndex="10">
+            <Path Data="M0,0 L0,14 L3.4,10.9 L5.8,16 L8,15 L5.6,10 L10,10 Z" Fill="White" Stroke="Black" StrokeLineJoin="Round" StrokeThickness="0.9" Visibility="Collapsed" x:Name="PlayerCursor"/>
+        </Canvas>
+
         <!-- Title card: the song name, centered on the cover after the mouse rests on it for 1 s -->
         <Popup AllowsTransparency="True" PlacementTarget="{Binding ElementName=Cover}" PopupAnimation="Fade" StaysOpen="True" x:Name="TitlePopup">
             <Border Background="#2B2B2B" BorderBrush="Transparent" BorderThickness="1" CornerRadius="8" MaxWidth="240" MinWidth="110" Padding="12,8" x:Name="TitlePopupBorder">

@@ -1248,7 +1248,7 @@ public partial class MainWindow : Window
     // ---------- Discord: "Listening via MMP" on the user's profile (on by default, tray menu) ----------
 
     // the "mey music player" application on discord.com/developers: its name is what the profile shows
-    const string DiscordAppId = "";
+    const string DiscordAppId = "1562239814949150850";
     const string RepoUrl = "https://github.com/weojiro/mey-music-player";
     const string DiscordLogo = "https://weojiro.github.io/mey-music-player/img/mmp-logo.png";
     DiscordPresence? _discord;

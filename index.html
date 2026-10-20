@@ -71,9 +71,7 @@ p { margin: 0; }
 .nav-in { display: flex; align-items: center; gap: 18px; height: 64px; max-width: none; padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; white-space: nowrap; }
 /* the mark is the app's own cover square: a music note on a cover painted by the song playing */
-.brand-mark { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: #fff; flex: none;
-  background: linear-gradient(145deg, var(--accent), color-mix(in srgb, var(--accent) 35%, #000)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); transition: background .8s ease; }
-.brand-mark svg { width: 16px; height: 16px; }
+.brand-mark { width: 30px; height: 30px; flex: none; display: block; }
 .nav-links { display: flex; gap: 4px; margin-left: auto; }
 .nav-links a { text-decoration: none; color: var(--dim); font-size: 14.5px; padding: 8px 12px; border-radius: 999px; transition: color .2s, background .2s; }
 .nav-links a:hover { color: var(--fg); background: var(--menu); }
@@ -264,7 +262,7 @@ footer a:hover { color: var(--fg); }
 <header class="nav">
   <div class="wrap nav-in">
     <a class="brand" href="#top" aria-label="mey music player">
-      <span class="brand-mark" aria-hidden="true"><svg><use href="#i-note"/></svg></span>
+      <img class="brand-mark" src="favicon.svg" width="30" height="30" alt="" aria-hidden="true">
       <span class="brand-name">mey music player</span>
     </a>
     <nav class="nav-links" aria-label="Sections">

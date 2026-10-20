@@ -385,12 +385,22 @@ footer a:hover { color: var(--fg); }
             <li><kbd data-i18n="k3.k">Wheel on the seek bar</kbd><span data-i18n="k3.v">5 seconds back or forward</span></li>
             <li><kbd data-i18n="k4.k">Wheel on the speaker</kbd><span data-i18n="k4.v">volume; a click mutes</span></li>
             <li><kbd data-i18n="k5.k">Tray icon</kbd><span data-i18n="k5.v">click to play / pause, wheel for volume</span></li>
+            <li><kbd>Ctrl + Alt</kbd><span data-i18n="k6.v">hide / show the player</span></li>
+            <li><kbd>Ctrl + Alt + X</kbd><span data-i18n="k7.v">mouse out of a full-screen game</span></li>
           </ul>
         </article>
         <article class="tile narrow">
           <div class="shot"><img src="img/tray-menu.png" width="232" height="340" alt="The tray menu"></div>
           <h3 data-i18n="f6.t">A tidy tray menu</h3>
-          <p data-i18n="f6.p">Options, lyrics, startup, side of the taskbar and 11 languages.</p>
+          <p data-i18n="f6.p">Options, hide player, lyrics, startup, side of the taskbar and 11 languages.</p>
+        </article>
+        <article class="tile">
+          <h3 data-i18n="f7.t">Anywhere, even over games</h3>
+          <p data-i18n="f7.p">Turn on Free move to drag the cover anywhere on the screen, and Show over games to keep it over full-screen games. While a game hides the cursor, clicks go to the game. Ctrl + Alt + X takes the mouse out of the game to skip a song.</p>
+        </article>
+        <article class="tile">
+          <h3 data-i18n="f8.t">Every player, its own place</h3>
+          <p data-i18n="f8.p">Each saved player remembers its side, its spot, Free move and Show over games, and comes back just as you left it.</p>
         </article>
       </div>
     </div>
@@ -408,7 +418,7 @@ footer a:hover { color: var(--fg); }
           </div>
           <ol class="steps">
             <li><span data-i18n-html="s1"><b>Start a player</b> and give it a name.</span></li>
-            <li><span data-i18n-html="s2"><b>Pick the colours</b> of the background and the buttons, or keep Chameleon.</span></li>
+            <li><span data-i18n-html="s2"><b>Pick the colours</b> of the background and the buttons, or keep Chameleon. Make it see-through with the Transparency slider.</span></li>
             <li><span data-i18n-html="s3"><b>Add PNG, JPG or GIF images.</b> Drag to move, pull a corner to resize, turn with the dot on top.</span></li>
             <li><span data-i18n-html="s4"><b>Stack them</b> in the image list. Pictures always stay behind the buttons.</span></li>
           </ol>
@@ -476,7 +486,7 @@ footer a:hover { color: var(--fg); }
         <details><summary data-i18n="q1">Windows says "Windows protected your PC".</summary><p data-i18n="a1">The app is not signed with a paid certificate yet. Choose More info, then Run anyway. The code is all on GitHub.</p></details>
         <details><summary data-i18n="q2">Which apps does it work with?</summary><p data-i18n="a2">Anything that shows up in the Windows media controls: Spotify, browsers playing YouTube, SoundCloud and most music and video players. Lyrics are for Spotify only.</p></details>
         <details><summary data-i18n="q3">The volume doesn't move the slider inside Spotify.</summary><p data-i18n="a3">MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser all tabs share one volume, and Firefox's volume can't be changed from MMP.</p></details>
-        <details><summary data-i18n="q4">My taskbar is on the side or on another screen.</summary><p data-i18n="a4">For now MMP sits on the taskbar of the main screen, at the bottom or the top.</p></details>
+        <details><summary data-i18n="q4">My taskbar is on the side or on another screen.</summary><p data-i18n="a4">On the taskbar MMP sits on the main screen, at the bottom or the top. Turn on Free move in Options to put it anywhere, on any screen.</p></details>
         <details><summary data-i18n="q5">How do I remove it?</summary><p data-i18n-html="a5">Turn off Start with Windows and choose Close in the tray menu, then delete the <code class="path">%LOCALAPPDATA%\MMP</code> folder and the desktop shortcut.</p></details>
       </div>
     </div>
@@ -610,11 +620,11 @@ footer a:hover { color: var(--fg); }
     "f5.t": "Hızlı kontroller",
     "k1.k": "Kapakta tekerlek", "k1.v": "sonraki / önceki şarkı", "k2.k": "Kapağa orta tık", "k2.v": "çal / duraklat",
     "k3.k": "İlerleme çubuğunda tekerlek", "k3.v": "5 saniye ileri ya da geri", "k4.k": "Ses ikonunda tekerlek", "k4.v": "ses; tıklayınca sessiz",
-    "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses",
-    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, şarkı sözleri, başlangıç, görev çubuğunun tarafı ve 11 dil.",
+    "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses", "k6.v": "oynatıcıyı gizle / göster", "k7.v": "fareyi tam ekran oyundan al",
+    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, oynatıcıyı gizle, şarkı sözleri, başlangıç, görev çubuğunun tarafı ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Oyun imleci gizlerken tıklamalar oyuna gider. Ctrl + Alt + X ile fareyi oyundan alıp şarkı geçebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
     "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dört tane daha.",
     "d.lead": "Tray menüsünden Ayarlar'ı aç. Değiştirdiğin her şey görev çubuğunda hemen görünür ve kendiliğinden kaydedilir.",
-    "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak.",
+    "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak. Saydamlık kaydırıcısıyla saydam yap.",
     "s3": "<b>PNG, JPG veya GIF ekle.</b> Taşımak için sürükle, boyut için köşeden çek, üstteki noktayla döndür.",
     "s4": "<b>Üst üste diz:</b> resim listesinde sırala. Resimler hep butonların arkasında kalır.",
     "d.win": "Ayarlar", "chip.default": "Varsayılan",
@@ -632,7 +642,7 @@ footer a:hover { color: var(--fg); }
     "q1": "Windows \"Bilgisayarınız korundu\" diyor.", "a1": "Uygulama henüz ücretli bir sertifikayla imzalanmadı. Ek bilgi'ye, sonra Yine de çalıştır'a tıkla. Kodun tamamı GitHub'da.",
     "q2": "Hangi uygulamalarla çalışır?", "a2": "Windows medya kontrollerinde görünen her şeyle: Spotify, YouTube açık tarayıcılar, SoundCloud ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify için.",
     "q3": "Ses ayarı Spotify'ın içindeki çubuğu oynatmıyor.", "a3": "MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda tüm sekmeler tek ses paylaşır, Firefox'un sesi ise MMP'den değiştirilemez.",
-    "q4": "Görev çubuğum yanda ya da başka bir ekranda.", "a4": "Şimdilik MMP ana ekranın görev çubuğunda, altta ya da üstte durur.",
+    "q4": "Görev çubuğum yanda ya da başka bir ekranda.", "a4": "Görev çubuğunda MMP ana ekranda, altta ya da üstte durur. Ayarlar'dan Serbest hareketi açarsan istediğin yere, istediğin ekrana koyabilirsin.",
     "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil.",
     "end.title": "Müziğin daha iyi<br><span class=\"accent\">bir yeri hak ediyor.</span>",
     "foot.mit": "MIT lisansı", "foot.preview": "önizleme", "foot.issue": "Sorun bildir"

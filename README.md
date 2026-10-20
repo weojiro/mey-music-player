@@ -49,6 +49,18 @@ Open **Options** in the tray menu to make the player your own:
 - drag them up or down in the image list to choose which one is in front. They always stay behind the buttons;
 - save up to 5 players and switch between them. Everything is saved on its own.
 
+### Anywhere on the screen, even over games
+
+Also in **Options**, under *Placement*:
+
+- **Free move**: drag the cover anywhere on the screen. When it opens, the player always stays on the screen;
+- **Always on top**: the player stays visible over full-screen apps and games. If it doesn't show in a game,
+  choose borderless or windowed full screen in the game's settings;
+- **Show / hide**: Ctrl + Shift + X hides or shows the player. Click it to choose another shortcut.
+
+While a game hides the cursor (driving, aiming), clicks go straight to the game, not to the player. When the
+cursor is back (the game's menu), you can use and move the player as usual. Hold **Ctrl + Alt** to use it anyway.
+
 ### Quick controls
 
 | Where | What it does |
@@ -58,9 +70,10 @@ Open **Options** in the tray menu to make the player your own:
 | Mouse wheel on the seek bar | 5 seconds back or forward |
 | Mouse wheel on the speaker | volume; a click mutes |
 | Tray icon | a click plays / pauses, the wheel changes the volume |
+| Ctrl + Shift + X | hides / shows the player |
 
-Right-click the tray icon for Options, Lyrics, Start with Windows, the side of the taskbar, the language,
-Restart and Close.
+Right-click the tray icon for Options, Hide player, Lyrics, Start with Windows, the side of the taskbar, the
+language, Restart and Close.
 
 ## Install
 
@@ -105,7 +118,8 @@ Nothing else.
 <details>
 <summary><b>My taskbar is on the side or on another screen.</b></summary>
 
-For now MMP sits on the taskbar of the main screen, at the bottom or the top.
+On the taskbar MMP sits on the main screen, at the bottom or the top. Turn on *Free move* in Options to put
+it anywhere, on any screen.
 </details>
 
 <details>

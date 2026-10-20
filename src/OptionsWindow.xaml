@@ -124,6 +124,36 @@
             </Setter>
         </Style>
 
+        <!-- on / off switch with its label on the right -->
+        <Style TargetType="CheckBox" x:Key="Switch">
+            <Setter Property="Foreground" Value="#E3E3E3"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Background="Transparent" Orientation="Horizontal">
+                            <Grid Height="20" VerticalAlignment="Center" Width="36">
+                                <Border Background="#3A3A3A" CornerRadius="10" x:Name="Track"/>
+                                <Ellipse Fill="#9AA0A6" Height="14" HorizontalAlignment="Left" Margin="3,0,0,0" Width="14" x:Name="Knob"/>
+                            </Grid>
+                            <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" TargetName="Track" Value="#E3E3E3"/>
+                                <Setter Property="Fill" TargetName="Knob" Value="#1F1F1F"/>
+                                <Setter Property="Margin" TargetName="Knob" Value="19,0,0,0"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" TargetName="Track" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="TextBlock" x:Key="Section">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -253,6 +283,29 @@
             <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
 
             <Button Foreground="#F28B82" HorizontalAlignment="Left" Style="{StaticResource Btn}" x:Name="ResetButton"/>
+
+            <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
+
+            <!-- where the player sits: free move, always on top, the show / hide shortcut -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="PlacementText"/>
+                <StackPanel Grid.Column="1" MaxWidth="480" HorizontalAlignment="Left">
+                    <CheckBox Style="{StaticResource Switch}" x:Name="FreeMoveBox"/>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="FreeMoveHint"/>
+                    <CheckBox Margin="0,16,0,0" Style="{StaticResource Switch}" x:Name="OnTopBox"/>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="OnTopHint"/>
+                    <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                        <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" x:Name="HotkeyText"/>
+                        <Button MinWidth="150" Style="{StaticResource Btn}" x:Name="HotkeyButton"/>
+                    </StackPanel>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
+                    <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
+                </StackPanel>
+            </Grid>
         </StackPanel>
         </ScrollViewer>
 

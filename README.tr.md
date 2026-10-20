@@ -49,6 +49,19 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
 - 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
 
+### Ekranın her yerinde, oyunların üstünde bile
+
+Yine **Ayarlar**'da, *Yerleşim* altında:
+
+- **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır;
+- **Her zaman üstte**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
+  oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
+- **Göster / gizle**: Ctrl + Shift + X oynatıcıyı gizler ya da gösterir. Başka bir kısayol seçmek için üstüne tıkla.
+
+Oyun imleci gizlerken (araba sürerken, nişan alırken) tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç
+geri gelince (oyunun menüsünde) oynatıcıyı her zamanki gibi kullanıp taşıyabilirsin. Yine de kullanmak için
+**Ctrl + Alt**'a basılı tut.
+
 ### Hızlı kontroller
 
 | Nerede | Ne yapar |
@@ -58,9 +71,10 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 | İlerleme çubuğunda tekerlek | 5 saniye ileri ya da geri |
 | Ses ikonunda tekerlek | ses; tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
+| Ctrl + Shift + X | oynatıcıyı gizler / gösterir |
 
-Tray ikonuna sağ tıklayınca: Ayarlar, Şarkı sözleri, Windows ile başlat, görev çubuğunun tarafı, dil,
-Yeniden başlat ve Kapat.
+Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, görev çubuğunun
+tarafı, dil, Yeniden başlat ve Kapat.
 
 ## Kurulum
 
@@ -105,7 +119,8 @@ saklanır. Başka bir şey gönderilmez.
 <details>
 <summary><b>Görev çubuğum yanda ya da başka bir ekranda.</b></summary>
 
-Şimdilik MMP ana ekranın görev çubuğunda, altta ya da üstte durur.
+Görev çubuğunda MMP ana ekranda, altta ya da üstte durur. Ayarlar'dan *Serbest hareket*'i açarsan istediğin
+yere, istediğin ekrana koyabilirsin.
 </details>
 
 <details>

@@ -137,6 +137,7 @@ public partial class OptionsWindow : Window
             _pvCache.Clear();
         };
 
+        SetupPlacement();
         RefreshAll();
     }
 
@@ -875,8 +876,85 @@ public partial class OptionsWindow : Window
         QueueSave();
     }
 
+    // ---------- placement: free move, always on top, the show / hide shortcut ----------
+
+    void SetupPlacement()
+    {
+        PlacementText.Text = T("placement");
+        FreeMoveBox.Content = T("freeMove");
+        FreeMoveHint.Text = T("freeMoveHint");
+        OnTopBox.Content = T("onTop");
+        OnTopHint.Text = T("onTopHint");
+        HotkeyText.Text = T("hotkey");
+        HotkeyHint.Text = T("hotkeyHint");
+        FreeMoveBox.IsChecked = _main.FreeMove;
+        OnTopBox.IsChecked = _main.AlwaysOnTop;
+        FreeMoveBox.Click += (_, _) => _main.SetFree(FreeMoveBox.IsChecked == true);
+        OnTopBox.Click += (_, _) => _main.SetOnTop(OnTopBox.IsChecked == true);
+        HotkeyButton.Click += (_, _) => { if (_capturing) StopCapture(); else StartCapture(); };
+        Deactivated += (_, _) => { if (_capturing) StopCapture(); };
+        Closed += (_, _) => { if (_capturing) _main.ResumeHotkey(); };
+        ShowHotkey();
+        if (!_main.HotkeyOk) ShowHotkeyMessage(T("hotkeyBusy"));
+    }
+
+    bool _capturing;
+
+    void ShowHotkey()
+    {
+        HotkeyButton.Content = _capturing ? T("hotkeyPress") : _main.HotkeyText;
+        HotkeyButton.Background = new SolidColorBrush(_capturing ? Light : ChipBack);
+        HotkeyButton.Foreground = new SolidColorBrush(_capturing ? Ink : Light);
+    }
+
+    void ShowHotkeyMessage(string? text)
+    {
+        HotkeyMessage.Text = text ?? "";
+        HotkeyMessage.Visibility = text == null ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    void StartCapture()
+    {
+        _capturing = true;
+        _main.PauseHotkey();
+        ShowHotkeyMessage(null);
+        ShowHotkey();
+    }
+
+    void StopCapture()
+    {
+        _capturing = false;
+        _main.ResumeHotkey();
+        ShowHotkey();
+    }
+
+    // A new shortcut: Ctrl, Alt or Win with a key, or an F key alone (Shift + a letter would stop the user typing capitals)
+    void CaptureKey(KeyEventArgs e)
+    {
+        e.Handled = true;
+        Key key = e.Key == Key.System ? e.SystemKey : e.Key == Key.ImeProcessed ? e.ImeProcessedKey : e.Key;
+        if (key == Key.Escape) { StopCapture(); return; }
+        if (key is Key.LeftCtrl or Key.RightCtrl or Key.LeftAlt or Key.RightAlt or Key.LeftShift or Key.RightShift
+            or Key.LWin or Key.RWin or Key.None or Key.DeadCharProcessed) return;     // wait for the key that goes with them
+        var m = Keyboard.Modifiers;
+        uint mods = (m.HasFlag(ModifierKeys.Control) ? MOD_CONTROL : 0) | (m.HasFlag(ModifierKeys.Alt) ? MOD_ALT : 0)
+            | (m.HasFlag(ModifierKeys.Shift) ? MOD_SHIFT : 0) | (m.HasFlag(ModifierKeys.Windows) ? MOD_WIN : 0);
+        uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+        bool fKey = key >= Key.F1 && key <= Key.F24;
+        if (vk == 0 || (mods & (MOD_CONTROL | MOD_ALT | MOD_WIN)) == 0 && !fKey)
+        {
+            ShowHotkeyMessage(T("hotkeyBad"));
+            return;
+        }
+        _capturing = false;
+        if (!_main.TrySetHotkey(mods, vk)) ShowHotkeyMessage(T("hotkeyBusy"));
+        else ShowHotkeyMessage(null);
+        ShowHotkey();
+    }
+
     void OnKey(object sender, KeyEventArgs e)
     {
+        if (_capturing) { CaptureKey(e); return; }
         if (Keyboard.FocusedElement is TextBox || ConfirmLayer.Visibility == Visibility.Visible) return;
         if (e.Key == Key.Escape) { Select(-1); return; }
         if (SelectedSpec is not { } s) return;

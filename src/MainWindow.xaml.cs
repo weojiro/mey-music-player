@@ -122,6 +122,7 @@ public partial class MainWindow : Window
 
     // mouse out of the game (shortcut 1)
     bool _mouseOut, _playerFocused;
+    IntPtr _dropsWin;                     // a game seen dropping to the desktop without the focus: the drawn cursor next time
 
     // ... or, in a game that changed the screen's resolution, a cursor drawn in the player
     bool _cursorMode, _cursorAnchored, _vDown, _hadClip;
@@ -2285,6 +2286,21 @@ public partial class MainWindow : Window
                 SetForegroundWindow(new WindowInteropHelper(_focusWin).Handle);
             }
             ClipCursor(IntPtr.Zero);                    // in case the game keeps the mouse in its box
+            // a game in exclusive full screen that was not recognised drops to the desktop: bring it back at once
+            // and use the drawn cursor instead
+            IntPtr game = _gameWin;
+            var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+            check.Tick += (_, _) =>
+            {
+                check.Stop();
+                if (!_mouseOut || _gameWin != game || !IsWindow(game) || !IsIconic(game)) return;
+                _dropsWin = game;
+                EndMouseOut();
+                ShowWindow(game, SW_RESTORE);
+                SetForegroundWindow(game);
+                SetCursorMode(true);
+            };
+            check.Start();
         }
         else
         {
@@ -2331,16 +2347,19 @@ public partial class MainWindow : Window
         if (_cursorMode) { SetCursorMode(false); return; }
         if (_mouseOut) { SetMouseOut(false); return; }
         if (!_onTop) return;
-        if (GameChangedResolution()) SetCursorMode(true);
+        if (GameNeedsFocus()) SetCursorMode(true);
         else SetMouseOut(true);
     }
 
-    // A full-screen game running at another resolution than the screen's own (1080p on a 1440p screen) drops to the
-    // desktop as soon as it loses the focus, so the focus must stay with it
-    bool GameChangedResolution()
+    // A game in exclusive full screen drops to the desktop as soon as it loses the focus, so the focus must stay with
+    // it: Windows says so for Direct3D games, a game at another resolution than the screen's own (1080p on a 1440p
+    // screen) is one, and so is a game already seen dropping
+    bool GameNeedsFocus()
     {
-        if (!IsFullScreenAppActive()) return false;
         IntPtr fg = GetForegroundWindow();
+        if (fg != IntPtr.Zero && fg == _dropsWin) return true;
+        if (SHQueryUserNotificationState(out int state) == 0 && state == QUNS_RUNNING_D3D_FULL_SCREEN) return true;
+        if (!IsFullScreenAppActive()) return false;
         if (!GetWindowRect(fg, out RECT r)) return false;
         var info = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
         IntPtr mon = MonitorFromPoint(new POINT { X = r.Left + r.Width / 2, Y = r.Top + r.Height / 2 }, MONITOR_DEFAULTTONEAREST);

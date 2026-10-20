@@ -203,6 +203,20 @@ internal static class NativeMethods
     public static extern bool IsWindow(IntPtr hwnd);
 
     [DllImport("user32.dll")]
+    public static extern bool IsIconic(IntPtr hwnd);
+
+    public const int SW_RESTORE = 9;
+
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr hwnd, int cmd);
+
+    // 3: a Direct3D game holds the screen on its own (exclusive full screen); it drops to the desktop without the focus
+    public const int QUNS_RUNNING_D3D_FULL_SCREEN = 3;
+
+    [DllImport("shell32.dll")]
+    public static extern int SHQueryUserNotificationState(out int state);
+
+    [DllImport("user32.dll")]
     public static extern bool ClipCursor(IntPtr none);
 
     [DllImport("user32.dll")]

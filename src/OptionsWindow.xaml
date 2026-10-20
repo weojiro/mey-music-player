@@ -154,6 +154,54 @@
             </Setter>
         </Style>
 
+        <!-- slim slider: grey track, light filled part, round knob -->
+        <Style TargetType="Slider" x:Key="Range">
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="90"/>
+            <Setter Property="SmallChange" Value="1"/>
+            <Setter Property="LargeChange" Value="10"/>
+            <Setter Property="IsSnapToTickEnabled" Value="True"/>
+            <Setter Property="TickFrequency" Value="1"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Background="Transparent">
+                            <Border Background="#3A3A3A" CornerRadius="2" Height="4" VerticalAlignment="Center"/>
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent"><Border Background="#E3E3E3" CornerRadius="2" Height="4" VerticalAlignment="Center"/></Border>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton"><Border Background="Transparent"/></ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb"><Ellipse Fill="#E3E3E3" Height="14" Width="14"/></ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="TextBlock" x:Key="Section">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
@@ -250,11 +298,42 @@
                 <Grid.RowDefinitions>
                     <RowDefinition/>
                     <RowDefinition/>
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
                 <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="BgText"/>
                 <WrapPanel Grid.Column="1" x:Name="BgSwatches"/>
                 <TextBlock Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="ButtonsText"/>
                 <WrapPanel Grid.Column="1" Grid.Row="1" Margin="0,12,0,0" x:Name="ButtonSwatches"/>
+
+                <!-- transparency: one slider for all, or one each for the background, the buttons and the cover -->
+                <TextBlock Grid.Row="2" Margin="0,16,0,0" Padding="0,2,0,0" Style="{StaticResource Section}" VerticalAlignment="Top" x:Name="ClearText"/>
+                <StackPanel Grid.Column="1" Grid.Row="2" Margin="0,16,0,0">
+                    <CheckBox Style="{StaticResource Switch}" x:Name="ClearAllBox"/>
+                    <Grid Margin="0,10,0,0" x:Name="ClearSliders">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="300"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Slider Grid.Column="1" Style="{StaticResource Range}" x:Name="ClearAllSlider"/>
+                        <TextBlock Grid.Column="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearAllValue"/>
+                        <TextBlock Grid.Row="1" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearBgLabel"/>
+                        <Slider Grid.Column="1" Grid.Row="1" Style="{StaticResource Range}" x:Name="ClearBgSlider"/>
+                        <TextBlock Grid.Column="2" Grid.Row="1" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearBgValue"/>
+                        <TextBlock Grid.Row="2" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearButtonsLabel"/>
+                        <Slider Grid.Column="1" Grid.Row="2" Style="{StaticResource Range}" x:Name="ClearButtonsSlider"/>
+                        <TextBlock Grid.Column="2" Grid.Row="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearButtonsValue"/>
+                        <TextBlock Grid.Row="3" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearCoverLabel"/>
+                        <Slider Grid.Column="1" Grid.Row="3" Style="{StaticResource Range}" x:Name="ClearCoverSlider"/>
+                        <TextBlock Grid.Column="2" Grid.Row="3" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearCoverValue"/>
+                    </Grid>
+                </StackPanel>
             </Grid>
 
             <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>

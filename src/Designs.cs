@@ -25,6 +25,13 @@ sealed class PlayerSpec
     public string? Bg { get; set; }
     public string? Buttons { get; set; }
     public List<StickerSpec> Stickers { get; set; } = new();
+
+    // transparency in percent (0 = solid, up to MaxClear); the background one also covers the pictures and the title
+    // card, the buttons one the time, the lyrics and the song's name
+    public int BgClear { get; set; }
+    public int ButtonsClear { get; set; }
+    public int CoverClear { get; set; }
+    public bool ClearApart { get; set; }        // false: one slider sets all three
 }
 
 // "Design your player": the saved players live in %LOCALAPPDATA%\MMP\players, which updates never touch.
@@ -33,6 +40,8 @@ sealed class Designs
     public const int MaxPlayers = 5;
     public const int MaxStickers = 10;
     public const long MaxFileBytes = 25 * 1024 * 1024;
+    // at most 90 % see-through: the player stays visible and clickable (a fully clear pixel lets clicks through)
+    public const int MaxClear = 90;
 
     static readonly string Dir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MMP", "players");

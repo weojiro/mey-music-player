@@ -138,6 +138,7 @@ public partial class OptionsWindow : Window
         };
 
         SetupPlacement();
+        SetupClear();
         RefreshAll();
     }
 
@@ -167,8 +168,83 @@ public partial class OptionsWindow : Window
         RefreshNameRow();
         RefreshSwatches();
         RefreshColors();
+        RefreshClear();
         RefreshButtons();
         RebuildPreviewStickers();
+    }
+
+    // ---------- transparency ----------
+
+    bool _loadingClear;
+
+    void SetupClear()
+    {
+        ClearText.Text = T("transparency");
+        ClearAllBox.Content = T("clearAll");
+        ClearBgLabel.Text = T("background");
+        ClearButtonsLabel.Text = T("buttons");
+        ClearCoverLabel.Text = T("cover");
+        ClearAllBox.Click += (_, _) => SetClearApart(ClearAllBox.IsChecked != true);
+        ClearAllSlider.ValueChanged += (_, e) => SetClear(0, e.NewValue);
+        ClearBgSlider.ValueChanged += (_, e) => SetClear(1, e.NewValue);
+        ClearButtonsSlider.ValueChanged += (_, e) => SetClear(2, e.NewValue);
+        ClearCoverSlider.ValueChanged += (_, e) => SetClear(3, e.NewValue);
+    }
+
+    // the sliders of the player being edited; "all" shows one slider, else one each
+    void RefreshClear()
+    {
+        _loadingClear = true;
+        var p = Current;
+        bool apart = p?.ClearApart ?? false;
+        ClearAllBox.IsChecked = !apart;
+        ClearAllSlider.Value = p?.BgClear ?? 0;
+        ClearBgSlider.Value = p?.BgClear ?? 0;
+        ClearButtonsSlider.Value = p?.ButtonsClear ?? 0;
+        ClearCoverSlider.Value = p?.CoverClear ?? 0;
+        foreach (UIElement el in ClearSliders.Children)
+        {
+            bool allRow = Grid.GetRow(el) == 0;
+            el.Visibility = allRow != apart ? Visibility.Visible : Visibility.Collapsed;
+        }
+        ClearAllValue.Text = $"{(int)ClearAllSlider.Value} %";
+        ClearBgValue.Text = $"{(int)ClearBgSlider.Value} %";
+        ClearButtonsValue.Text = $"{(int)ClearButtonsSlider.Value} %";
+        ClearCoverValue.Text = $"{(int)ClearCoverSlider.Value} %";
+        _loadingClear = false;
+    }
+
+    // which: 0 all, 1 background, 2 buttons, 3 cover
+    void SetClear(int which, double value)
+    {
+        if (_loadingClear) return;
+        int v = (int)Math.Round(Math.Clamp(value, 0, Designs.MaxClear));
+        if (Current == null && v == 0) return;          // the default player is solid already
+        var p = EnsurePlayer();
+        if (p == null) { RefreshClear(); return; }
+        if (which == 0) p.BgClear = p.ButtonsClear = p.CoverClear = v;
+        else if (which == 1) p.BgClear = v;
+        else if (which == 2) p.ButtonsClear = v;
+        else p.CoverClear = v;
+        RefreshClear();
+        RefreshColors();
+        _main.ApplyDesignColors();
+        QueueSave();
+    }
+
+    void SetClearApart(bool apart)
+    {
+        var p = Current;
+        if (p == null && !apart) return;
+        p ??= EnsurePlayer();
+        if (p == null) { RefreshClear(); return; }
+        p.ClearApart = apart;
+        // back to one slider: all three take the background's value, so what is seen matches the slider
+        if (!apart) p.ButtonsClear = p.CoverClear = p.BgClear;
+        RefreshClear();
+        RefreshColors();
+        _main.ApplyDesignColors();
+        QueueSave();
     }
 
     void RefreshButtons()
@@ -313,6 +389,8 @@ public partial class OptionsWindow : Window
         p.Bg = Designs.Hex(DefaultBg);              // the player's look when nothing plays
         p.Buttons = "#FFFFFF";
         p.Stickers.Clear();
+        p.BgClear = p.ButtonsClear = p.CoverClear = 0;
+        p.ClearApart = false;
         _selected = -1;
         Flush();
         RefreshAll();
@@ -358,8 +436,12 @@ public partial class OptionsWindow : Window
     void RefreshColors()
     {
         var (bg, a) = EffectiveColors();
-        Brush Of(byte alpha) => new SolidColorBrush(Color.FromArgb(alpha, a.R, a.G, a.B));
-        PvPanel.Background = new SolidColorBrush(bg);
+        // the design's transparency, as on the taskbar
+        double bs = MainWindow.Solid(Current?.BgClear), ks = MainWindow.Solid(Current?.ButtonsClear);
+        Brush Of(byte alpha) => new SolidColorBrush(Color.FromArgb((byte)Math.Round(alpha * ks), a.R, a.G, a.B));
+        PvPanel.Background = new SolidColorBrush(Color.FromArgb((byte)Math.Round(bg.A * bs), bg.R, bg.G, bg.B));
+        PvStickers.Opacity = bs;
+        PvCover.Opacity = MainWindow.Solid(Current?.CoverClear);
         foreach (var t in new[] { PvPrev, PvPlay, PvNext, PvVolume, PvLoop }) t.Foreground = Of(0xFF);
         PvMix.Foreground = Of(0x80);
         PvTime.Foreground = Of(0xCC);

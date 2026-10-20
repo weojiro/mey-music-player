@@ -32,6 +32,20 @@ sealed class PlayerSpec
     public int ButtonsClear { get; set; }
     public int CoverClear { get; set; }
     public bool ClearApart { get; set; }        // false: one slider sets all three
+
+    public PlacementSpec? Placement { get; set; }  // where this player was left; null = not used yet
+}
+
+// Where a player sits and how it behaves; every player comes back the way it was left
+sealed record PlacementSpec
+{
+    public string Side { get; init; } = "Left";
+    public int? UserX { get; init; }            // spot on the taskbar
+    public bool Free { get; init; }
+    public double? FreeFx { get; init; }        // spot in free move, a share of the screen
+    public double? FreeFy { get; init; }
+    public string FreeMon { get; init; } = "";
+    public bool OnTop { get; init; }            // show over games
 }
 
 // "Design your player": the saved players live in %LOCALAPPDATA%\MMP\players, which updates never touch.
@@ -57,6 +71,7 @@ sealed class Designs
 
     public string? Active { get; set; }                 // id of the player in use; null = the default player
     public List<PlayerSpec> Players { get; set; } = new();
+    public PlacementSpec? DefaultPlacement { get; set; }  // the default player's, like PlayerSpec.Placement
 
     [JsonIgnore] public PlayerSpec? Current => Players.FirstOrDefault(p => p.Id == Active);
 

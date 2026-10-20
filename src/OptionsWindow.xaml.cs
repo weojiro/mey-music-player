@@ -985,6 +985,15 @@ public partial class OptionsWindow : Window
         PreviewKeyUp += OnKeyUp;
         Deactivated += (_, _) => StopCapture();
         Closed += (_, _) => StopCapture();
+        // another player picked: its own switches come back
+        Action placement = () =>
+        {
+            FreeMoveBox.IsChecked = _main.FreeMove;
+            OnTopBox.IsChecked = _main.AlwaysOnTop;
+            ShowCursorKeyState();
+        };
+        _main.PlacementChanged += placement;
+        Closed += (_, _) => _main.PlacementChanged -= placement;
         ShowShortcuts();
         if (_main.ShortcutBusy) ShowShortcutMessage("hotkeyBusy");      // another app took the keys before MMP started
     }

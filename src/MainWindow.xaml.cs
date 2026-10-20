@@ -232,6 +232,7 @@ public partial class MainWindow : Window
         _usePoll = Environment.GetCommandLineArgs().Contains("--poll");
         _showDebug = Environment.GetCommandLineArgs().Contains("--debug");
         LoadSettings();
+        _placementOwner = _designs.Active;          // settings.ini holds the placement of the player in use
         ApplySideLayout();
         _zTimer.Tick += (_, _) => KeepOnTop();
         _cursorTimer.Tick += (_, _) => UpdateClickThrough();
@@ -1231,8 +1232,67 @@ public partial class MainWindow : Window
     // Called by the options window after the player in use or its pictures changed
     internal void DesignChanged()
     {
+        if (_designs.Active != _placementOwner) SwitchPlacement();
         ApplyDesignColors();
         BuildStickers();
+    }
+
+    // ---------- every player comes back where and how it was left ----------
+
+    string? _placementOwner;                // the player whose placement is in use now
+    internal event Action? PlacementChanged;
+
+    PlacementSpec PlacementNow() => new()
+    {
+        Side = _side.ToString(), UserX = _userX, Free = _free,
+        FreeFx = _freeFx, FreeFy = _freeFy, FreeMon = _freeMon, OnTop = _onTop
+    };
+
+    // keeps the placement in use with its player; players.json is only written when it changed
+    void StorePlacement()
+    {
+        var now = PlacementNow();
+        if (_placementOwner == null)
+        {
+            if (_designs.DefaultPlacement == now) return;
+            _designs.DefaultPlacement = now;
+        }
+        else if (_designs.Players.FirstOrDefault(p => p.Id == _placementOwner) is { } p)
+        {
+            if (p.Placement == now) return;
+            p.Placement = now;
+        }
+        else return;                        // that player was deleted
+        _designs.Save();
+    }
+
+    // Another player was picked: the old one keeps the placement it had, the new one gets back its own
+    // (a new player starts with the placement in use)
+    void SwitchPlacement()
+    {
+        StorePlacement();
+        _placementOwner = _designs.Active;
+        var next = _placementOwner == null ? _designs.DefaultPlacement : _designs.Current?.Placement;
+        if (next == null || next == PlacementNow()) { StorePlacement(); return; }
+
+        SetMouseOut(false);
+        SetCursorMode(false);
+        _dragging = false;
+        _side = next.Side == "Right" ? Side.Right : Side.Left;
+        ApplySideLayout();
+        _userX = next.UserX;
+        _free = next.Free;
+        _freeFx = next.FreeFx;
+        _freeFy = next.FreeFy;
+        _freeMon = next.FreeMon ?? "";
+        _onTop = next.OnTop;
+        _pxKey = default;
+        _posVersion++;
+        UpdateTrayChecks();
+        SaveSettings();
+        Update();
+        CoverChanged?.Invoke();             // the options preview puts the cover on the same side
+        PlacementChanged?.Invoke();         // and its switches follow
     }
 
     // Decodes the pictures of the player in use (in the background, so they are ready before the player opens)
@@ -2063,6 +2123,7 @@ public partial class MainWindow : Window
 
     void SaveSettings()
     {
+        StorePlacement();
         try
         {
             Directory.CreateDirectory(AppDataDir);

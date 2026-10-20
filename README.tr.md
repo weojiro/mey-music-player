@@ -45,6 +45,8 @@ sesi, karıştır ve tekrarla. İstediğin yere koymak için kapağı görev çu
 Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 
 - arka plan ve buton renklerini seç ya da kapaktan gelen renkler için *Bukalemun*'da bırak;
+- *Saydamlık* kaydırıcısıyla oynatıcıyı saydam yap (en fazla %90): hepsini birlikte ya da arka planı, butonları ve
+  kapağı ayrı ayrı;
 - PNG, JPG veya GIF resimler ekle, büyük önizlemede sürükle, boyutlandır ve döndür;
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
 - 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
@@ -64,6 +66,9 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Oyun imleci gizlerken (araba sürerken, nişan alırken)
 tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç geri gelince (oyunun menüsünde) oynatıcıyı her zamanki
 gibi kullanıp taşıyabilirsin.
+
+Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serbest hareket* ve *Oyunların üstünde göster*.
+Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
 
 ### Hızlı kontroller
 

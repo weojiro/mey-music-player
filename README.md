@@ -45,6 +45,8 @@ the tray menu. Move the mouse over it to get the buttons back.</td>
 Open **Options** in the tray menu to make the player your own:
 
 - pick the background and button colours, or keep *Chameleon*, the colours from the cover;
+- make the player see-through with the *Transparency* slider (up to 90 %): all together, or the background,
+  the buttons and the cover one by one;
 - add PNG, JPG or GIF images, then drag, resize and turn them on a big preview;
 - drag them up or down in the image list to choose which one is in front. They always stay behind the buttons;
 - save up to 5 players and switch between them. Everything is saved on its own.
@@ -63,6 +65,9 @@ Also in **Options**, under *Placement*:
 
 Click a shortcut in Options to change it. While a game hides the cursor (driving, aiming), clicks go straight to
 the game, not to the player. When the cursor is back (the game's menu), you can use and move the player as usual.
+
+Every saved player keeps its own place: the side, the cover's spot, *Free move* and *Show over games*. Switch to
+another player and it comes back just as you left it.
 
 ### Quick controls
 

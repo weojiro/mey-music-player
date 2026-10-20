@@ -40,7 +40,7 @@ the tray menu. Move the mouse over it to get the buttons back.</td>
 
 ### Design your player
 
-<img src="docs/design-demo.gif" alt="A new player gets a name, colours, a spinning record GIF and a lightning bolt PNG that are moved, resized and turned" width="760">
+<img src="docs/design-demo.gif" alt="A new player gets a name, colours, a spinning record GIF and a lightning bolt PNG that are moved, resized and turned" width="900">
 
 Open **Options** in the tray menu to make the player your own:
 

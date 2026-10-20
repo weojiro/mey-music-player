@@ -40,7 +40,7 @@ sesi, karıştır ve tekrarla. İstediğin yere koymak için kapağı görev çu
 
 ### Oynatıcını tasarla
 
-<img src="docs/design-demo.gif" alt="Yeni bir oynatıcıya ad, renkler, dönen bir plak GIF'i ve bir şimşek PNG'si ekleniyor; resimler taşınıyor, büyütülüyor ve döndürülüyor" width="760">
+<img src="docs/design-demo.gif" alt="Yeni bir oynatıcıya ad, renkler, dönen bir plak GIF'i ve bir şimşek PNG'si ekleniyor; resimler taşınıyor, büyütülüyor ve döndürülüyor" width="900">
 
 Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 

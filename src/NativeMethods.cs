@@ -71,7 +71,7 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern int GetSystemMetrics(int index);
 
-    public const uint GW_HWNDPREV = 3;
+    public const uint GW_HWNDFIRST = 0, GW_HWNDNEXT = 2, GW_HWNDPREV = 3;
     public const int WH_MOUSE_LL = 14;
     public const int WM_MOUSEWHEEL = 0x020A;
 

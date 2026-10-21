@@ -591,7 +591,10 @@ public partial class MainWindow : Window
         // "Center, above" shows with the taskbar; a taskbar that hides itself while the mouse moves up onto the cover
         // (or the player is open) leaves the cover where it is until the mouse goes
         bool keepAbove = _above && _shown && (atBottom || atTop) && (_expanded || _dragging || CursorOnPlayer());
-        bool visible = (taskbarVisible || overGame || keepAbove) && !_hidden && (_onTop || !fullScreen);
+        // the taskbar really in front: on the screen, and over a full-screen window only when it came up over it
+        bool taskbarInFront = taskbarVisible && (!fullScreen || TaskbarOverForeground());
+        bool sinking = _above && _shown && !taskbarVisible && !overGame && !keepAbove && !_hidden;
+        bool visible = (taskbarVisible || overGame || keepAbove || sinking) && !_hidden && (_onTop || !fullScreen);
 
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
@@ -616,14 +619,17 @@ public partial class MainWindow : Window
             int coverY = barTop + (h - size) / 2;
             if (_above)
             {
-                // above the taskbar (below one at the top); over a game, where the taskbar would be, like "Center"
-                // (a game covers the taskbar even where it doesn't hide). Under the mouse it stays put: a hiding
-                // taskbar would pull it away from under the mouse.
-                bool onSpot = overGame;
+                // above the taskbar (below one at the top), going up and down with it; with no taskbar in front (a
+                // full-screen game) where the taskbar would be, like "Center". Under the mouse it stays put: a hiding
+                // taskbar would pull it away from under the mouse. Without the taskbar it sinks off the screen.
                 int gap = (int)Math.Round(AboveGap * VisualTreeHelper.GetDpi(this).DpiScaleX);
-                if (!onSpot)
+                int state = overGame && !taskbarInFront ? YSpot : sinking ? YSink : YAbove;
+                if (state == YAbove)
                     coverY = taskbarVisible && !keepAbove ? (atBottom ? r.Top - gap - size : r.Bottom + gap) : _gapY;
-                coverY = SmoothY(coverY, onSpot);
+                else if (state == YSink)
+                    coverY = atBottom ? _screenH : -size;
+                coverY = SmoothY(coverY, state);
+                if (state == YSink && !_yAnimating) { HideWindow(); UpdateStickerAnim(); Refresh(); return; }
             }
             Place(coverX, coverY, size, fullW);
         }
@@ -1029,17 +1035,19 @@ public partial class MainWindow : Window
         if (_expanded) { UpdateProgressUi(); ReadVolume(); }
     }
 
-    // "Center, above" glides between its two places (above the taskbar, the taskbar's place over a game)
-    bool _ySpot, _yAnimating;
+    // "Center, above" glides between its places: above the taskbar, the taskbar's place over a game, off the screen
+    const int YAbove = 0, YSpot = 1, YSink = 2;
+    int _yState;
+    bool _yAnimating;
     int _yFrom;
     readonly Stopwatch _ySw = new();
 
-    int SmoothY(int target, bool onSpot)
+    int SmoothY(int target, int state)
     {
-        if (!_shown) { _ySpot = onSpot; StopYAnim(); return target; }      // appears right where it belongs
-        if (onSpot != _ySpot)
+        if (!_shown) { _yState = state; StopYAnim(); return target; }      // appears right where it belongs
+        if (state != _yState)
         {
-            _ySpot = onSpot;
+            _yState = state;
             _yFrom = _gapY;
             _ySw.Restart();
             if (!_yAnimating) { _yAnimating = true; CompositionTarget.Rendering += OnYRender; }
@@ -1059,6 +1067,21 @@ public partial class MainWindow : Window
     }
 
     void OnYRender(object? sender, EventArgs e) => Update();
+
+    // Is the taskbar above the foreground window? Under a full-screen game it is behind it; it comes in front when it
+    // slides up over the game.
+    bool TaskbarOverForeground()
+    {
+        IntPtr fg = GetForegroundWindow();
+        IntPtr w = NativeMethods.GetWindow(_hwnd, GW_HWNDFIRST);       // the top of the z-order
+        for (int guard = 0; w != IntPtr.Zero && guard < 1000; guard++)
+        {
+            if (w == _taskbar) return true;
+            if (w == fg) return false;
+            w = NativeMethods.GetWindow(w, GW_HWNDNEXT);
+        }
+        return false;
+    }
 
     bool CursorOnPlayer()
     {

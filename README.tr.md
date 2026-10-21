@@ -77,8 +77,8 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 
 ### Discord profilinde
 
-*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin ve Spotify şarkısının adı
-görünür. Diğer uygulamalar "Bir şeyler çalıyor" olarak görünür.
+*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin, Spotify şarkısının adı ve
+kapağı görünür. Diğer uygulamalar "Bir şeyler çalıyor" olarak görünür.
 
 ### Hızlı kontroller
 
@@ -132,7 +132,8 @@ olduğunu söylemiyor), geri kalan her şey çalışır.
 
 Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
 albümü ve süresi [LRCLIB](https://lrclib.net)'e gider; bulunan sözler `%LOCALAPPDATA%\MMP\lyrics` içinde
-saklanır. Başka bir şey gönderilmez.
+saklanır. *Discord'da göster* açıkken şarkının adı ve sanatçısı, kapağın internet adresini bulmak için Deezer'a ve
+Apple Music'e gider. Başka bir şey gönderilmez.
 </details>
 
 <details>
@@ -174,6 +175,8 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
   şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
 - **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da
   arkadaşlarına gösterir. Şarkı sadece Spotify'dan gösterilir. Kapatmak için tray menüsü → *Discord'da göster*.
+- **Deezer** (`api.deezer.com`) ve **Apple Music** (`itunes.apple.com`): Discord'daki kapak için Spotify şarkısının adı
+  ve sanatçısı (Discord resmi sadece bir internet adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
 
 MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
 

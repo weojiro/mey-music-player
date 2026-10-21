@@ -76,8 +76,8 @@ Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
-With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the name of
-the Spotify song. Other apps show up as "Something is playing".
+With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the name and
+the cover of the Spotify song. Other apps show up as "Something is playing".
 
 ### Quick controls
 
@@ -131,6 +131,7 @@ it is), but everything else works.
 
 It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
 go to [LRCLIB](https://lrclib.net) to find its lyrics; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
+With *Show on Discord* on, its title and artist go to Deezer and Apple Music to find the cover's web address.
 Nothing else.
 </details>
 
@@ -183,6 +184,8 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
   lyrics are on (tray menu → *Lyrics*).
 - **Discord**: what MMP shows on your Discord profile goes to the Discord app on your PC, which shows it to your
   friends. The song is shown only from Spotify. Turn it off in the tray menu → *Show on Discord*.
+- **Deezer** (`api.deezer.com`) and **Apple Music** (`itunes.apple.com`): the Spotify song's title and artist, to find
+  its cover for Discord (Discord shows a picture only from a web address). Only while *Show on Discord* is on.
 
 MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
 

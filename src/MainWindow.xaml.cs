@@ -1062,6 +1062,13 @@ public partial class MainWindow : Window
             _artist = props.Artist ?? "";
             _album = props.AlbumTitle ?? "";
             _source = s.SourceAppUserModelId ?? "";
+            if (IsSpotify)                  // Discord shows the cover too
+            {
+                var thumb = await LoadThumbAsync(props);
+                if (s != _session || seq != _hiddenSeq || _shown) return;
+                _thumb = thumb;
+                FindDiscordCover();
+            }
         }
         catch (Exception ex) { ErrorLog.Write("media hidden", ex); }
     }
@@ -1124,7 +1131,9 @@ public partial class MainWindow : Window
             ReadVolume();
             var cover = await LoadThumbAsync(props);
             if (s != _session || seq != _refreshSeq) return;
+            _thumb = cover;
             ApplyCover(cover);
+            FindDiscordCover();
             _mediaStatus = "ok";
         }
         catch (Exception ex) { _mediaStatus = "media error: " + ex.Message; ErrorLog.Write("media refresh", ex); }
@@ -1311,10 +1320,27 @@ public partial class MainWindow : Window
     // is playing"), and with nothing playing it says "Paused". Sent only when it changed (DiscordPresence compares).
     object? DiscordActivity()
     {
-        if (!_discordOn) return null;
+        if (!_discordOn) return _lastActivity = null;     // turned on again later: no old song while the cover loads
         bool song = IsSpotify && _playing && _title.Trim().Length > 0;
+        if (song)
+        {
+            // a new song waits a moment for its cover (the picture from Windows, then the lookup), so the name and
+            // the cover change together on the profile
+            string key = SongKey();
+            if (key != _waitKey) { _waitKey = key; _waitSince = Environment.TickCount64; }
+            bool pending = _coverSong != key || _coverAsked != 0;
+            if (pending && Environment.TickCount64 - _waitSince < CoverWaitMs && _lastActivity != null) return _lastActivity;
+        }
         static string Fit(string t) { t = t.Trim(); return t.Length < 2 ? t + "  " : t.Length > 128 ? t[..127] + "…" : t; }
-        return new Dictionary<string, object>
+        string? cover = song && _coverSong == SongKey() ? _coverUrl : null;
+        var assets = cover == null
+            ? new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl }
+            : new Dictionary<string, object>
+            {
+                ["large_image"] = cover, ["large_text"] = Fit(_album.Trim().Length > 0 ? _album : _title),
+                ["small_image"] = DiscordLogo, ["small_text"] = "mey music player", ["small_url"] = RepoUrl
+            };
+        return _lastActivity = new Dictionary<string, object>
         {
             ["type"] = 0,                                           // a game: before Spotify on the profile
             ["status_display_type"] = 2,                            // the member list shows "details", not the app name
@@ -1322,9 +1348,51 @@ public partial class MainWindow : Window
             ["state"] = Fit(song ? (_artist.Trim().Length > 0 ? $"{_title} — {_artist}" : _title)
                           : _playing ? Tr("dcSome") : "mey music player"),
             ["timestamps"] = new Dictionary<string, object> { ["start"] = _discordStart },
-            ["assets"] = new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl },
+            ["assets"] = assets,
             ["buttons"] = new[] { new Dictionary<string, object> { ["label"] = Tr("dcButton"), ["url"] = RepoUrl } }
         };
+    }
+
+    // ---------- the song's cover on Discord (DiscordCover finds its web address) ----------
+
+    const int CoverWaitMs = 1500;
+    string _coverSong = "";                 // the song the cover is for
+    string _coverLookup = "";               // that song and the picture Windows gave for it
+    string? _coverUrl;                      // its cover's address; null: the MMP logo
+    long _coverAsked;                       // when the lookup started, 0 when it is done
+    string _waitKey = "";                   // the song DiscordActivity last saw, and since when
+    long _waitSince;
+    object? _lastActivity;
+    BitmapSource? _thumb;                   // the cover Windows gave for the song now (null: none)
+
+    string SongKey() => $"{_title}\n{_artist}\n{_album}";
+
+    // Looks the cover up when the song or its picture changes (Spotify can send the new name before the new
+    // picture), and when Discord is turned on
+    void FindDiscordCover()
+    {
+        if (_discord == null || !_discordOn || !IsSpotify || _title.Trim().Length == 0) return;
+        string song = SongKey();
+        var print = _thumb == null ? null : DiscordCover.PrintOf(_thumb);
+        string lookup = song + "\n" + (print == null ? "" : DiscordCover.Hash(print));
+        if (lookup == _coverLookup) return;
+        _coverLookup = lookup;
+        _coverSong = song;
+        _coverUrl = null;
+        _coverAsked = 0;
+        if (print == null) return;          // no cover from Spotify: the logo
+        if (DiscordCover.TryCached(lookup, DiscordCover.Hash(print), out var known)) { _coverUrl = known; return; }
+        _coverAsked = Environment.TickCount64;
+        _ = Ask(lookup, _title, _artist, print);
+
+        async Task Ask(string lookup, string title, string artist, byte[] print)
+        {
+            string? url = await DiscordCover.FindAsync(lookup, title, artist, print);
+            if (lookup != _coverLookup) return;     // the song or its picture changed meanwhile
+            _coverUrl = url;
+            _coverAsked = 0;
+            _discord?.Set(DiscordActivity());
+        }
     }
 
     // ---------- every player comes back where and how it was left ----------
@@ -1836,6 +1904,7 @@ public partial class MainWindow : Window
                 _discordOn = !_discordOn;
                 SaveSettings();
                 UpdateTrayChecks();
+                FindDiscordCover();
                 _discord?.Set(DiscordActivity());
             };
             _miLyrics.Click += (_, _) =>
@@ -2855,7 +2924,8 @@ public partial class MainWindow : Window
         _shuffleOn = false;
         _repeat = Windows.Media.MediaPlaybackAutoRepeatMode.None;
         _tlPos = _tlStart = _tlEnd = TimeSpan.Zero;
-        _title = _artist = _source = "";
+        _title = _artist = _album = _source = "";
+        _thumb = null;
         TitlePopup.IsOpen = false;
         foreach (var b in new[] { BtnPrev, BtnPlay, BtnNext, BtnMix, BtnLoop })
             b.IsEnabled = false;

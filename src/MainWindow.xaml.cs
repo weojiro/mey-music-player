@@ -388,6 +388,8 @@ public partial class MainWindow : Window
         int dx = (int)at.X - _dragStartCursorX, dy = (int)at.Y - _dragStartCursorY;
         if (!_free) dy = 0;
         if (!_dragMoved && Math.Abs(dx) < 5 && Math.Abs(dy) < 5) return;       // small wobble = still a click
+        // "Center" and "Center, above" stay in the middle: a drag moves nothing (and is no click either)
+        if (_center && !_free) { _dragMoved = true; return; }
         if (!_dragMoved)
         {
             // the card stays open through a click, only a real drag hides it
@@ -414,6 +416,7 @@ public partial class MainWindow : Window
     {
         if (_dragMoved)
         {
+            if (!_dragging) return;         // a drag that moved nothing ("Center")
             DropCover();
             if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title)) _hoverTimer.Start();   // card comes back after the drop
         }

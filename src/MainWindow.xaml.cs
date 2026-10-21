@@ -927,12 +927,15 @@ public partial class MainWindow : Window
 
         var (spans, dump) = t.IsCompletedSuccessfully ? t.Result : (new List<(int L, int R)>(), "scan failed");
 
-        try
+        if (_showDebug)     // only for the debug window: normal use doesn't write a file on every taskbar change
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(DumpPath)!);
-            File.WriteAllText(DumpPath, dump);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(DumpPath)!);
+                File.WriteAllText(DumpPath, dump);
+            }
+            catch { }
         }
-        catch { }
 
         if (spans.Count > 0)
         {

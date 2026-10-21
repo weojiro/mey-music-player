@@ -37,6 +37,9 @@
     <Using Remove="System.Drawing" />
     <!-- tray icon only; the exe and its windows use app.ico (ApplicationIcon) -->
     <EmbeddedResource Include="tray.ico" LogicalName="tray.ico" />
+    <!-- the app keeps the launcher installed next to it up to date (App.RefreshLauncher) -->
+    <EmbeddedResource Include="../launcher/MMP Launcher.bat" LogicalName="MMP Launcher.bat" />
+    <EmbeddedResource Include="../launcher/launcher.ps1" LogicalName="launcher.ps1" />
     <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
   </ItemGroup>
 

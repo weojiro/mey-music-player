@@ -1062,20 +1062,19 @@ public partial class MainWindow : Window
         int seq = ++_hiddenSeq;
         try
         {
-            _playing = s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            var info = s.GetPlaybackInfo();
+            _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            SetMediaType(info);
             var props = await s.TryGetMediaPropertiesAsync();
             if (s != _session || seq != _hiddenSeq || _shown) return;
             _title = props.Title ?? "";
             _artist = props.Artist ?? "";
             _album = props.AlbumTitle ?? "";
             _source = s.SourceAppUserModelId ?? "";
-            if (IsSpotify)                  // Discord shows the cover too
-            {
-                var thumb = await LoadThumbAsync(props);
-                if (s != _session || seq != _hiddenSeq || _shown) return;
-                _thumb = thumb;
-                FindDiscordCover();
-            }
+            var thumb = await LoadThumbAsync(props);     // Discord shows the cover too
+            if (s != _session || seq != _hiddenSeq || _shown) return;
+            _thumb = thumb;
+            FindDiscordCover();
         }
         catch (Exception ex) { ErrorLog.Write("media hidden", ex); }
     }
@@ -1323,14 +1322,18 @@ public partial class MainWindow : Window
     readonly DispatcherTimer _discordTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     // Sent as a game, because Discord puts games before Spotify, with "Listening via MMP" (in the app's language) as the
-    // text under the user's name. The song is shown only from Spotify; what plays elsewhere stays private ("Something
-    // is playing"), and with nothing playing it says "Paused". Sent only when it changed (DiscordPresence compares).
+    // text under the user's name. The song is shown only from music apps and music websites (MusicSources); anything
+    // else stays private ("Something is playing"), and with nothing playing it says "Paused". The picture is the song's
+    // cover, or the app's logo when its cover can't be found. Sent only when it changed (DiscordPresence compares).
     object? DiscordActivity()
     {
         if (!_discordOn) return _lastActivity = null;     // turned on again later: no old song while the cover loads
-        bool song = IsSpotify && _playing && _title.Trim().Length > 0;
+        var app = _playing ? MusicNow() : null;
+        bool song = app != null;
         if (song)
         {
+            FindDiscordCover();             // a website can be recognised a moment after the song started
+            RetryBrowserCover(app!);
             // a new song waits a moment for its cover (the picture from Windows, then the lookup), so the name and
             // the cover change together on the profile
             string key = SongKey();
@@ -1340,11 +1343,13 @@ public partial class MainWindow : Window
         }
         static string Fit(string t) { t = t.Trim(); return t.Length < 2 ? t + "  " : t.Length > 128 ? t[..127] + "…" : t; }
         string? cover = song && _coverSong == SongKey() ? _coverUrl : null;
-        var assets = cover == null
+        string? picture = cover ?? app?.LogoUrl;
+        var assets = picture == null
             ? new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl }
             : new Dictionary<string, object>
             {
-                ["large_image"] = cover, ["large_text"] = Fit(_album.Trim().Length > 0 ? _album : _title),
+                ["large_image"] = picture,
+                ["large_text"] = Fit(cover != null && _album.Trim().Length > 0 ? _album : app!.Name),
                 ["small_image"] = DiscordLogo, ["small_text"] = "mey music player", ["small_url"] = RepoUrl
             };
         return _lastActivity = new Dictionary<string, object>
@@ -1360,46 +1365,80 @@ public partial class MainWindow : Window
         };
     }
 
+    // ---------- where the song plays (MusicSources): asked again until it is recognised, then kept for the song ----------
+
+    string _appKey = "";
+    MusicApp? _app;
+    long _appCheckedAt;
+    bool _appSure;                          // the answer for this song won't change (no more asking)
+    bool _isMusic, _isVideo;                // what Windows says the media is
+
+    MusicApp? MusicNow()
+    {
+        string key = _source + "\n" + SongKey();
+        if (key != _appKey) { _appKey = key; _app = null; _appSure = false; _appCheckedAt = 0; }
+        if (_app == null && !_appSure && Environment.TickCount64 - _appCheckedAt > 1500)
+        {
+            _appCheckedAt = Environment.TickCount64;
+            _app = _isVideo ? null : MusicSources.Identify(_source, _isMusic, _title, out _appSure);
+        }
+        return _app;
+    }
+
     // ---------- the song's cover on Discord (DiscordCover finds its web address) ----------
 
     const int CoverWaitMs = 1500;
     string _coverSong = "";                 // the song the cover is for
     string _coverLookup = "";               // that song and the picture Windows gave for it
-    string? _coverUrl;                      // its cover's address; null: the MMP logo
+    string? _coverUrl;                      // its cover's address; null: the app's logo
     long _coverAsked;                       // when the lookup started, 0 when it is done
     string _waitKey = "";                   // the song DiscordActivity last saw, and since when
     long _waitSince;
     object? _lastActivity;
     BitmapSource? _thumb;                   // the cover Windows gave for the song now (null: none)
+    int _coverRetries;                      // SoundCloud: asked again while its tab may come to the front
+    long _coverRetryAt;
 
     string SongKey() => $"{_title}\n{_artist}\n{_album}";
 
     // Looks the cover up when the song or its picture changes (Spotify can send the new name before the new
-    // picture), and when Discord is turned on
+    // picture), when Discord is turned on and when a website is recognised
     void FindDiscordCover()
     {
-        if (_discord == null || !_discordOn || !IsSpotify || _title.Trim().Length == 0) return;
+        if (_discord == null || !_discordOn || !_playing || MusicNow() is not MusicApp app) return;
         string song = SongKey();
         var print = _thumb == null ? null : DiscordCover.PrintOf(_thumb);
         string lookup = song + "\n" + (print == null ? "" : DiscordCover.Hash(print));
         if (lookup == _coverLookup) return;
+        if (song != _coverSong) _coverRetries = 0;
         _coverLookup = lookup;
         _coverSong = song;
         _coverUrl = null;
         _coverAsked = 0;
-        if (print == null) return;          // no cover from Spotify: the logo
+        if (print == null) return;          // no cover from the app: its logo
         if (DiscordCover.TryCached(lookup, DiscordCover.Hash(print), out var known)) { _coverUrl = known; return; }
         _coverAsked = Environment.TickCount64;
-        _ = Ask(lookup, _title, _artist, print);
+        _coverRetryAt = _coverAsked + 10000;
+        _ = Ask(lookup, _title, _artist, print, app);
 
-        async Task Ask(string lookup, string title, string artist, byte[] print)
+        async Task Ask(string lookup, string title, string artist, byte[] print, MusicApp app)
         {
-            string? url = await DiscordCover.FindAsync(lookup, title, artist, print);
+            string? url = await DiscordCover.FindAsync(lookup, title, artist, print, app);
             if (lookup != _coverLookup) return;     // the song or its picture changed meanwhile
             _coverUrl = url;
             _coverAsked = 0;
             _discord?.Set(DiscordActivity());
         }
+    }
+
+    // SoundCloud's and YouTube Music's addresses can be read only while their tab is in front: a few more tries, 10 s apart
+    void RetryBrowserCover(MusicApp app)
+    {
+        if (app != MusicSources.SoundCloud && app != MusicSources.YouTubeMusic || _coverUrl != null || _coverAsked != 0 || _thumb == null) return;
+        if (_coverRetries >= 6 || Environment.TickCount64 < _coverRetryAt) return;
+        _coverRetries++;
+        _coverLookup = "";
+        FindDiscordCover();
     }
 
     // ---------- every player comes back where and how it was left ----------
@@ -1630,10 +1669,17 @@ public partial class MainWindow : Window
         return Color.FromRgb((byte)Math.Round((r + m) * 255), (byte)Math.Round((g + m) * 255), (byte)Math.Round((b + m) * 255));
     }
 
+    void SetMediaType(GlobalSystemMediaTransportControlsSessionPlaybackInfo info)
+    {
+        _isMusic = info.PlaybackType == Windows.Media.MediaPlaybackType.Music;
+        _isVideo = info.PlaybackType == Windows.Media.MediaPlaybackType.Video;
+    }
+
     void ApplyPlayback(GlobalSystemMediaTransportControlsSessionPlaybackInfo info)
     {
         var c = info.Controls;
         _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+        SetMediaType(info);
         _shuffleOn = info.IsShuffleActive == true;
         _repeat = info.AutoRepeatMode ?? Windows.Media.MediaPlaybackAutoRepeatMode.None;
 
@@ -2959,6 +3005,8 @@ public partial class MainWindow : Window
         sb.AppendLine($"album  : {_album}");
         sb.AppendLine($"time   : {pos.ToString(@"m\:ss\.f")} / {(_tlEnd - _tlStart).ToString(@"m\:ss")}");
         sb.AppendLine($"lyrics : {_lyricsStatus}");
+        sb.AppendLine($"discord: {_discord?.Status} | app: {_app?.Name ?? "-"} | {(_isMusic ? "music" : _isVideo ? "video" : "other")}");
+        sb.AppendLine($"cover  : {_coverUrl ?? (_coverAsked != 0 ? "looking..." : "-")}");
         if (_lyrics != null)
         {
             sb.AppendLine();

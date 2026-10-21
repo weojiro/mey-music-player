@@ -77,8 +77,11 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 
 ### Discord profilinde
 
-*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin, Spotify şarkısının adı ve
-kapağı görünür. Diğer uygulamalar "Bir şeyler çalıyor" olarak görünür.
+*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin, şarkının adı ve kapağı
+görünür. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
+diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
+şarkılarda da. Kapak bulunamazsa uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
+olarak görünür.
 
 ### Hızlı kontroller
 
@@ -132,8 +135,8 @@ olduğunu söylemiyor), geri kalan her şey çalışır.
 
 Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
 albümü ve süresi [LRCLIB](https://lrclib.net)'e gider; bulunan sözler `%LOCALAPPDATA%\MMP\lyrics` içinde
-saklanır. *Discord'da göster* açıkken şarkının adı ve sanatçısı, kapağın internet adresini bulmak için Deezer'a ve
-Apple Music'e gider. Başka bir şey gönderilmez.
+saklanır. *Discord'da göster* açıkken şarkının adı ve sanatçısı, kapağın internet adresini bulmak için Deezer'a,
+Apple Music'e (SoundCloud şarkısında SoundCloud'a da) gider. Başka bir şey gönderilmez.
 </details>
 
 <details>
@@ -174,9 +177,11 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
 - **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı, albümü ve süresi. Sadece Spotify'da ve
   şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
 - **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da
-  arkadaşlarına gösterir. Şarkı sadece Spotify'dan gösterilir. Kapatmak için tray menüsü → *Discord'da göster*.
-- **Deezer** (`api.deezer.com`) ve **Apple Music** (`itunes.apple.com`): Discord'daki kapak için Spotify şarkısının adı
-  ve sanatçısı (Discord resmi sadece bir internet adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
+  arkadaşlarına gösterir. Şarkı sadece müzik uygulamalarından ve müzik sitelerinden gösterilir. Kapatmak için tray
+  menüsü → *Discord'da göster*.
+- **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) ve **SoundCloud** (`soundcloud.com`, sadece
+  SoundCloud şarkısında): Discord'daki kapak için şarkının adı ve sanatçısı (Discord resmi sadece bir internet
+  adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
 
 MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
 

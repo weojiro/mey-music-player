@@ -11,9 +11,9 @@ using System.Windows.Media.Imaging;
 namespace TaskbarPlayerProto;
 
 // The song's cover on Discord. Discord shows a picture only from a web address, and Windows hands MMP the cover as
-// a picture, so the song is looked up on Deezer, then on Apple Music. A cover is used only when it looks the same as
-// the one Spotify shows: a single, its album and a remix often have different covers. No match: the MMP logo.
-// Spotify songs only, while "Show on Discord" is on. Found addresses are kept while MMP runs.
+// a picture, so the song is looked up: on SoundCloud itself for SoundCloud, then on Deezer and Apple Music. A cover is
+// used only when it looks the same as the one the app shows: a single, its album and a remix often have different
+// covers. No match: the app's logo. Only while "Show on Discord" is on. Found addresses are kept while MMP runs.
 static class DiscordCover
 {
     const int Grid = 12;                    // fingerprint: the cover as 12 x 12 average colours
@@ -67,18 +67,89 @@ static class DiscordCover
 
     // The address of a cover that matches print, or null. Never throws; a network error is not remembered,
     // so the song is asked again the next time it plays.
-    public static async Task<string?> FindAsync(string key, string title, string artist, byte[] print)
+    // app: where the song plays. SoundCloud and YouTube Music show their own pictures, found by the song's address in
+    // the browser; nothing found there is not remembered: the address can be read only while the tab is in front, so
+    // it is asked again later.
+    public static async Task<string?> FindAsync(string key, string title, string artist, byte[] print, MusicApp app)
     {
         string picture = Hash(print);
         if (TryCached(key, picture, out var known)) return known;
+        bool soundCloud = app == MusicSources.SoundCloud, youTube = app == MusicSources.YouTubeMusic;
         try
         {
-            string? url = await FromDeezer(title, artist, print).ConfigureAwait(false)
-                       ?? await FromApple(title, artist, print).ConfigureAwait(false);
-            Remember(key, picture, url);
+            string? url = soundCloud ? await FromSoundCloud(title, artist, print).ConfigureAwait(false) : null;
+            url ??= await FromDeezer(title, artist, print).ConfigureAwait(false)
+                 ?? await FromApple(title, artist, print).ConfigureAwait(false);
+            // YouTube Music shows a video's picture for many songs (not the album's)
+            if (url == null && youTube) url = await FromYouTube(title).ConfigureAwait(false);
+            if (url != null || !(soundCloud || youTube)) Remember(key, picture, url);
             return url;
         }
         catch { return null; }
+    }
+
+    // The video's picture. No fingerprint check here: the id comes from the address of the YouTube Music window that
+    // shows the song's name, which is always the song playing (and Windows gets a zoomed crop of the picture).
+    static async Task<string?> FromYouTube(string title)
+    {
+        string? id = await Task.Run(() => MusicSources.YouTubeMusicId(title)).ConfigureAwait(false);
+        if (id == null) return null;
+        foreach (string size in new[] { "hq720", "mqdefault" })        // 1280 x 720 for HD videos, 320 x 180 for all
+        {
+            string url = $"https://i.ytimg.com/vi/{id}/{size}.jpg";
+            using var response = await Http.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode) return url;
+        }
+        return null;
+    }
+
+    // SoundCloud's own cover, by the song's address: first a guess from the names ("soundcloud.com/artist/title"),
+    // then the link in the player bar of the SoundCloud tab. SoundCloud tells a song's cover by its address (oEmbed).
+    static async Task<string?> FromSoundCloud(string title, string artist, byte[] print)
+    {
+        string user = Slug(artist);
+        var guesses = new List<string> { $"https://soundcloud.com/{user}/{Slug(title)}" };
+        int dash = title.LastIndexOf(" - ", StringComparison.Ordinal);
+        if (dash > 0) guesses.Add($"https://soundcloud.com/{user}/{Slug(title[(dash + 3)..])}");
+        foreach (string page in guesses.Distinct().ToList())
+            if (await SoundCloudCover(page, print).ConfigureAwait(false) is string found) return found;
+        // the page open in the SoundCloud tab and the link in its player bar
+        var pages = await Task.Run(() => MusicSources.SongAddresses(title, MusicSources.SoundCloud)).ConfigureAwait(false);
+        foreach (string address in pages)
+        {
+            string page = address.Split('?', '#')[0].TrimEnd('/');
+            if (page.Count(c => c == '/') != 4 || guesses.Contains(page)) continue;     // https://soundcloud.com/user/song
+            guesses.Add(page);
+            if (await SoundCloudCover(page, print).ConfigureAwait(false) is string found) return found;
+        }
+        return null;
+    }
+
+    static async Task<string?> SoundCloudCover(string page, byte[] print)
+    {
+        if (page.EndsWith('/')) return null;            // a name without letters
+        using var response = await Http.GetAsync("https://soundcloud.com/oembed?format=json&url=" + Uri.EscapeDataString(page)).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode) return null;     // 404: no such song
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync().ConfigureAwait(false));
+        string big = Text(doc.RootElement, "thumbnail_url");
+        if (!big.Contains("-t500x500.")) return null;   // the uploader's picture instead of a cover
+        byte[]? theirs;
+        try { theirs = PrintOf(await Http.GetByteArrayAsync(big.Replace("-t500x500.", "-large.")).ConfigureAwait(false)); }
+        catch (HttpRequestException) { return null; }
+        return theirs != null && Difference(print, theirs) < SameBelow ? big : null;
+    }
+
+    // "Gece Yarısı (Remix)" -> "gece-yarisi-remix", like SoundCloud's addresses
+    static string Slug(string s)
+    {
+        var sb = new StringBuilder(s.Length);
+        foreach (char c in s.Normalize(NormalizationForm.FormD))
+        {
+            if (char.IsLetterOrDigit(c) && c < 128) sb.Append(char.ToLowerInvariant(c));
+            else if (c == 'ı') sb.Append('i');
+            else if (char.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark && sb.Length > 0 && sb[^1] != '-') sb.Append('-');
+        }
+        return sb.ToString().Trim('-');
     }
 
     static async Task<string?> FromDeezer(string title, string artist, byte[] print)
@@ -154,13 +225,7 @@ static class DiscordCover
         return Plain(title[..cut]);
     }
 
-    static string Plain(string s)
-    {
-        var sb = new StringBuilder(s.Length);
-        foreach (char c in s.Normalize(NormalizationForm.FormD))
-            if (char.IsLetterOrDigit(c)) sb.Append(char.ToLowerInvariant(c));
-        return sb.ToString().Replace('ı', 'i');
-    }
+    static string Plain(string s) => MusicSources.Plain(s);
 
     static string FirstArtist(string artist) => artist.Split(',', '&', ';')[0].Trim();
 

@@ -76,8 +76,11 @@ Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
-With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the name and
-the cover of the Spotify song. Other apps show up as "Something is playing".
+With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the song's
+name and cover. That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
+and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
+on SoundCloud. When the cover can't be found, the app's logo shows. Videos and other websites stay private: they show
+up as "Something is playing".
 
 ### Quick controls
 
@@ -131,7 +134,8 @@ it is), but everything else works.
 
 It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
 go to [LRCLIB](https://lrclib.net) to find its lyrics; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
-With *Show on Discord* on, its title and artist go to Deezer and Apple Music to find the cover's web address.
+With *Show on Discord* on, the song's title and artist go to Deezer and Apple Music (and SoundCloud for a
+SoundCloud song) to find the cover's web address.
 Nothing else.
 </details>
 
@@ -183,9 +187,10 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
 - **LRCLIB** (`lrclib.net`): the song's title, artist, album and length, to find lyrics. Only for Spotify, and only while
   lyrics are on (tray menu → *Lyrics*).
 - **Discord**: what MMP shows on your Discord profile goes to the Discord app on your PC, which shows it to your
-  friends. The song is shown only from Spotify. Turn it off in the tray menu → *Show on Discord*.
-- **Deezer** (`api.deezer.com`) and **Apple Music** (`itunes.apple.com`): the Spotify song's title and artist, to find
-  its cover for Discord (Discord shows a picture only from a web address). Only while *Show on Discord* is on.
+  friends. The song is shown only from music apps and music websites. Turn it off in the tray menu → *Show on Discord*.
+- **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) and **SoundCloud** (`soundcloud.com`, only for a
+  SoundCloud song): the song's title and artist, to find its cover for Discord (Discord shows a picture only from a web
+  address). Only while *Show on Discord* is on.
 
 MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
 

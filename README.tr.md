@@ -161,6 +161,19 @@ Tray menüsünde *Dil*'den seç.
 
 Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
 
+## Gizlilik
+
+MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir şey göndermez:
+
+- **GitHub** (`api.github.com`, `github.com`): açılışta yeni sürüm var mı diye bakar, güncellemeyi seçersen indirir.
+- **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı ve süresi. Sadece Spotify'da ve
+  şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
+- **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da
+  arkadaşlarına gösterir. Şarkı sadece Spotify'dan gösterilir. Kapatmak için tray menüsü → *Discord'da göster*.
+- **Microsoft** (`aka.ms`, `dotnet.microsoft.com`): bilgisayarında yoksa launcher .NET 8 runtime'ı indirir.
+
+MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
+
 ## Lisans
 
 [MIT](LICENSE) © weojiro

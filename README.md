@@ -169,6 +169,21 @@ docs/       the pictures in this README
 `tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 8 SDK if needed).
 `tools/debug.bat` starts the installed app with a debug window.
 
+## Privacy
+
+MMP has no account, no tracking and no analytics. It only connects to these, and sends nothing else:
+
+- **GitHub** (`api.github.com`, `github.com`): checks for a new version at startup and downloads it when you choose
+  to update.
+- **LRCLIB** (`lrclib.net`): the song's title, artist and length, to find lyrics. Only for Spotify, and only while
+  lyrics are on (tray menu → *Lyrics*).
+- **Discord**: what MMP shows on your Discord profile goes to the Discord app on your PC, which shows it to your
+  friends. The song is shown only from Spotify. Turn it off in the tray menu → *Show on Discord*.
+- **Microsoft** (`aka.ms`, `dotnet.microsoft.com`): the launcher downloads the .NET 8 runtime if your PC doesn't
+  have it.
+
+MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
+
 ## License
 
 [MIT](LICENSE) © weojiro

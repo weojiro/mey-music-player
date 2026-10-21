@@ -94,8 +94,9 @@ up as "Something is playing".
 | Ctrl + Alt | hides / shows the player |
 | Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Show over games*) |
 
-Right-click the tray icon for Options, Hide player, Lyrics, Start with Windows, the side of the taskbar, the
-language, Restart and Close.
+Right-click the tray icon for Options, Hide player, Lyrics, Start with Windows, the cover's place (right, center or
+left), the language, Restart and Close. *Center* puts the cover in the middle of the taskbar when the taskbar icons are
+on the left, and the open player stays in the middle too.
 
 ## Install
 

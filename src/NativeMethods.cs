@@ -111,6 +111,9 @@ internal static class NativeMethods
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr GetModuleHandle(string? moduleName);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern uint RegisterWindowMessage(string message);
+
     // Windows 11 only: rounded corners and border colour of a window
     public const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;     // dark title bar (Windows 10 2004+ and 11)
     public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;

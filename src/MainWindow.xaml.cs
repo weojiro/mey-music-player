@@ -92,6 +92,8 @@ public partial class MainWindow : Window
     // --- position / drag / settings ---
     Side _side = Side.Left;
     int? _userX;                          // where the user dropped the cover (screen x); null = default spot
+    volatile int _startLeft = -1;         // the Start button's left edge (taskbar scan); -1 = not seen yet
+    bool _center;                         // "Center": the cover in the middle of the taskbar (its side is Left)
     string _lang = "en";
     bool _firstRun;                       // no settings.ini yet
     bool _dragging, _dragMoved;
@@ -141,7 +143,7 @@ public partial class MainWindow : Window
 
     // --- tray menu ---
     readonly Forms.ToolStripMenuItem _miStartup = new(), _miOptions = new(), _miPosition = new(),
-        _miRight = new(), _miLeft = new(), _miLanguage = new(), _miRestart = new(), _miClose = new(), _miLyrics = new(),
+        _miRight = new(), _miLeft = new(), _miCenter = new(), _miLanguage = new(), _miRestart = new(), _miClose = new(), _miLyrics = new(),
         _miHide = new(), _miDiscord = new();
     readonly Forms.ToolStripMenuItem _miVersion = new() { Enabled = false };   // greyed out, only shows the version
     readonly List<(string code, Forms.ToolStripMenuItem item)> _langItems = new();
@@ -421,6 +423,34 @@ public partial class MainWindow : Window
         _ = delta > 0 ? _session?.TrySkipNextAsync() : _session?.TrySkipPreviousAsync();
     }
 
+    // Finds the taskbar and follows it: its moves (a hidden taskbar sliding in) and its icons. Again after Explorer
+    // restarted (a crash, an update, a changed taskbar setting): the old taskbar is gone and a new one comes.
+    void AttachTaskbar()
+    {
+        if (_locHook != IntPtr.Zero) { UnhookWinEvent(_locHook); _locHook = IntPtr.Zero; }
+        _taskbar = FindWindow("Shell_TrayWnd", null);
+        _fullHeight = 0;
+        _needMeasure = true;
+        _pxKey = default;
+        if (_taskbar == IntPtr.Zero) return;
+        GetWindowThreadProcessId(_taskbar, out uint pid);
+        _locHook = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
+            IntPtr.Zero, _proc!, pid, 0, WINEVENT_OUTOFCONTEXT);
+        var taskbar = _taskbar;
+        Task.Run(() =>
+        {
+            try
+            {
+                var root = AutomationElement.FromHandle(taskbar);
+                Automation.AddStructureChangedEventHandler(root, TreeScope.Subtree, _structHandler);
+            }
+            catch { }
+        });
+    }
+
+    // sent to every window when Explorer has made a new taskbar
+    static readonly int WM_TASKBARCREATED = (int)RegisterWindowMessage("TaskbarCreated");
+
     void OnSourceInitialized(object? sender, EventArgs e)
     {
         _hwnd = new WindowInteropHelper(this).Handle;
@@ -428,28 +458,11 @@ public partial class MainWindow : Window
         int ex = GetWindowLong(_hwnd, GWL_EXSTYLE);
         SetWindowLong(_hwnd, GWL_EXSTYLE, ex | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
 
-        _taskbar = FindWindow("Shell_TrayWnd", null);
         _proc = OnWinEvent;
-
-        if (_taskbar != IntPtr.Zero)
-        {
-            GetWindowThreadProcessId(_taskbar, out uint pid);
-            _locHook = SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE, EVENT_OBJECT_LOCATIONCHANGE,
-                IntPtr.Zero, _proc, pid, 0, WINEVENT_OUTOFCONTEXT);
-            _fgHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
-                IntPtr.Zero, _proc, 0, 0, WINEVENT_OUTOFCONTEXT);
-
-            _structHandler = (_, _) => Dispatcher.BeginInvoke(new Action(OnStructureChanged));
-            Task.Run(() =>
-            {
-                try
-                {
-                    var root = AutomationElement.FromHandle(_taskbar);
-                    Automation.AddStructureChangedEventHandler(root, TreeScope.Subtree, _structHandler);
-                }
-                catch { }
-            });
-        }
+        _fgHook = SetWinEventHook(EVENT_SYSTEM_FOREGROUND, EVENT_SYSTEM_FOREGROUND,
+            IntPtr.Zero, _proc, 0, 0, WINEVENT_OUTOFCONTEXT);
+        _structHandler = (_, _) => Dispatcher.BeginInvoke(new Action(OnStructureChanged));
+        AttachTaskbar();
 
         if (_usePoll)
         {
@@ -760,7 +773,8 @@ public partial class MainWindow : Window
     {
         var key = (size, taskbarLeft, _spansVersion, _posVersion);
         if (key == _pxKey) return _pxVal;
-        int wanted = _userX ?? (_side == Side.Left ? taskbarLeft - 100000 : _screenW + 100000);
+        int wanted = _userX ?? (_center ? _last.Left + (_last.Right - _last.Left - size) / 2
+                              : _side == Side.Left ? taskbarLeft - 100000 : _screenW + 100000);
         int need = _side == Side.Right ? FullWidth(size) : size;
         int x = SnapToFree(wanted, size, taskbarLeft, need);
         if (x < 0) x = _side == Side.Left ? taskbarLeft + MarginPx : TrayLeft - MarginPx - size;
@@ -771,7 +785,9 @@ public partial class MainWindow : Window
 
     int OpenX(int restX, int size, int taskbarLeft)
     {
-        int x = SnapToFree(restX, size, taskbarLeft, FullWidth(size));
+        // "Center": the whole open player sits in the middle of the taskbar, not only the cover
+        int wanted = _center && _userX == null ? _last.Left + (_last.Right - _last.Left - FullWidth(size)) / 2 : restX;
+        int x = SnapToFree(wanted, size, taskbarLeft, FullWidth(size));
         return x >= 0 ? x : restX;
     }
 
@@ -814,7 +830,11 @@ public partial class MainWindow : Window
             return;
         }
         int x = SnapToFree(_dragX, _coverSize, _last.Left, _coverSize);
-        if (x >= 0) _userX = x;
+        if (x >= 0)
+        {
+            _userX = x;
+            _center = false;        // a spot of the user's own: no longer the middle
+        }
         _posVersion++;
         SaveSettings();
         Update();
@@ -915,6 +935,7 @@ public partial class MainWindow : Window
                     if (rc.IsEmpty || rc.Width <= 0) continue;
                     int l = (int)rc.Left, rr = (int)Math.Ceiling(rc.Right);
                     bool counted = IsItemType(info.ControlType) && rr <= trayLeft;
+                    if (info.AutomationId == "StartButton") _startLeft = l;
                     sb.AppendLine($"{(counted ? "*" : " ")} {info.ControlType.ProgrammaticName,-24} L{l} R{rr} id='{info.AutomationId}'");
                     if (counted) spans.Add((l, rr));
                 }
@@ -964,8 +985,8 @@ public partial class MainWindow : Window
 
     void ToggleExpand()
     {
-        // closing: the cover stays where opening pushed it
-        if (_expanded && _gapX != _restX)
+        // closing: the cover stays where opening pushed it ("Center" goes back to the middle)
+        if (_expanded && _gapX != _restX && !_center)
         {
             if (_free) SetFreeSpot(_gapX, _gapY, _coverSize);
             else { _userX = _gapX; _posVersion++; }
@@ -1448,7 +1469,7 @@ public partial class MainWindow : Window
 
     PlacementSpec PlacementNow() => new()
     {
-        Side = _side.ToString(), UserX = _userX, Free = _free,
+        Side = _center ? "Center" : _side.ToString(), UserX = _userX, Free = _free,
         FreeFx = _freeFx, FreeFy = _freeFy, FreeMon = _freeMon, OnTop = _onTop, Size = _size
     };
 
@@ -1483,6 +1504,7 @@ public partial class MainWindow : Window
         SetCursorMode(false);
         _dragging = false;
         _side = next.Side == "Right" ? Side.Right : Side.Left;
+        _center = next.Side == "Center";
         ApplySideLayout();
         _userX = next.UserX;
         _free = next.Free;
@@ -1971,10 +1993,13 @@ public partial class MainWindow : Window
             };
             _miRight.Click += (_, _) => SetSide(Side.Right);
             _miLeft.Click += (_, _) => SetSide(Side.Left);
-            _miPosition.DropDownItems.AddRange(new Forms.ToolStripItem[] { _miRight, _miLeft });
+            _miCenter.Click += (_, _) => { if (!IconsCentered()) SetSide(Side.Left, center: true); };
+            _miPosition.DropDownItems.AddRange(new Forms.ToolStripItem[] { _miRight, _miCenter, _miLeft });
+            _miPosition.DropDown.ShowItemToolTips = true;       // "Center" tells which Windows setting it needs
             // picking a side keeps the menu open: the cover moves at once and the user can try the other side
             bool keepOpen = false;
-            _miPosition.DropDown.ItemClicked += (_, e) => keepOpen = e.ClickedItem == _miRight || e.ClickedItem == _miLeft;
+            _miPosition.DropDown.ItemClicked += (_, e) =>
+                keepOpen = e.ClickedItem == _miRight || e.ClickedItem == _miLeft || e.ClickedItem == _miCenter;
             _miPosition.DropDown.Closing += (_, e) =>
             {
                 if (keepOpen && e.CloseReason == Forms.ToolStripDropDownCloseReason.ItemClicked) e.Cancel = true;
@@ -2051,7 +2076,7 @@ public partial class MainWindow : Window
         "chameleon", "customColor", "images", "addImage", "imageHint", "editHint", "remove",
         "reset", "resetAsk", "deleteAsk", "cancel", "maxImages", "maxPlayers", "badImage", "layersHint", "imageN",
         "hide", "placement", "freeMove", "freeMoveHint", "onTop", "onTopHint", "hotkey", "hotkeyHint",
-        "cursorKey", "hotkeyPress", "hotkeyBusy", "hotkeyBad", "hotkeySame", "needsOnTop", "transparency", "clearAll", "cover", "discord", "dcLine1", "dcLine2", "dcVia", "dcButton", "dcSome", "dcPaused", "playerSize", "sizeReset", "needsFreeMove", "dcIdle"
+        "cursorKey", "hotkeyPress", "hotkeyBusy", "hotkeyBad", "hotkeySame", "needsOnTop", "transparency", "clearAll", "cover", "discord", "dcLine1", "dcLine2", "dcVia", "dcButton", "dcSome", "dcPaused", "playerSize", "sizeReset", "needsFreeMove", "dcIdle", "center", "centerHint"
     };
 
     static readonly Dictionary<string, string[]> Strings = new()
@@ -2064,7 +2089,7 @@ public partial class MainWindow : Window
             "Drag an image to move it, its corner to resize it and the dot above it to rotate it. Mouse wheel: size. Delete: remove.", "Remove", "Reset", "Reset this player to the default colours and remove its images?", "Delete this player?", "Cancel",
             "A player can have up to 10 images.", "You can save up to 5 players.", "This file can't be used. Choose a PNG, JPG or GIF up to 25 MB.",
             "Drag to reorder. The top image is in front.", "Image {0}",
-            "Hide player", "Placement", "Free move", "Drag the cover anywhere on the screen. When it opens, the player always stays on the screen.", "Show over games", "Also stays visible over full-screen games and apps. While a game hides the cursor, clicks go to the game. If it doesn't show in a game, choose borderless or windowed full screen in the game's settings.", "Show / hide", "Click a shortcut to change it. While a game hides the cursor, clicks go to the game. The second shortcut takes the mouse out of a full-screen game, so you can use the player or anything else; press it again or click the game to go back. It works when Show over games is on.", "Mouse out of the game", "Press a shortcut...", "Another app uses this shortcut. Choose another one.", "Use Ctrl, Alt or Win with a key, two of Ctrl, Alt and Shift on their own, or an F key.", "The other shortcut already uses these keys.", "Turn on Show over games to use this.", "Transparency", "All together", "Cover", "Show on Discord", "Music, right on the Windows taskbar", "Free and open source", "Listening via MMP", "Get mey music player", "Something is playing", "Paused", "Player size", "Back to default", "Works when Free move is on.", "Nothing is playing right now" },
+            "Hide player", "Placement", "Free move", "Drag the cover anywhere on the screen. When it opens, the player always stays on the screen.", "Show over games", "Also stays visible over full-screen games and apps. While a game hides the cursor, clicks go to the game. If it doesn't show in a game, choose borderless or windowed full screen in the game's settings.", "Show / hide", "Click a shortcut to change it. While a game hides the cursor, clicks go to the game. The second shortcut takes the mouse out of a full-screen game, so you can use the player or anything else; press it again or click the game to go back. It works when Show over games is on.", "Mouse out of the game", "Press a shortcut...", "Another app uses this shortcut. Choose another one.", "Use Ctrl, Alt or Win with a key, two of Ctrl, Alt and Shift on their own, or an F key.", "The other shortcut already uses these keys.", "Turn on Show over games to use this.", "Transparency", "All together", "Cover", "Show on Discord", "Music, right on the Windows taskbar", "Free and open source", "Listening via MMP", "Get mey music player", "Something is playing", "Paused", "Player size", "Back to default", "Works when Free move is on.", "Nothing is playing right now", "Center", "Needs the taskbar icons on the left: Settings → Personalization → Taskbar → Taskbar behaviors → Taskbar alignment: Left" },
         ["tr"] = new[] { "Windows ile başlat", "Ayarlar", "Konum", "Sağ", "Sol", "Dil", "Kapat", "Güncelleme mevcut",
             "{0} sürümü yayınlandı. Şu an {1} sürümünü kullanıyorsun.", "Yenilikler", "Güncelle", "Sonra", "Güncelleme indiriliyor...",
             "Güncelleme yüklenemedi. Daha sonra tekrar dene.", "Yeniden başlat", "Şarkı sözleri", "Oynatıcını tasarla",
@@ -2076,7 +2101,7 @@ public partial class MainWindow : Window
             "Bu oynatıcı silinsin mi?", "Vazgeç", "Bir oynatıcıda en fazla 10 resim olabilir.", "En fazla 5 oynatıcı kaydedebilirsin.",
             "Bu dosya kullanılamıyor. En fazla 25 MB'lık bir PNG, JPG veya GIF seç.",
             "Sıralamak için sürükle. En üstteki resim en öndedir.", "Resim {0}",
-            "Oynatıcıyı gizle", "Yerleşim", "Serbest hareket", "Kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır.", "Oyunların üstünde göster", "Tam ekran oyunların ve uygulamaların üstünde de görünür. Oyun imleci gizlerken tıklamalar oyuna gider. Bir oyunda görünmüyorsa oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç.", "Göster / gizle", "Değiştirmek için bir kısayola tıkla. Oyun imleci gizlerken tıklamalar oyuna gider. İkinci kısayol fareyi tam ekran oyundan alır; oynatıcıyı ya da başka bir şeyi kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. Oyunların üstünde göster açıkken çalışır.", "Fareyi oyundan al", "Bir kısayola bas...", "Bu kısayolu başka bir uygulama kullanıyor. Başka bir tane seç.", "Bir tuşla birlikte Ctrl, Alt veya Win, tek başına Ctrl, Alt ve Shift'ten ikisi ya da bir F tuşu kullan.", "Bu tuşları diğer kısayol kullanıyor.", "Bunun için Oyunların üstünde göster'i aç.", "Saydamlık", "Hepsi birlikte", "Kapak", "Discord'da göster", "Müzik, tam Windows görev çubuğunda", "Ücretsiz ve açık kaynak", "MMP üzerinden dinliyor", "mey music player'ı indir", "Bir şeyler çalıyor", "Duraklatıldı", "Oynatıcı boyutu", "Varsayılana döndür", "Serbest hareket açıkken çalışır.", "Şu an bir şey çalmıyor" },
+            "Oynatıcıyı gizle", "Yerleşim", "Serbest hareket", "Kapağı ekranda istediğin yere sürükle. Açıldığında oynatıcı hep ekranın içinde kalır.", "Oyunların üstünde göster", "Tam ekran oyunların ve uygulamaların üstünde de görünür. Oyun imleci gizlerken tıklamalar oyuna gider. Bir oyunda görünmüyorsa oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç.", "Göster / gizle", "Değiştirmek için bir kısayola tıkla. Oyun imleci gizlerken tıklamalar oyuna gider. İkinci kısayol fareyi tam ekran oyundan alır; oynatıcıyı ya da başka bir şeyi kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. Oyunların üstünde göster açıkken çalışır.", "Fareyi oyundan al", "Bir kısayola bas...", "Bu kısayolu başka bir uygulama kullanıyor. Başka bir tane seç.", "Bir tuşla birlikte Ctrl, Alt veya Win, tek başına Ctrl, Alt ve Shift'ten ikisi ya da bir F tuşu kullan.", "Bu tuşları diğer kısayol kullanıyor.", "Bunun için Oyunların üstünde göster'i aç.", "Saydamlık", "Hepsi birlikte", "Kapak", "Discord'da göster", "Müzik, tam Windows görev çubuğunda", "Ücretsiz ve açık kaynak", "MMP üzerinden dinliyor", "mey music player'ı indir", "Bir şeyler çalıyor", "Duraklatıldı", "Oynatıcı boyutu", "Varsayılana döndür", "Serbest hareket açıkken çalışır.", "Şu an bir şey çalmıyor", "Orta", "Görev çubuğu simgeleri solda olmalı: Ayarlar → Kişiselleştirme → Görev çubuğu → Görev çubuğu davranışları → Görev çubuğu hizalaması: Sol" },
         ["es"] = new[] { "Iniciar con Windows", "Opciones", "Posición", "Derecha", "Izquierda", "Idioma", "Cerrar", "Actualización disponible",
             "La versión {0} está disponible. Estás usando la versión {1}.", "Novedades", "Actualizar", "Más tarde", "Descargando actualización...",
             "No se pudo instalar la actualización. Inténtalo de nuevo más tarde.", "Reiniciar", "Letras", "Diseña tu reproductor",
@@ -2088,7 +2113,7 @@ public partial class MainWindow : Window
             "¿Eliminar este reproductor?", "Cancelar", "Un reproductor puede tener hasta 10 imágenes.", "Puedes guardar hasta 5 reproductores.",
             "Este archivo no se puede usar. Elige un PNG, JPG o GIF de hasta 25 MB.",
             "Arrastra para ordenar. La imagen de arriba queda delante.", "Imagen {0}",
-            "Ocultar reproductor", "Ubicación", "Movimiento libre", "Arrastra la portada a cualquier parte de la pantalla. Al abrirse, el reproductor siempre queda dentro de la pantalla.", "Mostrar sobre los juegos", "También se ve encima de juegos y aplicaciones a pantalla completa. Mientras un juego oculta el cursor, los clics van al juego. Si no aparece en un juego, elige pantalla completa sin bordes o en ventana en los ajustes del juego.", "Mostrar / ocultar", "Haz clic en un atajo para cambiarlo. Mientras un juego oculta el cursor, los clics van al juego. El segundo atajo saca el ratón de un juego a pantalla completa para que puedas usar el reproductor o cualquier otra cosa; vuelve a pulsarlo o haz clic en el juego para volver. Funciona con Mostrar sobre los juegos activado.", "Sacar el ratón del juego", "Pulsa un atajo...", "Otra aplicación usa este atajo. Elige otro.", "Usa Ctrl, Alt o Win con una tecla, dos de Ctrl, Alt y Mayús solas, o una tecla F.", "El otro atajo ya usa estas teclas.", "Activa Mostrar sobre los juegos para usarlo.", "Transparencia", "Todo junto", "Portada", "Mostrar en Discord", "Música en la barra de tareas de Windows", "Gratis y de código abierto", "Escuchando con MMP", "Descargar mey music player", "Algo está sonando", "En pausa", "Tamaño del reproductor", "Volver al predeterminado", "Funciona con Movimiento libre activado.", "Ahora mismo no suena nada" },
+            "Ocultar reproductor", "Ubicación", "Movimiento libre", "Arrastra la portada a cualquier parte de la pantalla. Al abrirse, el reproductor siempre queda dentro de la pantalla.", "Mostrar sobre los juegos", "También se ve encima de juegos y aplicaciones a pantalla completa. Mientras un juego oculta el cursor, los clics van al juego. Si no aparece en un juego, elige pantalla completa sin bordes o en ventana en los ajustes del juego.", "Mostrar / ocultar", "Haz clic en un atajo para cambiarlo. Mientras un juego oculta el cursor, los clics van al juego. El segundo atajo saca el ratón de un juego a pantalla completa para que puedas usar el reproductor o cualquier otra cosa; vuelve a pulsarlo o haz clic en el juego para volver. Funciona con Mostrar sobre los juegos activado.", "Sacar el ratón del juego", "Pulsa un atajo...", "Otra aplicación usa este atajo. Elige otro.", "Usa Ctrl, Alt o Win con una tecla, dos de Ctrl, Alt y Mayús solas, o una tecla F.", "El otro atajo ya usa estas teclas.", "Activa Mostrar sobre los juegos para usarlo.", "Transparencia", "Todo junto", "Portada", "Mostrar en Discord", "Música en la barra de tareas de Windows", "Gratis y de código abierto", "Escuchando con MMP", "Descargar mey music player", "Algo está sonando", "En pausa", "Tamaño del reproductor", "Volver al predeterminado", "Funciona con Movimiento libre activado.", "Ahora mismo no suena nada", "Centro", "Necesita los iconos de la barra de tareas a la izquierda: Configuración → Personalización → Barra de tareas → Comportamientos de la barra de tareas → Alineación de la barra de tareas: Izquierda" },
         ["fr"] = new[] { "Démarrer avec Windows", "Options", "Position", "Droite", "Gauche", "Langue", "Fermer", "Mise à jour disponible",
             "La version {0} est disponible. Vous utilisez la version {1}.", "Nouveautés", "Mettre à jour", "Plus tard",
             "Téléchargement de la mise à jour...", "La mise à jour n'a pas pu être installée. Veuillez réessayer plus tard.", "Redémarrer", "Paroles",
@@ -2101,7 +2126,7 @@ public partial class MainWindow : Window
             "Un lecteur peut avoir jusqu'à 10 images.", "Vous pouvez enregistrer jusqu'à 5 lecteurs.",
             "Ce fichier ne peut pas être utilisé. Choisissez un PNG, JPG ou GIF de 25 Mo maximum.",
             "Faites glisser pour réordonner. L'image du haut est devant.", "Image {0}",
-            "Masquer le lecteur", "Emplacement", "Déplacement libre", "Faites glisser la pochette n'importe où sur l'écran. À l'ouverture, le lecteur reste toujours à l'écran.", "Afficher par-dessus les jeux", "Reste aussi visible par-dessus les jeux et applications en plein écran. Quand un jeu masque le curseur, les clics vont au jeu. S'il n'apparaît pas dans un jeu, choisissez le plein écran sans bordure ou fenêtré dans les paramètres du jeu.", "Afficher / masquer", "Cliquez sur un raccourci pour le changer. Quand un jeu masque le curseur, les clics vont au jeu. Le second raccourci sort la souris d'un jeu en plein écran pour utiliser le lecteur ou autre chose ; appuyez de nouveau ou cliquez sur le jeu pour y revenir. Fonctionne quand Afficher par-dessus les jeux est activé.", "Sortir la souris du jeu", "Appuyez sur un raccourci...", "Une autre application utilise ce raccourci. Choisissez-en un autre.", "Utilisez Ctrl, Alt ou Win avec une touche, deux touches parmi Ctrl, Alt et Maj seules, ou une touche F.", "L'autre raccourci utilise déjà ces touches.", "Activez Afficher par-dessus les jeux pour l'utiliser.", "Transparence", "Tout ensemble", "Pochette", "Afficher sur Discord", "La musique dans la barre des tâches", "Gratuit et open source", "Écoute avec MMP", "Obtenir mey music player", "Quelque chose joue", "En pause", "Taille du lecteur", "Revenir par défaut", "Fonctionne avec Déplacement libre activé.", "Rien ne joue pour le moment" },
+            "Masquer le lecteur", "Emplacement", "Déplacement libre", "Faites glisser la pochette n'importe où sur l'écran. À l'ouverture, le lecteur reste toujours à l'écran.", "Afficher par-dessus les jeux", "Reste aussi visible par-dessus les jeux et applications en plein écran. Quand un jeu masque le curseur, les clics vont au jeu. S'il n'apparaît pas dans un jeu, choisissez le plein écran sans bordure ou fenêtré dans les paramètres du jeu.", "Afficher / masquer", "Cliquez sur un raccourci pour le changer. Quand un jeu masque le curseur, les clics vont au jeu. Le second raccourci sort la souris d'un jeu en plein écran pour utiliser le lecteur ou autre chose ; appuyez de nouveau ou cliquez sur le jeu pour y revenir. Fonctionne quand Afficher par-dessus les jeux est activé.", "Sortir la souris du jeu", "Appuyez sur un raccourci...", "Une autre application utilise ce raccourci. Choisissez-en un autre.", "Utilisez Ctrl, Alt ou Win avec une touche, deux touches parmi Ctrl, Alt et Maj seules, ou une touche F.", "L'autre raccourci utilise déjà ces touches.", "Activez Afficher par-dessus les jeux pour l'utiliser.", "Transparence", "Tout ensemble", "Pochette", "Afficher sur Discord", "La musique dans la barre des tâches", "Gratuit et open source", "Écoute avec MMP", "Obtenir mey music player", "Quelque chose joue", "En pause", "Taille du lecteur", "Revenir par défaut", "Fonctionne avec Déplacement libre activé.", "Rien ne joue pour le moment", "Centre", "Nécessite les icônes de la barre des tâches à gauche : Paramètres → Personnalisation → Barre des tâches → Comportements de la barre des tâches → Alignement de la barre des tâches : Gauche" },
         ["de"] = new[] { "Mit Windows starten", "Optionen", "Position", "Rechts", "Links", "Sprache", "Schließen", "Update verfügbar",
             "Version {0} ist verfügbar. Sie verwenden Version {1}.", "Was ist neu", "Aktualisieren", "Später", "Update wird heruntergeladen...",
             "Das Update konnte nicht installiert werden. Bitte versuchen Sie es später noch einmal.", "Neu starten", "Songtexte",
@@ -2113,7 +2138,7 @@ public partial class MainWindow : Window
             "Diesen Player löschen?", "Abbrechen", "Ein Player kann bis zu 10 Bilder haben.", "Sie können bis zu 5 Player speichern.",
             "Diese Datei kann nicht verwendet werden. Wählen Sie ein PNG, JPG oder GIF bis 25 MB.",
             "Zum Sortieren ziehen. Das oberste Bild liegt vorne.", "Bild {0}",
-            "Player ausblenden", "Platzierung", "Frei bewegen", "Ziehen Sie das Cover an eine beliebige Stelle auf dem Bildschirm. Beim Öffnen bleibt der Player immer auf dem Bildschirm.", "Über Spielen anzeigen", "Bleibt auch über Vollbildspielen und -apps sichtbar. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Wenn er in einem Spiel nicht erscheint, wählen Sie in den Spieleinstellungen randloses Vollbild oder den Fenstermodus.", "Ein- / ausblenden", "Klicken Sie auf ein Tastenkürzel, um es zu ändern. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Das zweite Kürzel holt die Maus aus einem Vollbildspiel, damit Sie den Player oder etwas anderes bedienen können; drücken Sie es erneut oder klicken Sie ins Spiel, um zurückzukehren. Funktioniert, wenn Über Spielen anzeigen an ist.", "Maus aus dem Spiel holen", "Tastenkürzel drücken...", "Eine andere App verwendet dieses Tastenkürzel. Wählen Sie ein anderes.", "Verwenden Sie Strg, Alt oder Win mit einer Taste, zwei von Strg, Alt und Umschalt allein oder eine F-Taste.", "Das andere Tastenkürzel verwendet diese Tasten bereits.", "Schalten Sie Über Spielen anzeigen ein, um dies zu nutzen.", "Transparenz", "Alles zusammen", "Cover", "Auf Discord zeigen", "Musik direkt in der Windows-Taskleiste", "Kostenlos und Open Source", "Hört über MMP", "mey music player holen", "Etwas läuft", "Pausiert", "Player-Größe", "Auf Standard zurücksetzen", "Funktioniert, wenn Frei bewegen aktiviert ist.", "Gerade läuft nichts" },
+            "Player ausblenden", "Platzierung", "Frei bewegen", "Ziehen Sie das Cover an eine beliebige Stelle auf dem Bildschirm. Beim Öffnen bleibt der Player immer auf dem Bildschirm.", "Über Spielen anzeigen", "Bleibt auch über Vollbildspielen und -apps sichtbar. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Wenn er in einem Spiel nicht erscheint, wählen Sie in den Spieleinstellungen randloses Vollbild oder den Fenstermodus.", "Ein- / ausblenden", "Klicken Sie auf ein Tastenkürzel, um es zu ändern. Solange ein Spiel den Mauszeiger ausblendet, gehen Klicks an das Spiel. Das zweite Kürzel holt die Maus aus einem Vollbildspiel, damit Sie den Player oder etwas anderes bedienen können; drücken Sie es erneut oder klicken Sie ins Spiel, um zurückzukehren. Funktioniert, wenn Über Spielen anzeigen an ist.", "Maus aus dem Spiel holen", "Tastenkürzel drücken...", "Eine andere App verwendet dieses Tastenkürzel. Wählen Sie ein anderes.", "Verwenden Sie Strg, Alt oder Win mit einer Taste, zwei von Strg, Alt und Umschalt allein oder eine F-Taste.", "Das andere Tastenkürzel verwendet diese Tasten bereits.", "Schalten Sie Über Spielen anzeigen ein, um dies zu nutzen.", "Transparenz", "Alles zusammen", "Cover", "Auf Discord zeigen", "Musik direkt in der Windows-Taskleiste", "Kostenlos und Open Source", "Hört über MMP", "mey music player holen", "Etwas läuft", "Pausiert", "Player-Größe", "Auf Standard zurücksetzen", "Funktioniert, wenn Frei bewegen aktiviert ist.", "Gerade läuft nichts", "Mitte", "Die Taskleistensymbole müssen links sein: Einstellungen → Personalisierung → Taskleiste → Verhalten der Taskleiste → Taskleistenausrichtung: Links" },
         ["pt"] = new[] { "Iniciar com o Windows", "Opções", "Posição", "Direita", "Esquerda", "Idioma", "Fechar", "Atualização disponível",
             "A versão {0} está disponível. Você está usando a versão {1}.", "O que há de novo", "Atualizar", "Mais tarde", "Baixando atualização...",
             "A atualização não pôde ser instalada. Tente novamente mais tarde.", "Reiniciar", "Letras", "Crie seu player",
@@ -2125,7 +2150,7 @@ public partial class MainWindow : Window
             "Excluir este player?", "Cancelar", "Um player pode ter até 10 imagens.", "Você pode salvar até 5 players.",
             "Este arquivo não pode ser usado. Escolha um PNG, JPG ou GIF de até 25 MB.",
             "Arraste para reordenar. A imagem de cima fica na frente.", "Imagem {0}",
-            "Ocultar player", "Posicionamento", "Movimento livre", "Arraste a capa para qualquer lugar da tela. Ao abrir, o player sempre fica dentro da tela.", "Mostrar sobre os jogos", "Também fica visível sobre jogos e apps em tela cheia. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. Se não aparecer em um jogo, escolha tela cheia sem bordas ou em janela nas configurações do jogo.", "Mostrar / ocultar", "Clique em um atalho para mudá-lo. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. O segundo atalho tira o mouse de um jogo em tela cheia para você usar o player ou qualquer outra coisa; pressione de novo ou clique no jogo para voltar. Funciona com Mostrar sobre os jogos ativado.", "Tirar o mouse do jogo", "Pressione um atalho...", "Outro app usa este atalho. Escolha outro.", "Use Ctrl, Alt ou Win com uma tecla, duas entre Ctrl, Alt e Shift sozinhas, ou uma tecla F.", "O outro atalho já usa estas teclas.", "Ative Mostrar sobre os jogos para usar isto.", "Transparência", "Tudo junto", "Capa", "Mostrar no Discord", "Música na barra de tarefas do Windows", "Grátis e de código aberto", "Ouvindo pelo MMP", "Baixar mey music player", "Algo está tocando", "Pausado", "Tamanho do player", "Voltar ao padrão", "Funciona com Movimento livre ativado.", "Nada tocando agora" },
+            "Ocultar player", "Posicionamento", "Movimento livre", "Arraste a capa para qualquer lugar da tela. Ao abrir, o player sempre fica dentro da tela.", "Mostrar sobre os jogos", "Também fica visível sobre jogos e apps em tela cheia. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. Se não aparecer em um jogo, escolha tela cheia sem bordas ou em janela nas configurações do jogo.", "Mostrar / ocultar", "Clique em um atalho para mudá-lo. Enquanto um jogo esconde o cursor, os cliques vão para o jogo. O segundo atalho tira o mouse de um jogo em tela cheia para você usar o player ou qualquer outra coisa; pressione de novo ou clique no jogo para voltar. Funciona com Mostrar sobre os jogos ativado.", "Tirar o mouse do jogo", "Pressione um atalho...", "Outro app usa este atalho. Escolha outro.", "Use Ctrl, Alt ou Win com uma tecla, duas entre Ctrl, Alt e Shift sozinhas, ou uma tecla F.", "O outro atalho já usa estas teclas.", "Ative Mostrar sobre os jogos para usar isto.", "Transparência", "Tudo junto", "Capa", "Mostrar no Discord", "Música na barra de tarefas do Windows", "Grátis e de código aberto", "Ouvindo pelo MMP", "Baixar mey music player", "Algo está tocando", "Pausado", "Tamanho do player", "Voltar ao padrão", "Funciona com Movimento livre ativado.", "Nada tocando agora", "Centro", "Requer os ícones da barra de tarefas à esquerda: Configurações → Personalização → Barra de Tarefas → Comportamentos da barra de tarefas → Alinhamento da barra de tarefas: Esquerda" },
         ["ru"] = new[] { "Запуск с Windows", "Параметры", "Положение", "Справа", "Слева", "Язык", "Закрыть", "Доступно обновление",
             "Доступна версия {0}. Вы используете версию {1}.", "Что нового", "Обновить", "Позже", "Загрузка обновления...",
             "Не удалось установить обновление. Повторите попытку позже.", "Перезапустить", "Тексты песен", "Оформите свой плеер",
@@ -2137,20 +2162,20 @@ public partial class MainWindow : Window
             "Удалить этот плеер?", "Отмена", "У плеера может быть до 10 изображений.", "Можно сохранить до 5 плееров.",
             "Этот файл нельзя использовать. Выберите PNG, JPG или GIF до 25 МБ.",
             "Перетащите, чтобы изменить порядок. Верхнее изображение — впереди.", "Изображение {0}",
-            "Скрыть плеер", "Размещение", "Свободное перемещение", "Перетащите обложку в любое место экрана. При открытии плеер всегда остаётся на экране.", "Показывать поверх игр", "Виден и поверх полноэкранных игр и приложений. Пока игра скрывает курсор, щелчки идут в игру. Если в игре его не видно, выберите в настройках игры полноэкранный режим без рамки или оконный режим.", "Показать / скрыть", "Нажмите на сочетание, чтобы изменить его. Пока игра скрывает курсор, щелчки идут в игру. Второе сочетание выводит мышь из полноэкранной игры, чтобы пользоваться плеером или чем-то ещё; нажмите его снова или щёлкните по игре, чтобы вернуться. Работает, когда включено «Показывать поверх игр».", "Вывести мышь из игры", "Нажмите сочетание клавиш...", "Это сочетание использует другое приложение. Выберите другое.", "Используйте Ctrl, Alt или Win с клавишей, две из Ctrl, Alt и Shift без других клавиш или клавишу F.", "Эти клавиши уже заняты другим сочетанием.", "Включите «Показывать поверх игр», чтобы пользоваться этим.", "Прозрачность", "Всё вместе", "Обложка", "Показывать в Discord", "Музыка прямо на панели задач Windows", "Бесплатно и с открытым кодом", "Слушает через MMP", "Скачать mey music player", "Что-то играет", "На паузе", "Размер плеера", "По умолчанию", "Работает при включённом «Свободном перемещении».", "Сейчас ничего не играет" },
+            "Скрыть плеер", "Размещение", "Свободное перемещение", "Перетащите обложку в любое место экрана. При открытии плеер всегда остаётся на экране.", "Показывать поверх игр", "Виден и поверх полноэкранных игр и приложений. Пока игра скрывает курсор, щелчки идут в игру. Если в игре его не видно, выберите в настройках игры полноэкранный режим без рамки или оконный режим.", "Показать / скрыть", "Нажмите на сочетание, чтобы изменить его. Пока игра скрывает курсор, щелчки идут в игру. Второе сочетание выводит мышь из полноэкранной игры, чтобы пользоваться плеером или чем-то ещё; нажмите его снова или щёлкните по игре, чтобы вернуться. Работает, когда включено «Показывать поверх игр».", "Вывести мышь из игры", "Нажмите сочетание клавиш...", "Это сочетание использует другое приложение. Выберите другое.", "Используйте Ctrl, Alt или Win с клавишей, две из Ctrl, Alt и Shift без других клавиш или клавишу F.", "Эти клавиши уже заняты другим сочетанием.", "Включите «Показывать поверх игр», чтобы пользоваться этим.", "Прозрачность", "Всё вместе", "Обложка", "Показывать в Discord", "Музыка прямо на панели задач Windows", "Бесплатно и с открытым кодом", "Слушает через MMP", "Скачать mey music player", "Что-то играет", "На паузе", "Размер плеера", "По умолчанию", "Работает при включённом «Свободном перемещении».", "Сейчас ничего не играет", "По центру", "Нужны значки панели задач слева: Параметры → Персонализация → Панель задач → Поведение панели задач → Выравнивание панели задач: по левому краю" },
         ["zh"] = new[] { "随 Windows 启动", "选项", "位置", "右", "左", "语言", "关闭", "有可用更新", "版本 {0} 可用。您当前使用的是版本 {1}。", "更新内容", "更新", "稍后", "正在下载更新...", "无法安装更新。请稍后重试。",
             "重新启动", "歌词", "设计你的播放器", "更改会自动保存。", "播放器", "默认", "自定义播放器", "新建播放器", "名称", "删除播放器", "背景", "按钮", "变色龙：取自封面的颜色", "自定义颜色", "图片", "添加图片",
             "PNG、JPG 或 GIF，最大 25 MB。每个播放器最多 10 张图片。", "拖动图片可移动，拖动角可调整大小，拖动上方的圆点可旋转。鼠标滚轮：大小。Delete：移除。", "移除", "重置",
             "将此播放器重置为默认颜色并移除其图片？", "删除此播放器？", "取消", "每个播放器最多可以有 10 张图片。", "最多可以保存 5 个播放器。", "无法使用此文件。请选择不超过 25 MB 的 PNG、JPG 或 GIF。",
             "拖动以排序。最上面的图片在最前面。", "图片 {0}",
-            "隐藏播放器", "位置", "自由移动", "将封面拖到屏幕上的任意位置。打开时，播放器始终保持在屏幕内。", "在游戏上方显示", "在全屏游戏和应用上方也保持可见。游戏隐藏光标时，点击会传给游戏。如果在游戏中不显示，请在游戏设置中选择无边框或窗口化全屏。", "显示 / 隐藏", "点击快捷键即可更改。游戏隐藏光标时，点击会传给游戏。第二个快捷键让鼠标离开全屏游戏，以便使用播放器或其他内容；再按一次或点击游戏即可返回。开启“在游戏上方显示”时可用。", "让鼠标离开游戏", "请按下快捷键...", "其他应用正在使用此快捷键。请选择其他快捷键。", "请使用 Ctrl、Alt 或 Win 加一个键、单独使用 Ctrl、Alt、Shift 中的两个，或使用 F 键。", "另一个快捷键已在使用这些键。", "请开启“在游戏上方显示”以使用此功能。", "透明度", "全部一起", "封面", "在 Discord 上显示", "音乐，就在 Windows 任务栏上", "免费且开源", "正在通过 MMP 收听", "获取 mey music player", "正在播放", "已暂停", "播放器大小", "恢复默认", "需开启自由移动。", "当前没有播放内容" },
+            "隐藏播放器", "位置", "自由移动", "将封面拖到屏幕上的任意位置。打开时，播放器始终保持在屏幕内。", "在游戏上方显示", "在全屏游戏和应用上方也保持可见。游戏隐藏光标时，点击会传给游戏。如果在游戏中不显示，请在游戏设置中选择无边框或窗口化全屏。", "显示 / 隐藏", "点击快捷键即可更改。游戏隐藏光标时，点击会传给游戏。第二个快捷键让鼠标离开全屏游戏，以便使用播放器或其他内容；再按一次或点击游戏即可返回。开启“在游戏上方显示”时可用。", "让鼠标离开游戏", "请按下快捷键...", "其他应用正在使用此快捷键。请选择其他快捷键。", "请使用 Ctrl、Alt 或 Win 加一个键、单独使用 Ctrl、Alt、Shift 中的两个，或使用 F 键。", "另一个快捷键已在使用这些键。", "请开启“在游戏上方显示”以使用此功能。", "透明度", "全部一起", "封面", "在 Discord 上显示", "音乐，就在 Windows 任务栏上", "免费且开源", "正在通过 MMP 收听", "获取 mey music player", "正在播放", "已暂停", "播放器大小", "恢复默认", "需开启自由移动。", "当前没有播放内容", "居中", "需要任务栏图标靠左：设置 → 个性化 → 任务栏 → 任务栏行为 → 任务栏对齐方式：左" },
         ["ja"] = new[] { "Windowsと同時に起動", "オプション", "位置", "右", "左", "言語", "閉じる", "利用可能なアップデート", "バージョン {0} が利用可能です。現在バージョン {1} を使用しています。", "新機能", "アップデート", "後で",
             "アップデートをダウンロード中...", "アップデートをインストールできませんでした。後で再度お試しください。", "再起動", "歌詞", "プレーヤーをデザイン", "変更は自動的に保存されます。", "プレーヤー", "デフォルト", "カスタムプレーヤー",
             "新しいプレーヤー", "名前", "プレーヤーを削除", "背景", "ボタン", "カメレオン：カバーの色", "カスタムカラー", "画像", "画像を追加", "PNG、JPG、GIF（25 MB まで）。1 つのプレーヤーに画像は 10 枚まで。",
             "画像をドラッグして移動、角でサイズ変更、上の点で回転します。マウスホイール：サイズ。Delete：取り除く。", "取り除く", "リセット", "このプレーヤーをデフォルトの色に戻し、画像を取り除きますか？",
             "このプレーヤーを削除しますか？", "キャンセル", "1 つのプレーヤーに画像は 10 枚までです。", "プレーヤーは 5 つまで保存できます。", "このファイルは使用できません。25 MB までの PNG、JPG、GIF を選んでください。",
             "ドラッグで並べ替え。いちばん上の画像が最前面です。", "画像 {0}",
-            "プレーヤーを隠す", "配置", "自由に移動", "カバーを画面上の好きな場所にドラッグします。開いたときもプレーヤーは常に画面内に収まります。", "ゲームの上に表示", "全画面のゲームやアプリの上にも表示されます。ゲームがカーソルを隠している間はクリックがゲームに届きます。ゲームで表示されない場合は、ゲームの設定でボーダーレスまたはウィンドウ化された全画面を選んでください。", "表示 / 非表示", "ショートカットをクリックすると変更できます。ゲームがカーソルを隠している間はクリックがゲームに届きます。2 つ目のショートカットは全画面ゲームからマウスを出し、プレーヤーやほかのものを使えるようにします。戻るにはもう一度押すか、ゲームをクリックしてください。「ゲームの上に表示」がオンのときに使えます。", "マウスをゲームから出す", "ショートカットを押してください...", "このショートカットは別のアプリが使用しています。別のものを選んでください。", "Ctrl、Alt、Win とキーの組み合わせ、Ctrl・Alt・Shift のうち 2 つだけ、または F キーを使ってください。", "もう一方のショートカットがこのキーを使っています。", "使うには「ゲームの上に表示」をオンにしてください。", "透明度", "すべてまとめて", "カバー", "Discord に表示", "音楽を Windows のタスクバーに", "無料でオープンソース", "MMP で再生中", "mey music player を入手", "何かを再生中", "一時停止中", "プレーヤーのサイズ", "デフォルトに戻す", "「自由に移動」がオンのときに使えます。", "今は何も再生していません" },
+            "プレーヤーを隠す", "配置", "自由に移動", "カバーを画面上の好きな場所にドラッグします。開いたときもプレーヤーは常に画面内に収まります。", "ゲームの上に表示", "全画面のゲームやアプリの上にも表示されます。ゲームがカーソルを隠している間はクリックがゲームに届きます。ゲームで表示されない場合は、ゲームの設定でボーダーレスまたはウィンドウ化された全画面を選んでください。", "表示 / 非表示", "ショートカットをクリックすると変更できます。ゲームがカーソルを隠している間はクリックがゲームに届きます。2 つ目のショートカットは全画面ゲームからマウスを出し、プレーヤーやほかのものを使えるようにします。戻るにはもう一度押すか、ゲームをクリックしてください。「ゲームの上に表示」がオンのときに使えます。", "マウスをゲームから出す", "ショートカットを押してください...", "このショートカットは別のアプリが使用しています。別のものを選んでください。", "Ctrl、Alt、Win とキーの組み合わせ、Ctrl・Alt・Shift のうち 2 つだけ、または F キーを使ってください。", "もう一方のショートカットがこのキーを使っています。", "使うには「ゲームの上に表示」をオンにしてください。", "透明度", "すべてまとめて", "カバー", "Discord に表示", "音楽を Windows のタスクバーに", "無料でオープンソース", "MMP で再生中", "mey music player を入手", "何かを再生中", "一時停止中", "プレーヤーのサイズ", "デフォルトに戻す", "「自由に移動」がオンのときに使えます。", "今は何も再生していません", "中央", "タスク バーのアイコンを左揃えにする必要があります: 設定 → 個人用設定 → タスク バー → タスク バーの動作 → タスク バーの配置: 左揃え" },
         ["ar"] = new[] { "البدء مع ويندوز", "الخيارات", "الموضع", "يمين", "يسار", "اللغة", "إغلاق", "تحديث متاح", "الإصدار {0} متاح. أنت تستخدم الإصدار {1}.",
             "ما الجديد", "تحديث", "لاحقاً", "جاري تنزيل التحديث...", "تعذر تثبيت التحديث. يرجى المحاولة مرة أخرى لاحقاً.", "إعادة التشغيل",
             "كلمات الأغاني", "صمّم مشغّلك", "يتم حفظ التغييرات تلقائياً.", "المشغّلات", "الافتراضي", "مشغّل مخصّص", "مشغّل جديد", "الاسم",
@@ -2160,7 +2185,7 @@ public partial class MainWindow : Window
             "يمكن أن يحتوي المشغّل على 10 صور كحد أقصى.", "يمكنك حفظ 5 مشغّلات كحد أقصى.",
             "لا يمكن استخدام هذا الملف. اختر صورة PNG أو JPG أو GIF حتى 25 ميغابايت.",
             "اسحب لإعادة الترتيب. الصورة العليا تكون في المقدمة.", "صورة {0}",
-            "إخفاء المشغّل", "الموقع", "تحريك حر", "اسحب الغلاف إلى أي مكان على الشاشة. عند الفتح يبقى المشغّل دائماً داخل الشاشة.", "العرض فوق الألعاب", "يبقى ظاهراً أيضاً فوق الألعاب والتطبيقات بملء الشاشة. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. إذا لم يظهر في لعبة، فاختر ملء الشاشة بلا حدود أو في نافذة من إعدادات اللعبة.", "إظهار / إخفاء", "انقر على اختصار لتغييره. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. الاختصار الثاني يُخرج الماوس من لعبة بملء الشاشة لتستخدم المشغّل أو أي شيء آخر؛ اضغطه مرة أخرى أو انقر على اللعبة للعودة. يعمل عند تفعيل «العرض فوق الألعاب».", "إخراج الماوس من اللعبة", "اضغط اختصاراً...", "يستخدم تطبيق آخر هذا الاختصار. اختر اختصاراً آخر.", "استخدم Ctrl أو Alt أو Win مع مفتاح، أو اثنين من Ctrl وAlt وShift وحدهما، أو مفتاح F.", "الاختصار الآخر يستخدم هذه المفاتيح بالفعل.", "فعّل «العرض فوق الألعاب» لاستخدام هذا.", "الشفافية", "الكل معاً", "الغلاف", "العرض على Discord", "الموسيقى على شريط مهام ويندوز", "مجاني ومفتوح المصدر", "يستمع عبر MMP", "احصل على mey music player", "شيء ما قيد التشغيل", "متوقف مؤقتًا", "حجم المشغل", "العودة إلى الافتراضي", "يعمل عند تشغيل «تحريك حر».", "لا يتم تشغيل شيء الآن" },
+            "إخفاء المشغّل", "الموقع", "تحريك حر", "اسحب الغلاف إلى أي مكان على الشاشة. عند الفتح يبقى المشغّل دائماً داخل الشاشة.", "العرض فوق الألعاب", "يبقى ظاهراً أيضاً فوق الألعاب والتطبيقات بملء الشاشة. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. إذا لم يظهر في لعبة، فاختر ملء الشاشة بلا حدود أو في نافذة من إعدادات اللعبة.", "إظهار / إخفاء", "انقر على اختصار لتغييره. عندما تُخفي اللعبة المؤشر تذهب النقرات إلى اللعبة. الاختصار الثاني يُخرج الماوس من لعبة بملء الشاشة لتستخدم المشغّل أو أي شيء آخر؛ اضغطه مرة أخرى أو انقر على اللعبة للعودة. يعمل عند تفعيل «العرض فوق الألعاب».", "إخراج الماوس من اللعبة", "اضغط اختصاراً...", "يستخدم تطبيق آخر هذا الاختصار. اختر اختصاراً آخر.", "استخدم Ctrl أو Alt أو Win مع مفتاح، أو اثنين من Ctrl وAlt وShift وحدهما، أو مفتاح F.", "الاختصار الآخر يستخدم هذه المفاتيح بالفعل.", "فعّل «العرض فوق الألعاب» لاستخدام هذا.", "الشفافية", "الكل معاً", "الغلاف", "العرض على Discord", "الموسيقى على شريط مهام ويندوز", "مجاني ومفتوح المصدر", "يستمع عبر MMP", "احصل على mey music player", "شيء ما قيد التشغيل", "متوقف مؤقتًا", "حجم المشغل", "العودة إلى الافتراضي", "يعمل عند تشغيل «تحريك حر».", "لا يتم تشغيل شيء الآن", "الوسط", "يتطلب أن تكون أيقونات شريط المهام على اليسار: الإعدادات ← التخصيص ← شريط المهام ← سلوكيات شريط المهام ← محاذاة شريط المهام: يسار" },
         ["hi"] = new[] { "Windows के साथ शुरू करें", "विकल्प", "स्थिति", "दाएं", "बाएं", "भाषा", "बंद करें", "अपडेट उपलब्ध है",
             "संस्करण {0} उपलब्ध है। आप संस्करण {1} का उपयोग कर रहे हैं।", "नया क्या है", "अपडेट करें", "बाद में", "अपडेट डाउनलोड किया जा रहा है...",
             "अपडेट इंस्टॉल नहीं किया जा सका। कृपया बाद में पुनः प्रयास करें।", "पुनः आरंभ करें", "गीत के बोल", "अपना प्लेयर डिज़ाइन करें",
@@ -2171,7 +2196,7 @@ public partial class MainWindow : Window
             "इस प्लेयर को हटाएं?", "रद्द करें", "एक प्लेयर में अधिकतम 10 चित्र हो सकते हैं।", "आप अधिकतम 5 प्लेयर सहेज सकते हैं।",
             "यह फ़ाइल इस्तेमाल नहीं की जा सकती। 25 MB तक का PNG, JPG या GIF चुनें।",
             "क्रम बदलने के लिए खींचें। सबसे ऊपर वाला चित्र सबसे आगे होता है।", "चित्र {0}",
-            "प्लेयर छिपाएं", "जगह", "मुक्त रूप से हिलाएं", "कवर को स्क्रीन पर कहीं भी खींचें। खुलने पर प्लेयर हमेशा स्क्रीन के अंदर रहता है।", "गेम के ऊपर दिखाएं", "फ़ुल-स्क्रीन गेम और ऐप्स के ऊपर भी दिखता रहता है। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। अगर किसी गेम में न दिखे, तो गेम की सेटिंग में बॉर्डरलेस या विंडो वाली फ़ुल स्क्रीन चुनें।", "दिखाएं / छिपाएं", "बदलने के लिए किसी शॉर्टकट पर क्लिक करें। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। दूसरा शॉर्टकट माउस को फ़ुल-स्क्रीन गेम से बाहर लाता है, ताकि आप प्लेयर या कुछ और इस्तेमाल कर सकें; वापस जाने के लिए इसे फिर से दबाएं या गेम पर क्लिक करें। यह तब काम करता है जब गेम के ऊपर दिखाएं चालू हो।", "माउस को गेम से बाहर लाएं", "कोई शॉर्टकट दबाएं...", "यह शॉर्टकट कोई दूसरा ऐप इस्तेमाल कर रहा है। कोई दूसरा चुनें।", "किसी कुंजी के साथ Ctrl, Alt या Win, अकेले Ctrl, Alt और Shift में से दो, या कोई F कुंजी इस्तेमाल करें।", "दूसरा शॉर्टकट पहले से ये कुंजियां इस्तेमाल कर रहा है।", "इसे इस्तेमाल करने के लिए गेम के ऊपर दिखाएं चालू करें।", "पारदर्शिता", "सब एक साथ", "कवर", "Discord पर दिखाएं", "संगीत, सीधे Windows टास्कबार पर", "मुफ़्त और ओपन सोर्स", "MMP पर सुन रहे हैं", "mey music player पाएं", "कुछ चल रहा है", "रुका हुआ", "प्लेयर का आकार", "डिफ़ॉल्ट पर लौटें", "मुक्त रूप से हिलाएं चालू होने पर काम करता है।", "अभी कुछ नहीं चल रहा है" }
+            "प्लेयर छिपाएं", "जगह", "मुक्त रूप से हिलाएं", "कवर को स्क्रीन पर कहीं भी खींचें। खुलने पर प्लेयर हमेशा स्क्रीन के अंदर रहता है।", "गेम के ऊपर दिखाएं", "फ़ुल-स्क्रीन गेम और ऐप्स के ऊपर भी दिखता रहता है। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। अगर किसी गेम में न दिखे, तो गेम की सेटिंग में बॉर्डरलेस या विंडो वाली फ़ुल स्क्रीन चुनें।", "दिखाएं / छिपाएं", "बदलने के लिए किसी शॉर्टकट पर क्लिक करें। जब गेम कर्सर छिपाता है, तो क्लिक गेम में जाते हैं। दूसरा शॉर्टकट माउस को फ़ुल-स्क्रीन गेम से बाहर लाता है, ताकि आप प्लेयर या कुछ और इस्तेमाल कर सकें; वापस जाने के लिए इसे फिर से दबाएं या गेम पर क्लिक करें। यह तब काम करता है जब गेम के ऊपर दिखाएं चालू हो।", "माउस को गेम से बाहर लाएं", "कोई शॉर्टकट दबाएं...", "यह शॉर्टकट कोई दूसरा ऐप इस्तेमाल कर रहा है। कोई दूसरा चुनें।", "किसी कुंजी के साथ Ctrl, Alt या Win, अकेले Ctrl, Alt और Shift में से दो, या कोई F कुंजी इस्तेमाल करें।", "दूसरा शॉर्टकट पहले से ये कुंजियां इस्तेमाल कर रहा है।", "इसे इस्तेमाल करने के लिए गेम के ऊपर दिखाएं चालू करें।", "पारदर्शिता", "सब एक साथ", "कवर", "Discord पर दिखाएं", "संगीत, सीधे Windows टास्कबार पर", "मुफ़्त और ओपन सोर्स", "MMP पर सुन रहे हैं", "mey music player पाएं", "कुछ चल रहा है", "रुका हुआ", "प्लेयर का आकार", "डिफ़ॉल्ट पर लौटें", "मुक्त रूप से हिलाएं चालू होने पर काम करता है।", "अभी कुछ नहीं चल रहा है", "बीच में", "टास्कबार आइकन बाईं ओर होने चाहिए: सेटिंग्स → वैयक्तिकरण → टास्कबार → टास्कबार व्यवहार → टास्कबार संरेखण: बाएँ" }
     };
 
     string Tr(string key) =>
@@ -2187,6 +2212,7 @@ public partial class MainWindow : Window
         _miPosition.Text = Tr("position");
         _miRight.Text = Tr("right");
         _miLeft.Text = Tr("left");
+        _miCenter.Text = Tr("center");
         _miLanguage.Text = Tr("language");
         _miRestart.Text = Tr("restart");
         _miClose.Text = Tr("close");
@@ -2201,13 +2227,35 @@ public partial class MainWindow : Window
         _miDiscord.Checked = _discordOn;
         _miDiscord.Visible = DiscordAppId.Length > 0;     // hidden until the Discord application id is set
         _miRight.Checked = _side == Side.Right;
-        _miLeft.Checked = _side == Side.Left;
+        _miLeft.Checked = _side == Side.Left && !_center;
+        _miCenter.Checked = _center;
+        // with the taskbar icons in the middle (Windows 11's default) there is no room there: dimmed, and the
+        // tooltip names the Windows setting. Read each time the menu opens: the setting can change any time.
+        bool centered = IconsCentered();
+        _miCenter.Tag = centered ? TrayMenu.Dimmed : null;
+        _miCenter.ToolTipText = centered ? Tr("centerHint") : "";
         foreach (var (code, item) in _langItems) item.Checked = code == _lang;
     }
 
-    void SetSide(Side side)
+    // Windows 11 puts the taskbar icons in the middle unless "Taskbar alignment" is "Left"; Windows 10 keeps them left.
+    // The Start button's place tells it best (newer Windows 11 builds don't keep the setting where it used to be).
+    bool IconsCentered()
+    {
+        if (Environment.OSVersion.Version.Build < 22000) return false;
+        int width = _last.Right - _last.Left;
+        if (_startLeft >= 0 && width > 0) return _startLeft - _last.Left > width / 4;
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced");
+            return key?.GetValue("TaskbarAl") is not int al || al != 0;
+        }
+        catch { return true; }
+    }
+
+    void SetSide(Side side, bool center = false)
     {
         _side = side;
+        _center = center;
         _userX = null;
         _posVersion++;
         ApplySideLayout();
@@ -2362,7 +2410,7 @@ public partial class MainWindow : Window
                 int i = line.IndexOf('=');
                 if (i < 0) continue;
                 string k = line[..i].Trim(), v = line[(i + 1)..].Trim();
-                if (k == "side") _side = v == "Right" ? Side.Right : Side.Left;
+                if (k == "side") { _side = v == "Right" ? Side.Right : Side.Left; _center = v == "Center"; }
                 else if (k == "lang" && Strings.ContainsKey(v)) _lang = v;
                 else if (k == "userX" && int.TryParse(v, out int x)) _userX = x;
                 else if (k == "lyrics") _lyricsOn = v == "1";
@@ -2398,7 +2446,7 @@ public partial class MainWindow : Window
             Directory.CreateDirectory(AppDataDir);
             File.WriteAllLines(SettingsPath, new[]
             {
-                $"side={_side}",
+                $"side={(_center ? "Center" : _side.ToString())}",
                 $"lang={_lang}",
                 $"userX={(_userX is int x ? x.ToString() : "")}",
                 $"lyrics={(_lyricsOn ? 1 : 0)}",
@@ -2581,6 +2629,11 @@ public partial class MainWindow : Window
         }
         // a game switched the screen to another resolution (or back): free move puts the cover in its corner again
         else if (msg == WM_DISPLAYCHANGE) OnDisplayChanged(null, EventArgs.Empty);
+        else if (msg == WM_TASKBARCREATED && msg != 0)
+        {
+            AttachTaskbar();
+            Update();
+        }
         return IntPtr.Zero;
     }
 

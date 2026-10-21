@@ -25,6 +25,11 @@ static class TrayMenu
 
     static readonly Forms.ToolStripRenderer Renderer = new DarkRenderer();
 
+    // an item's Tag: drawn greyed out and not highlighted, but still enabled, so its tooltip shows
+    public static readonly object Dimmed = new();
+
+    static bool IsDim(Forms.ToolStripItem item) => !item.Enabled || item.Tag == Dimmed;
+
     static int Px(int value, Forms.Control? c) => (int)Math.Round(value * (c?.DeviceDpi ?? 96) / 96.0);
 
     // Applies the look to a menu and its submenus. Call after the items are added.
@@ -107,7 +112,7 @@ static class TrayMenu
 
         protected override void OnRenderMenuItemBackground(Forms.ToolStripItemRenderEventArgs e)
         {
-            if (!e.Item.Selected || !e.Item.Enabled) return;
+            if (!e.Item.Selected || IsDim(e.Item)) return;
             int inset = Px(4, e.ToolStrip);
             var r = new Rectangle(inset, 0, e.Item.Width - 2 * inset, e.Item.Height);
             using var path = new GraphicsPath();
@@ -125,7 +130,7 @@ static class TrayMenu
         protected override void OnRenderItemText(Forms.ToolStripItemTextRenderEventArgs e)
         {
             bool rtl = e.Item.RightToLeft == Forms.RightToLeft.Yes;
-            var color = e.Item.Enabled ? Text : Dim;
+            var color = IsDim(e.Item) ? Dim : Text;
             e.TextColor = color;
             int left = Px(TextLeft, e.ToolStrip), right = Px(ArrowRoom, e.ToolStrip);
             // the layout's text box sits at the top of the padded row: center the text over the whole row instead

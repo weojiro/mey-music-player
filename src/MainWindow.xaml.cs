@@ -506,6 +506,13 @@ public partial class MainWindow : Window
             string cls = sb.ToString();
             if (cls == "Progman" || cls == "WorkerW" || cls == "Shell_TrayWnd" || cls == "Shell_SecondaryTrayWnd")
                 return false;
+            // Windows' own full-screen views (Alt + Tab, Task View) belong to the taskbar's process (explorer):
+            // not a game, or "show over games" would put the cover on a hidden taskbar for a moment
+            GetWindowThreadProcessId(fg, out uint fgPid);
+            GetWindowThreadProcessId(_taskbar, out uint shellPid);
+            if (fgPid != 0 && fgPid == shellPid) return false;
+            if (cls is "XamlExplorerHostIslandWindow" or "MultitaskingViewFrame" or "TaskSwitcherWnd" or "ForegroundStaging")
+                return false;
 
             int style = GetWindowLong(fg, GWL_STYLE);
             if ((style & WS_CAPTION) == WS_CAPTION) return false;

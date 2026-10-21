@@ -2,7 +2,7 @@
 
 # mey music player
 
-**Dinlediğin şey, Windows görev çubuğunun tam üstünde.**
+**Kendi tasarladığın müzik oynatıcı: Windows görev çubuğunda, oyunların üstünde.**
 
 <img src="docs/open-close.gif" alt="Görev çubuğundaki kapak oynatıcıya açılıyor" width="452">
 
@@ -13,7 +13,11 @@
 mey music player (MMP), Windows görev çubuğu için ücretsiz ve açık kaynak bir müzik oynatıcı. O an çalan
 şeyin kapağını görev çubuğundaki ikonlarının yanına koyar: Spotify, tarayıcıdaki YouTube, SoundCloud ya da
 Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı açılır;
-butonlar, süre ve Spotify'da şarkı sözleri oradadır. Renklerini kapaktan alır, böylece her zaman müziğe uyar.
+butonlar, süre ve Spotify'da şarkı sözleri oradadır.
+
+Onu kendine göre yap: renklerini kapaktan alsın ya da kendi renklerini seç, saydam yap, PNG veya GIF ekle.
+Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ctrl + Alt + X** ile fareyi oyundan alıp
+şarkı geçebilirsin.
 
 ## Tutorial
 

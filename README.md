@@ -2,7 +2,7 @@
 
 # mey music player
 
-**What you're listening to, right on your Windows taskbar.**
+**A music player you design yourself, on your Windows taskbar and over your games.**
 
 <img src="docs/open-close.gif" alt="The cover on the taskbar opening into the player" width="452">
 
@@ -13,7 +13,11 @@
 mey music player (MMP) is a free, open-source music player for the Windows taskbar. It puts the cover of
 whatever is playing next to your taskbar icons: Spotify, YouTube in your browser, SoundCloud or any app that
 uses the Windows media controls. Click the cover and a small player slides open with the controls, the time
-and, for Spotify, the lyrics. Its colours come from the cover, so it always matches the music.
+and, for Spotify, the lyrics.
+
+Make it yours: let it take its colours from the cover, or pick your own colours, make it see-through and add
+PNGs or GIFs. Put it anywhere on the screen and keep it visible over full-screen games, where **Ctrl + Alt + X**
+gets the mouse out of the game to skip a song.
 
 ## Tutorial
 

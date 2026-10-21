@@ -96,8 +96,9 @@ olarak görünür.
 | Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
 
 Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, kapağın yeri (sağ,
-orta ya da sol), dil, Yeniden başlat ve Kapat. *Orta*, görev çubuğu simgeleri soldayken kapağı görev çubuğunun ortasına
-koyar; açılan oynatıcı da ortada durur.
+orta, orta üst ya da sol), dil, Yeniden başlat ve Kapat. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
+çubuğunun ortasına koyar; açılan oynatıcı da ortada durur. *Orta üst*, kapağı görev çubuğunun hemen üstüne, ortaya koyar
+(simgeler ortadayken de); tam ekran oyunda görev çubuğunun yerine iner.
 
 ## Kurulum
 

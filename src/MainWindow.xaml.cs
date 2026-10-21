@@ -1038,6 +1038,28 @@ public partial class MainWindow : Window
         _mediaDirty = true;
         if (_shown) { _mediaDirty = false; RefreshMedia(); }
         else if (_session == null) SetNoMedia();
+        else RefreshHiddenInfo();
+    }
+
+    // While the player is hidden (a hidden taskbar, a full-screen game) Discord still shows what is playing:
+    // only the play state and the names are read; the rest waits until the player shows (_mediaDirty)
+    int _hiddenSeq;
+    async void RefreshHiddenInfo()
+    {
+        var s = _session;
+        if (s == null || _discord == null || !_discordOn) return;
+        int seq = ++_hiddenSeq;
+        try
+        {
+            _playing = s.GetPlaybackInfo().PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+            var props = await s.TryGetMediaPropertiesAsync();
+            if (s != _session || seq != _hiddenSeq || _shown) return;
+            _title = props.Title ?? "";
+            _artist = props.Artist ?? "";
+            _album = props.AlbumTitle ?? "";
+            _source = s.SourceAppUserModelId ?? "";
+        }
+        catch (Exception ex) { ErrorLog.Write("media hidden", ex); }
     }
 
     void OnMediaProps(GlobalSystemMediaTransportControlsSession s, MediaPropertiesChangedEventArgs a) =>
@@ -1050,7 +1072,12 @@ public partial class MainWindow : Window
     void OnSmtc(Smtc kind)
     {
         // the debug window keeps following the song while the taskbar is hidden (lyrics prototype)
-        if (!_shown && !_showDebug) { _mediaDirty = true; return; }
+        if (!_shown && !_showDebug)
+        {
+            _mediaDirty = true;
+            if (kind != Smtc.Timeline) RefreshHiddenInfo();
+            return;
+        }
         var s = _session;
         if (s == null) return;
         try
@@ -1644,7 +1671,7 @@ public partial class MainWindow : Window
                 if (pid == 0) continue;
                 if (!names.TryGetValue(pid, out var name))
                 {
-                    try { name = Process.GetProcessById((int)pid).ProcessName; } catch { name = ""; }
+                    try { using var proc = Process.GetProcessById((int)pid); name = proc.ProcessName; } catch { name = ""; }
                     names[pid] = name;
                 }
                 if (string.Equals(name, key, StringComparison.OrdinalIgnoreCase)) found.Add(session);

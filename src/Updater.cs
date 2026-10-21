@@ -120,7 +120,7 @@ static class Updater
         });
     }
 
-    // Release notes can have one section per language ("## en", "## tr", ...).
+    // Release notes can have one section per language: "## en", "## tr", ... or "## English", "## Türkçe".
     // Picks the user's language, then English, then the whole text.
     public static string PickNotes(string body, string lang)
     {
@@ -129,10 +129,10 @@ static class Updater
         StringBuilder? current = null;
         foreach (var line in lines)
         {
-            var m = Regex.Match(line, @"^##\s*([a-z]{2})\s*$");
-            if (m.Success)
+            var m = Regex.Match(line, @"^##\s*(\S.*?)\s*$");
+            if (m.Success && LanguageCode(m.Groups[1].Value) is string code)
             {
-                current = sections[m.Groups[1].Value] = new StringBuilder();
+                current = sections[code] = new StringBuilder();
                 continue;
             }
             current?.AppendLine(Bullet(line));
@@ -143,6 +143,16 @@ static class Updater
             : string.Join("\n", lines.Select(Bullet));
         return text.Trim();
     }
+
+    static readonly Dictionary<string, string> LanguageNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["English"] = "en", ["Türkçe"] = "tr", ["Turkish"] = "tr", ["Español"] = "es", ["Français"] = "fr",
+        ["Deutsch"] = "de", ["Português"] = "pt", ["Русский"] = "ru", ["中文"] = "zh", ["简体中文"] = "zh",
+        ["日本語"] = "ja", ["العربية"] = "ar", ["हिन्दी"] = "hi"
+    };
+
+    static string? LanguageCode(string heading) =>
+        Regex.IsMatch(heading, "^[a-z]{2}$") ? heading : LanguageNames.TryGetValue(heading, out var code) ? code : null;
 
     static string Bullet(string line) => Regex.Replace(line, @"^(\s*)[-*]\s+", "$1• ");
 }

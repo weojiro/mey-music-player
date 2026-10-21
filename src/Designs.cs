@@ -88,6 +88,9 @@ sealed class Designs
                 foreach (var p in d.Players)
                 {
                     p.Name ??= "";
+                    p.BgClear = Math.Clamp(p.BgClear, 0, MaxClear);         // a hand-edited file can't hide the buttons
+                    p.ButtonsClear = Math.Clamp(p.ButtonsClear, 0, MaxButtonsClear);
+                    p.CoverClear = Math.Clamp(p.CoverClear, 0, MaxClear);
                     p.Stickers = (p.Stickers ?? new()).Where(s => s != null && File.Exists(ImagePath(s.File ?? ""))).Take(MaxStickers).ToList();
                 }
                 if (d.Current == null) d.Active = null;

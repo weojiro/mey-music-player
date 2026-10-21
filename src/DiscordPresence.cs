@@ -77,8 +77,11 @@ sealed class DiscordPresence : IDisposable
             try
             {
                 Write(OpHandshake, $"{{\"v\":1,\"client_id\":\"{_clientId}\"}}");
-                var (op, _) = Read();               // READY, or a close with the reason (a wrong application id)
-                if (op != OpFrame) { Drop("Discord refused the connection", 60000); return false; }
+                // READY, or a close with the reason (a wrong application id). A Discord that is still starting may
+                // not answer at all: don't wait for it forever (Drop closes the pipe, which ends the read)
+                var ready = Task.Run(Read);
+                if (!ready.Wait(5000)) { Drop("Discord did not answer"); return false; }
+                if (ready.Result.op != OpFrame) { Drop("Discord refused the connection", 60000); return false; }
                 _sent = null;
                 Status = "connected";
                 // Discord answers every update; read them in the background so its pipe never fills up

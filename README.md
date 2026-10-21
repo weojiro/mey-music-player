@@ -61,6 +61,7 @@ Also in **Options**, under *Placement*:
 
 - **Free move**: drag the cover anywhere on the screen. It keeps its place on the screen, also when a game
   changes the resolution. When it opens, the player always stays on the screen;
+- **Player size**: with *Free move* on, make the player bigger, up to 300 %. It stays sharp and on the screen;
 - **Show over games**: the player stays visible over full-screen apps and games. If it doesn't show in a game,
   choose borderless or windowed full screen in the game's settings;
 - **Show / hide**: press **Ctrl + Alt** to hide or show the player;
@@ -70,8 +71,13 @@ Also in **Options**, under *Placement*:
 Click a shortcut in Options to change it. While a game hides the cursor (driving, aiming), clicks go straight to
 the game, not to the player. When the cursor is back (the game's menu), you can use and move the player as usual.
 
-Every saved player keeps its own place: the side, the cover's spot, *Free move* and *Show over games*. Switch to
-another player and it comes back just as you left it.
+Every saved player keeps its own place: the side, the cover's spot, *Free move*, its size and *Show over games*.
+Switch to another player and it comes back just as you left it.
+
+### On your Discord profile
+
+With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the name of
+the Spotify song. Other apps show up as "Something is playing".
 
 ### Quick controls
 
@@ -80,7 +86,7 @@ another player and it comes back just as you left it.
 | Mouse wheel on the cover | next / previous song |
 | Middle click on the cover | play / pause |
 | Mouse wheel on the seek bar | 5 seconds back or forward |
-| Mouse wheel on the speaker | volume; a click mutes |
+| Mouse wheel on the speaker | volume (the mouse on it shows the %); a click mutes |
 | Tray icon | a click plays / pauses, the wheel changes the volume |
 | Ctrl + Alt | hides / shows the player |
 | Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Show over games*) |
@@ -173,7 +179,7 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
 
 - **GitHub** (`api.github.com`, `github.com`): checks for a new version at startup and downloads it when you choose
   to update.
-- **LRCLIB** (`lrclib.net`): the song's title, artist and length, to find lyrics. Only for Spotify, and only while
+- **LRCLIB** (`lrclib.net`): the song's title, artist, album and length, to find lyrics. Only for Spotify, and only while
   lyrics are on (tray menu → *Lyrics*).
 - **Discord**: what MMP shows on your Discord profile goes to the Discord app on your PC, which shows it to your
   friends. The song is shown only from Spotify. Turn it off in the tray menu → *Show on Discord*.

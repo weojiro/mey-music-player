@@ -40,6 +40,8 @@ static class Stickers
         {
             try { done.SetResult(Load(path, maxSide, budget)); }
             catch { done.SetResult(null); }
+            // rendering gave this thread a WPF dispatcher; shut it down or every load leaves one behind
+            finally { Dispatcher.FromThread(Thread.CurrentThread)?.InvokeShutdown(); }
         });
         thread.SetApartmentState(ApartmentState.STA);       // WPF imaging and RenderTargetBitmap want STA
         thread.IsBackground = true;

@@ -61,6 +61,7 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 
 - **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Bir oyun çözünürlüğü değiştirse de ekrandaki
   yerini korur. Açıldığında oynatıcı hep ekranın içinde kalır;
+- **Oynatıcı boyutu**: *Serbest hareket* açıkken oynatıcıyı %300'e kadar büyüt. Görüntü bozulmaz, ekrandan taşmaz;
 - **Oyunların üstünde göster**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
 - **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas;
@@ -71,8 +72,13 @@ Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Oyun imleci gizl
 tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç geri gelince (oyunun menüsünde) oynatıcıyı her zamanki
 gibi kullanıp taşıyabilirsin.
 
-Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serbest hareket* ve *Oyunların üstünde göster*.
-Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
+Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serbest hareket*, boyutu ve *Oyunların
+üstünde göster*. Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
+
+### Discord profilinde
+
+*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin ve Spotify şarkısının adı
+görünür. Diğer uygulamalar "Bir şeyler çalıyor" olarak görünür.
 
 ### Hızlı kontroller
 
@@ -81,7 +87,7 @@ Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
 | Kapakta fare tekerleği | sonraki / önceki şarkı |
 | Kapağa orta tık | çal / duraklat |
 | İlerleme çubuğunda tekerlek | 5 saniye ileri ya da geri |
-| Ses ikonunda tekerlek | ses; tıklayınca sessiz |
+| Ses ikonunda tekerlek | ses (fareyi üstüne getirince % görünür); tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
 | Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
@@ -101,7 +107,7 @@ ve günde bir kez yeni sürüme bakar. Windows 10 (1809 veya üstü, 64 bit) ve 
 ## Sorular
 
 <details>
-<summary><b>Windows "Bilgisayarınız korundu" / bilinmeyen yayıncı diyor.</b></summary>
+<summary><b>Windows "Windows bilgisayarınızı korudu" / bilinmeyen yayıncı diyor.</b></summary>
 
 Uygulama ücretli bir sertifikayla imzalanmadı. *Ek bilgi*'ye, sonra *Yine de çalıştır*'a tıkla.
 </details>
@@ -164,7 +170,7 @@ Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
 MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir şey göndermez:
 
 - **GitHub** (`api.github.com`, `github.com`): açılışta yeni sürüm var mı diye bakar, güncellemeyi seçersen indirir.
-- **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı ve süresi. Sadece Spotify'da ve
+- **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı, albümü ve süresi. Sadece Spotify'da ve
   şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
 - **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da
   arkadaşlarına gösterir. Şarkı sadece Spotify'dan gösterilir. Kapatmak için tray menüsü → *Discord'da göster*.

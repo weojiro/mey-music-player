@@ -488,6 +488,7 @@ public partial class MainWindow : Window
 
         CreateTray();
         InitMedia();
+        Task.Run(Lyrics.TrimCache);
         _updateTimer.Start();
         Update();
         if (Environment.GetCommandLineArgs().Contains("--options")) ShowOptions();     // for development and tests
@@ -1651,9 +1652,16 @@ public partial class MainWindow : Window
         return aumid;
     }
 
+    // apps whose media id is not their process name
+    static readonly Dictionary<string, string> AudioProcess = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Microsoft.ZuneMusic"] = "Microsoft.Media.Player",     // Windows Media Player (the new one)
+    };
+
     T WithAppSessions<T>(Func<List<AudioSessionControl>, T> action, T fallback)
     {
         string key = ProcessKey(_source);
+        if (AudioProcess.TryGetValue(key, out var process)) key = process;
         if (key.Length == 0) { _volTargets = 0; return fallback; }
         try
         {

@@ -23,9 +23,27 @@ static class Lyrics
         try
         {
             string file = CacheFile(key);
-            return File.Exists(file) ? Parse(File.ReadAllText(file)) : null;
+            if (!File.Exists(file)) return null;
+            File.SetLastWriteTimeUtc(file, DateTime.UtcNow);       // songs played again stay when the cache is trimmed
+            return Parse(File.ReadAllText(file));
         }
         catch { return null; }
+    }
+
+    // The cache keeps the songs played last: about 4 MB at most
+    const int MaxCached = 1000;
+
+    public static void TrimCache()
+    {
+        try
+        {
+            if (!Directory.Exists(CacheDir)) return;
+            var old = new DirectoryInfo(CacheDir).GetFiles("*.lrc")
+                .OrderByDescending(f => f.LastWriteTimeUtc).Skip(MaxCached);
+            foreach (var f in old)
+                try { f.Delete(); } catch { }
+        }
+        catch { }
     }
 
     public static void ToCache(string key, string lrc)

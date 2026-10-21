@@ -109,5 +109,12 @@
                 <TextBlock FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="12" FontWeight="SemiBold" Foreground="White" MaxHeight="36" TextAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="TitlePopupText"/>
             </Border>
         </Popup>
+
+        <!-- Volume card: the volume in %, over the volume icon while the mouse is on it; same colours as the title card -->
+        <Popup AllowsTransparency="True" IsHitTestVisible="False" PlacementTarget="{Binding ElementName=VolumeHit}" PopupAnimation="Fade" StaysOpen="True" x:Name="VolumePopup">
+            <Border Background="#2B2B2B" CornerRadius="6" Padding="8,4" x:Name="VolumePopupBorder">
+                <TextBlock FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="11" FontWeight="SemiBold" Foreground="White" TextAlignment="Center" x:Name="VolumePopupText"/>
+            </Border>
+        </Popup>
     </Grid>
 </Window>

@@ -978,7 +978,7 @@ public partial class OptionsWindow : Window
         HotkeyHint.Text = T("hotkeyHint");
         FreeMoveBox.IsChecked = _main.FreeMove;
         OnTopBox.IsChecked = _main.AlwaysOnTop;
-        FreeMoveBox.Click += (_, _) => _main.SetFree(FreeMoveBox.IsChecked == true);
+        FreeMoveBox.Click += (_, _) => { _main.SetFree(FreeMoveBox.IsChecked == true); ShowSizeState(); };
         OnTopBox.Click += (_, _) => { _main.SetOnTop(OnTopBox.IsChecked == true); ShowCursorKeyState(); };
         CursorKeyNote.Text = T("needsOnTop");
         ShowCursorKeyState();
@@ -993,11 +993,57 @@ public partial class OptionsWindow : Window
             FreeMoveBox.IsChecked = _main.FreeMove;
             OnTopBox.IsChecked = _main.AlwaysOnTop;
             ShowCursorKeyState();
+            ShowSizeState();
         };
         _main.PlacementChanged += placement;
         Closed += (_, _) => _main.PlacementChanged -= placement;
+        SetupSize();
         ShowShortcuts();
         if (_main.ShortcutBusy) ShowShortcutMessage("hotkeyBusy");      // another app took the keys before MMP started
+    }
+
+    bool _sizeSync;                 // the size controls are being set from the player, not by the user
+
+    void SetupSize()
+    {
+        SizeText.Text = T("playerSize");
+        SizeResetButton.Content = T("sizeReset");
+        SizeNote.Text = T("needsFreeMove");
+        SizeSlider.Minimum = MainWindow.MinSize;
+        SizeSlider.Maximum = MainWindow.MaxSize;
+        SizeSlider.LargeChange = 25;
+        SizeSlider.ValueChanged += (_, e) =>
+        {
+            if (_sizeSync) return;
+            _main.SetPlayerSize((int)e.NewValue);
+            ShowSizeState();
+        };
+        SizeBox.PreviewTextInput += (_, e) => e.Handled = !e.Text.All(char.IsDigit);
+        DataObject.AddPastingHandler(SizeBox, (_, e) => e.CancelCommand());
+        SizeBox.KeyDown += (_, e) => { if (e.Key == Key.Enter) { CommitSizeBox(); Keyboard.ClearFocus(); } };
+        SizeBox.LostKeyboardFocus += (_, _) => CommitSizeBox();
+        SizeResetButton.Click += (_, _) => { _main.SetPlayerSize(MainWindow.DefaultSize); ShowSizeState(); };
+        ShowSizeState();
+    }
+
+    // a typed size: kept within the limits; anything else puts back the size in use
+    void CommitSizeBox()
+    {
+        if (int.TryParse(SizeBox.Text, out int pct)) _main.SetPlayerSize(pct);
+        ShowSizeState();
+    }
+
+    // the size only works in free move: greyed out with a note while that is off
+    void ShowSizeState()
+    {
+        bool on = _main.FreeMove;
+        _sizeSync = true;
+        SizeSlider.Value = _main.PlayerSize;
+        if (!SizeBox.IsKeyboardFocused) SizeBox.Text = _main.PlayerSize.ToString();
+        _sizeSync = false;
+        SizeControls.IsEnabled = on;
+        SizeControls.Opacity = SizeText.Opacity = on ? 1 : 0.45;
+        SizeNote.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
     }
 
     // the mouse shortcut only works with "show over games": greyed out with a note while that is off

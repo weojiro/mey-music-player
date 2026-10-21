@@ -46,6 +46,7 @@ sealed record PlacementSpec
     public double? FreeFy { get; init; }
     public string FreeMon { get; init; } = "";
     public bool OnTop { get; init; }            // show over games
+    public int Size { get; init; } = 100;       // player size in free move, %
 }
 
 // "Design your player": the saved players live in %LOCALAPPDATA%\MMP\players, which updates never touch.

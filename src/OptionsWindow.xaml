@@ -365,10 +365,11 @@
 
             <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
 
-            <!-- where the player sits: free move, always on top, the show / hide shortcut -->
+            <!-- where the player sits: free move, always on top, the show / hide shortcut; the player size on the right -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="PlacementText"/>
@@ -397,6 +398,27 @@
                     <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
                     <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
                 </StackPanel>
+
+                <!-- player size (free move only): slider or a typed %, and back to 100 % -->
+                <Grid Grid.Column="2" Margin="48,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="0,0,8,0" Padding="0,8,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="SizeText"/>
+                    <StackPanel Grid.Column="1" MaxWidth="320">
+                        <StackPanel x:Name="SizeControls">
+                            <StackPanel Orientation="Horizontal">
+                                <Slider Style="{StaticResource Range}" VerticalAlignment="Center" Width="220" x:Name="SizeSlider"/>
+                                <TextBox Margin="12,0,0,0" MaxLength="3" Style="{StaticResource Field}" TextAlignment="Center" VerticalAlignment="Center" Width="56" x:Name="SizeBox"/>
+                                <TextBlock Margin="6,0,0,0" Text="%" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource Btn}" x:Name="SizeResetButton"/>
+                        </StackPanel>
+                        <!-- shown while free move is off: the size only works with it -->
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="SizeNote"/>
+                    </StackPanel>
+                </Grid>
             </Grid>
         </StackPanel>
         </ScrollViewer>

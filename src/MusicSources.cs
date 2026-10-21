@@ -192,7 +192,8 @@ static class MusicSources
     }
 
     // The address in a browser window's address bar (Windows' accessibility interface): "OmniboxViewViews" in Chrome
-    // and Edge, "BraveOmniboxViewViews" in Brave, ...; "urlbar-input" in Firefox. Null if it can't be read.
+    // and Edge, "BraveOmniboxViewViews" in Brave, "AddressTextfieldView" in Opera and Opera GX; "urlbar-input" in
+    // Firefox. Null if it can't be read.
     static string? Address(IntPtr hwnd)
     {
         try
@@ -201,6 +202,7 @@ static class MusicSources
                 .FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit))
                 .Cast<AutomationElement>()
                 .FirstOrDefault(e => e.Current.ClassName.EndsWith("OmniboxViewViews", StringComparison.Ordinal)
+                                  || e.Current.ClassName == "AddressTextfieldView"
                                   || e.Current.AutomationId == "urlbar-input");
             if (bar?.TryGetCurrentPattern(ValuePattern.Pattern, out object? p) == true && p is ValuePattern v)
             {

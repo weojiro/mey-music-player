@@ -588,9 +588,9 @@ public partial class MainWindow : Window
         // "show over games": over a full-screen game the cover stays in its place on the taskbar,
         // also when the taskbar hides itself under the game
         bool overGame = _onTop && fullScreen && (atBottom || atTop);
-        // "Center, above" shows with the taskbar; a taskbar that hides itself while the mouse moves up onto the cover
-        // (or the player is open) leaves the cover where it is until the mouse goes
-        bool keepAbove = _above && _shown && (atBottom || atTop) && (_expanded || _dragging || CursorOnPlayer());
+        // "Center, above" shows with the taskbar, open or not; a taskbar that hides itself while the mouse moves up onto
+        // the player leaves it where it is until the mouse goes
+        bool keepAbove = _above && _shown && (atBottom || atTop) && (_dragging || CursorOnPlayer());
         // the taskbar really in front: on the screen, and over a full-screen window only when it came up over it
         bool taskbarInFront = taskbarVisible && (!fullScreen || TaskbarOverForeground());
         bool sinking = _above && _shown && !taskbarVisible && !overGame && !keepAbove && !_hidden;

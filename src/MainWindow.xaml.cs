@@ -1250,7 +1250,7 @@ public partial class MainWindow : Window
     // the "mey music player" application on discord.com/developers: its name is what the profile shows
     const string DiscordAppId = "1562239814949150850";
     const string RepoUrl = "https://github.com/weojiro/mey-music-player";
-    const string DiscordLogo = "https://weojiro.github.io/mey-music-player/img/mmp-logo.png";
+    const string DiscordLogo = "https://weojiro.github.io/mey-music-player/img/mmp-logo.png?v=2";     // ?v: Discord keeps a copy per address
     DiscordPresence? _discord;
     bool _discordOn = true;
     readonly long _discordStart = DateTimeOffset.UtcNow.ToUnixTimeSeconds();    // the time counts from the start
@@ -1271,7 +1271,7 @@ public partial class MainWindow : Window
             ["details"] = Fit(Tr("dcVia")),
             ["state"] = Fit(song ? (_artist.Trim().Length > 0 ? $"{_title} — {_artist}" : _title) : Tr("dcLine1")),
             ["timestamps"] = new Dictionary<string, object> { ["start"] = _discordStart },
-            ["assets"] = new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2") },
+            ["assets"] = new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl },
             ["buttons"] = new[] { new Dictionary<string, object> { ["label"] = Tr("dcButton"), ["url"] = RepoUrl } }
         };
     }

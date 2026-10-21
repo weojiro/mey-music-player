@@ -1,6 +1,6 @@
 ﻿# mey music player - installer / repair launcher
-# Installs the .NET Desktop Runtime 8 (if it is missing) and the latest MMP.exe from GitHub.
-# The console text is English on purpose. The "run" mode shows its message in the app's language.
+# Installs the latest MMP.exe from GitHub. The .NET runtime is inside MMP.exe, so there is nothing else to install.
+# The console text is English on purpose.
 param([switch]$Run)
 
 $ErrorActionPreference = 'Stop'
@@ -11,62 +11,9 @@ $Repo            = 'weojiro/mey-music-player'
 $InstallDir      = Join-Path $env:LOCALAPPDATA 'MMP'
 $ExePath         = Join-Path $InstallDir 'MMP.exe'
 $BatPath         = Join-Path $InstallDir 'MMP Launcher.bat'
-$ReleasesJsonUrl = 'https://raw.githubusercontent.com/dotnet/core/main/release-notes/8.0/releases.json'
-$RuntimeFallback = 'https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe'
 
-# ---- ".NET is missing" message, in every language of the app ----
-$NetMissing = @{
-    en = '.NET is missing. Please run MMP Launcher again.'
-    tr = '.NET eksik. Lütfen MMP Launcher''ı yeniden çalıştırın.'
-    es = 'Falta .NET. Ejecuta MMP Launcher de nuevo.'
-    fr = '.NET est manquant. Veuillez relancer MMP Launcher.'
-    de = '.NET fehlt. Bitte führen Sie MMP Launcher erneut aus.'
-    pt = 'O .NET está ausente. Execute o MMP Launcher novamente.'
-    ru = 'Отсутствует .NET. Запустите MMP Launcher ещё раз.'
-    zh = '缺少 .NET。请重新运行 MMP Launcher。'
-    ja = '.NET が見つかりません。MMP Launcher をもう一度実行してください。'
-    ar = '.NET غير موجود. يُرجى تشغيل MMP Launcher مرة أخرى.'
-    hi = '.NET उपलब्ध नहीं है। कृपया MMP Launcher को फिर से चलाएँ।'
-}
-
-function Test-DotNet {
-    $key = 'HKLM:\SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedfx\Microsoft.WindowsDesktop.App'
-    if (Test-Path $key) {
-        $versions = (Get-Item $key).Property
-        if ($versions | Where-Object { $_ -like '8.*' }) { return $true }
-    }
-    $dir = Join-Path $env:ProgramFiles 'dotnet\shared\Microsoft.WindowsDesktop.App'
-    if (Test-Path $dir) {
-        if (Get-ChildItem $dir -Directory -Filter '8.*' -ErrorAction SilentlyContinue) { return $true }
-    }
-    return $false
-}
-
-# language chosen in the app (settings.ini), otherwise the Windows display language, otherwise English
-function Get-Lang {
-    $ini = Join-Path $InstallDir 'settings.ini'
-    if (Test-Path $ini) {
-        foreach ($line in Get-Content $ini -Encoding UTF8) {
-            if ($line -match '^\s*lang\s*=\s*([a-z]{2})\s*$' -and $NetMissing.ContainsKey($Matches[1])) { return $Matches[1] }
-        }
-    }
-    $code = (Get-UICulture).TwoLetterISOLanguageName
-    if ($NetMissing.ContainsKey($code)) { return $code }
-    return 'en'
-}
-
-# ================= run mode: called by the shortcut when the quick check in the .bat failed =================
-if ($Run) {
-    if (Test-DotNet) { Start-Process $ExePath; exit 0 }
-    Add-Type -AssemblyName PresentationFramework
-    $lang = Get-Lang
-    $options = [System.Windows.MessageBoxOptions]::None
-    if ($lang -eq 'ar') { $options = [System.Windows.MessageBoxOptions]::RtlReading -bor [System.Windows.MessageBoxOptions]::RightAlign }
-    [void][System.Windows.MessageBox]::Show($NetMissing[$lang], 'mey music player',
-        [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning,
-        [System.Windows.MessageBoxResult]::OK, $options)
-    exit 0
-}
+# run mode: shortcuts made by launchers before v1.0.1 may still call the script with -Run
+if ($Run) { Start-Process $ExePath; exit 0 }
 
 # ================= install mode =================
 $Host.UI.RawUI.WindowTitle = 'mey music player launcher'
@@ -101,49 +48,12 @@ $Art = @'
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠛⠛⠀⠀⠀⠀⠀⠀
 '@
 
-# Windows 10 console fonts have no braille: plain ASCII art there
-$Art10 = @'
-         ,''',
-       .' ., .',                                  ../'''',
-      .'. %%, %.',                         .,/' .,%    :
-     .'.% %%%,`%%%'.     .....,,,,,,,.....   .,%%% .,%%'. .'
-     : %%% %%%%%%',:%%>>%>' .,>>%>>%>%>>%%>,.   `%%%',% :
-     : %%%%%%%'.,>>>%'   .,%>%>%'.,>%>%' . `%>>>,. `%%%:'
-     ` %%%%'.,>>%'  .,%>>%>%' .,%>%>%' .>>%,. `%%>>,. `%
-      `%'.,>>>%'.,%%%%%%%' .,%%>%%>%' >>%%>%>>%.`%% %% `,
-     ,`%% %%>>>%%%>>%%>%%>>%>>%>%%%  %%>%%>%%>>%>%%%' % %,
-   ,%>%'.>>%>%'%>>%%>%%%%>%'              `%>%>>%%.`%>>%.
-  ,%%>' .>%>%'.%>%>>%%%>>%' ,%%>>%%>%>>%>>%>%%,.`%>%%>%%. `%>%.
- ` ,%' .>%%%'.%>%>>%' .,%%%%%%%%'        `%%%%%%.`%%>%% .%%>
- .%>% .%%>' :%>>%%'.,%%%%%%%%%'.%%%%%' `%%%%.`%%%%%.%%%%> %%>%.
- ,%>%' >>%%  >%' `%%%%'     `%%%%%%%'.,>,. `%%%%'     `%%%>>%%>%
- .%%>%' .%%>'  %>>%, %% oO ~ Oo %%%>>'.>>>>>>. `% oO ~ Oo'.%%%'%>%,
- %>'%> .%>%>%  %%>%%%'   `OoooO'.%%>>'.>>>%>>%>>.`%`OoooO'.%%>% '%>%
- %',%' %>%>%'  %>%>% .%,>,>,   `>'.>>%>%%>>>%>.`%,>,>' %```% .>%>,
-  ` %>% `%>>%%. `%%% %' >%%%%%%>,  ' >>%>>%%%>%>>> >>%%' ,%%>%'.%%>>%.
-   .%%'  %%%%>%.   `>%%. %>%%>>>%.>> >>>%>%%%%>%>>.>>>'.>%>%>' %>>%>%%
-   `.%%  `%>>%%>    %%%<>  %>>>%%%>>'.>%>>>>%%%>>%>>.>',%>>%'   ,>%'>% '
-    %>'  %%%%%%    `%%'  %%%%% >' >>>>%>>%%>>%>>%> %%>%>' .%>%% .%%
-   %>%>, %>%%>>%%,  %>%>% `%%  %>>   >>>%>>>%%>>>>%>>  %%>>,%>%%'.%>%,
-  %>%>%%, `%>%%>%>%, %>%%> ,%>%>>>.>>`.,.  ``    ..'>.%. % %>%>%'.%>%%;
-  %'`%%>%  %%>%%  %>% %'.>%>>%>%>>;'' ..,,%>%>%%/::%>%%>>%%,,.``% .%>%%
-  ` .%>%'  >%%% %>%%'.>%>%;''.,>>%%>%%::.  ..'.,%>>%>%>,`%  %'.>%%' '
-    %>%>%% `%>  >%%'.%%>%>>%>%>>>%>%>>%,,::,%>>%%>>%%,,.``% .%>%%
-    `    `%>%>>%%' %>%%>>%>>%>%>%>%%>%/'       `%>%%>%>>%%% ' .%'
-         %'  `%>% `%>%%;'' .,>>%>%/',;;;;;,;;;;,`%>%>%,`%'   '
-         `    `   ` %>%%%>%%>%%;/ @a;;;;;;;;;;;a@   >%>%%'
-                   `/////////';, `@a@@a@@a@@aa@',;`//'
-                      `//////.;;,,............,,;;//'
-                          `////;;;;;;;;;;;;;;;/'
-                             `/////////////////'
-'@
-
 # build from the registry: 22000 and above = Windows 11
 $Build = 0
 try { $Build = [int](Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuildNumber } catch { }
 
 function W($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
-function Step($n, $text) { W ''; W ("  [{0}/4] {1}" -f $n, $text) 'Cyan' }
+function Step($n, $text) { W ''; W ("  [{0}/3] {1}" -f $n, $text) 'Cyan' }
 function Ok($text) { W ("        [ OK ] {0}" -f $text) 'Green' }
 
 # ASCII progress bar: [##########--------------------]  33%
@@ -165,10 +75,14 @@ function Get-FileWithBar($url, $dest) {
         try {
             $buffer = New-Object byte[] 65536
             $read = 0
+            $shown = -1
             while (($n = $in.Read($buffer, 0, $buffer.Length)) -gt 0) {
                 $out.Write($buffer, 0, $n)
                 $read += $n
-                if ($total -gt 0) { Draw-Bar ([int](100 * $read / $total)) }
+                if ($total -gt 0) {
+                    $pct = [int](100 * $read / $total)
+                    if ($pct -ne $shown) { Draw-Bar $pct; $shown = $pct }    # redraw only when the number changes
+                }
             }
         } finally { $out.Close(); $in.Close() }
     } finally { $response.Close() }
@@ -176,56 +90,26 @@ function Get-FileWithBar($url, $dest) {
     Write-Host ''
 }
 
-# moving bar while something runs that reports no progress (the .NET installer)
-function Wait-WithBar($processId) {
-    $width = 30
-    $i = 0
-    while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
-        $pos = $i % ($width - 5)
-        $bar = ('-' * $pos) + '#####' + ('-' * ($width - 5 - $pos))
-        Write-Host -NoNewline ("`r        [{0}] installing..." -f $bar) -ForegroundColor Yellow
-        Start-Sleep -Milliseconds 100
-        $i++
-    }
-    Write-Host ("`r        [{0}] done          " -f ('#' * $width)) -ForegroundColor Yellow
-}
-
-# newest .NET 8 Desktop Runtime installer from Microsoft's own release list (with its SHA-512)
-function Get-RuntimeInstaller {
+function Expand-Gzip($from, $to) {
+    $in = [System.IO.File]::OpenRead($from)
     try {
-        $text = (Invoke-WebRequest -Uri $ReleasesJsonUrl -UseBasicParsing -Headers @{ 'User-Agent' = 'MMP-launcher' }).Content
-        $m = [regex]::Match($text, '"name":\s*"windowsdesktop-runtime-win-x64\.exe",\s*"rid":\s*"win-x64",\s*"url":\s*"([^"]+)",\s*"hash":\s*"([0-9a-fA-F]+)"')
-        if ($m.Success) { return @{ Url = $m.Groups[1].Value; Hash = $m.Groups[2].Value } }
-    } catch { }
-    return @{ Url = $RuntimeFallback; Hash = $null }
+        $gz = New-Object System.IO.Compression.GZipStream($in, [System.IO.Compression.CompressionMode]::Decompress)
+        $out = [System.IO.File]::Create($to)
+        try { $gz.CopyTo($out) } finally { $out.Close(); $gz.Close() }
+    } finally { $in.Close() }
 }
 
-function Install-DotNet {
-    $info = Get-RuntimeInstaller
-    $file = Join-Path $env:TEMP 'mmp-windowsdesktop-runtime-8.exe'
-    W '        Downloading the .NET Desktop Runtime 8 from Microsoft...' 'Gray'
-    Get-FileWithBar $info.Url $file
-    if ($info.Hash) {
-        if ((Get-FileHash $file -Algorithm SHA512).Hash -ne $info.Hash) { throw 'The downloaded .NET installer is damaged (hash mismatch).' }
-    }
-    $signature = Get-AuthenticodeSignature $file
-    if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'Microsoft Corporation') {
-        throw 'The downloaded .NET installer is not signed by Microsoft.'
-    }
-    W '        Installing. Windows will ask for permission once...' 'Gray'
-    $process = Start-Process -FilePath $file -ArgumentList '/install', '/quiet', '/norestart' -Verb RunAs -PassThru
-    Wait-WithBar $process.Id
-    Remove-Item $file -Force -ErrorAction SilentlyContinue
-    if (-not (Test-DotNet)) {
-        throw 'The .NET installation did not finish. Install it from https://dotnet.microsoft.com/download/dotnet/8.0 and run this launcher again.'
-    }
-}
-
-# latest MMP.exe from the newest GitHub release, checked against the published SHA-256
+# latest MMP.exe from the newest GitHub release, checked against the published SHA-256.
+# The gzipped copy is less than half the size; releases before v1.0.1 only have MMP.exe.
 function Get-App {
     $base = "https://github.com/$Repo/releases/latest/download"
     $file = Join-Path $env:TEMP 'MMP.exe.download'
-    try { Get-FileWithBar "$base/MMP.exe" $file }
+    $gz = Join-Path $env:TEMP 'MMP.exe.gz.download'
+    try {
+        try { Get-FileWithBar "$base/MMP.exe.gz" $gz; Expand-Gzip $gz $file }
+        catch { Write-Host ''; Get-FileWithBar "$base/MMP.exe" $file }
+        finally { Remove-Item $gz -Force -ErrorAction SilentlyContinue }
+    }
     catch { throw "Could not download MMP.exe from github.com/$Repo/releases ($($_.Exception.Message)). Check your internet connection and try again." }
     $client = New-Object System.Net.WebClient
     $client.Headers.Add('User-Agent', 'MMP-launcher')
@@ -265,23 +149,19 @@ function Install-App($downloaded) {
 }
 
 try {
-    W $Banner 'Cyan'
+    W ''
     W '  mey music player - installer' 'White'
     W '  -----------------------------------------' 'DarkGray'
 
-    Step 1 'Checking the .NET Desktop Runtime 8'
-    if (Test-DotNet) { Ok '.NET is already installed' }
-    else { Install-DotNet; Ok '.NET installed' }
-
-    Step 2 'Downloading mey music player'
+    Step 1 'Downloading mey music player'
     $download = Get-App
 
-    Step 3 'Installing'
+    Step 2 'Installing'
     Install-App $download
     Ok "Installed to $InstallDir"
     Ok 'Desktop shortcut created'
 
-    Step 4 'Starting'
+    Step 3 'Starting'
     Start-Process -FilePath $BatPath -ArgumentList '/run' -WindowStyle Minimized
     Ok 'mey music player is running'
 
@@ -290,8 +170,9 @@ try {
     W '            Installation complete!' 'Green'
     W '  =============================================' 'Green'
     W ''
+    # Windows 10 console fonts have no braille: the plain MMP letters there
     if ($Build -ge 22000) { Write-Host $Art -ForegroundColor Magenta }
-    else { Write-Host $Art10 -ForegroundColor Magenta }
+    else { Write-Host $Banner -ForegroundColor Cyan }
 }
 catch {
     W ''

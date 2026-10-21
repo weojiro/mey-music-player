@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.17763.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
@@ -15,6 +15,20 @@
     <Product>mey music player</Product>
     <!-- the release workflow overrides this with the release tag (v0.2.0 -> 0.2.0) -->
     <Version>0.1.0</Version>
+    <!-- one MMP.exe with the .NET runtime inside: nothing to install, old versions can update straight to it -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- not compressed inside: a compressed bundle keeps every assembly unpacked in memory (about twice the RAM).
+         The download is small anyway: the release also has MMP.exe.gz, which the updater and the launcher use. -->
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <!-- the app has its own texts; leave out the framework's translated error messages -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <!-- WPF sets the DPI awareness from app.manifest; WinForms is only the tray icon -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

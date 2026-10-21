@@ -1186,9 +1186,11 @@ public partial class MainWindow : Window
     {
         if (string.IsNullOrEmpty(aumid)) return null;
         string key = ProcessKey(aumid).ToLower();
+        if (key == "") return null;     // "" is in every process name: it would pick a random app's icon
+        var processes = Array.Empty<Process>();
         try
         {
-            var processes = Process.GetProcesses();
+            processes = Process.GetProcesses();
             foreach (var p in processes)
             {
                 try
@@ -1213,6 +1215,10 @@ public partial class MainWindow : Window
             }
         }
         catch { }
+        finally
+        {
+            foreach (var p in processes) p.Dispose();     // each one holds a process handle
+        }
         return null;
     }
 
@@ -2626,8 +2632,7 @@ public partial class MainWindow : Window
             if (_hidden) SetHidden(false);
             if (!_shown) return;
             _cursorProc ??= CursorProc;
-            string? module = Process.GetCurrentProcess().MainModule?.ModuleName;
-            _cursorHook = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(module), 0);
+            _cursorHook = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(null), 0);
             if (_cursorHook == IntPtr.Zero) return;
             _cursorMode = true;
             _vDown = _cursorAnchored = false;
@@ -2812,8 +2817,7 @@ public partial class MainWindow : Window
         _lastTrayHover = Environment.TickCount64;
         if (_wheelHook != IntPtr.Zero) return;
         _wheelProc = WheelProc;
-        string? module = Process.GetCurrentProcess().MainModule?.ModuleName;
-        _wheelHook = SetWindowsHookEx(WH_MOUSE_LL, _wheelProc, GetModuleHandle(module), 0);
+        _wheelHook = SetWindowsHookEx(WH_MOUSE_LL, _wheelProc, GetModuleHandle(null), 0);     // this exe
         if (_wheelHook != IntPtr.Zero) _wheelTimer.Start();
     }
 

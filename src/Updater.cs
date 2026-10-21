@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Net.Http;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -15,6 +16,7 @@ sealed class UpdateInfo
     public Version Version { get; init; } = new(0, 0, 0);
     public string Notes { get; init; } = "";
     public string ExeUrl { get; init; } = "";
+    public string GzUrl { get; init; } = "";        // the same exe gzipped (from v1.0.1), "" if the release has none
     public string HashUrl { get; init; } = "";
 }
 
@@ -50,7 +52,7 @@ static class Updater
         latest = Normalize(latest);
         if (latest <= Current) return null;
 
-        string exeUrl = "", hashUrl = "";
+        string exeUrl = "", gzUrl = "", hashUrl = "";
         if (root.TryGetProperty("assets", out var assets))
         {
             foreach (var asset in assets.EnumerateArray())
@@ -58,16 +60,18 @@ static class Updater
                 string name = asset.GetProperty("name").GetString() ?? "";
                 string url = asset.GetProperty("browser_download_url").GetString() ?? "";
                 if (name == "MMP.exe") exeUrl = url;
+                else if (name == "MMP.exe.gz") gzUrl = url;
                 else if (name == "MMP.exe.sha256") hashUrl = url;
             }
         }
         if (exeUrl == "" || hashUrl == "") return null;     // the build is still being attached to the release
 
         string notes = root.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "";
-        return new UpdateInfo { Version = latest, Notes = notes, ExeUrl = exeUrl, HashUrl = hashUrl };
+        return new UpdateInfo { Version = latest, Notes = notes, ExeUrl = exeUrl, GzUrl = gzUrl, HashUrl = hashUrl };
     }
 
-    // Downloads the new exe next to the running one, checks its SHA-256, swaps it in and starts it.
+    // Downloads the new exe next to the running one (the gzipped copy if there is one: less than half the size),
+    // checks its SHA-256, swaps it in and starts it.
     public static async Task DownloadAndInstallAsync(UpdateInfo info, IProgress<double> progress)
     {
         string exePath = Environment.ProcessPath ?? throw new InvalidOperationException("exe path unknown");
@@ -77,21 +81,16 @@ static class Updater
         string expected = (await Http.GetStringAsync(info.HashUrl))
             .Trim().Split(' ', '\t', '\r', '\n')[0].ToLowerInvariant();
 
-        using (var response = await Http.GetAsync(info.ExeUrl, HttpCompletionOption.ResponseHeadersRead))
+        bool gz = info.GzUrl != "";
+        using (var response = await Http.GetAsync(gz ? info.GzUrl : info.ExeUrl, HttpCompletionOption.ResponseHeadersRead))
         {
             response.EnsureSuccessStatusCode();
             long total = response.Content.Headers.ContentLength ?? -1;
-            using var source = await response.Content.ReadAsStreamAsync();
+            using var download = await response.Content.ReadAsStreamAsync();
+            using var counted = new CountingStream(download, done => { if (total > 0) progress.Report((double)done / total); });
+            using var source = gz ? new GZipStream(counted, CompressionMode.Decompress) : (Stream)counted;
             using var target = File.Create(newPath);
-            var buffer = new byte[81920];
-            long done = 0;
-            int n;
-            while ((n = await source.ReadAsync(buffer)) > 0)
-            {
-                await target.WriteAsync(buffer.AsMemory(0, n));
-                done += n;
-                if (total > 0) progress.Report((double)done / total);
-            }
+            await source.CopyToAsync(target).ConfigureAwait(false);     // unzipping stays off the UI thread
         }
 
         string actual;
@@ -153,6 +152,43 @@ static class Updater
 
     static string? LanguageCode(string heading) =>
         Regex.IsMatch(heading, "^[a-z]{2}$") ? heading : LanguageNames.TryGetValue(heading, out var code) ? code : null;
+
+    // Reports how many bytes were read from the download (the gzipped size, which is what the bar shows).
+    sealed class CountingStream(Stream inner, Action<long> report) : Stream
+    {
+        long _done;
+
+        public override int Read(byte[] buffer, int offset, int count) => Count(inner.Read(buffer, offset, count));
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken token = default) =>
+            Count(await inner.ReadAsync(buffer, token));
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token) =>
+            ReadAsync(buffer.AsMemory(offset, count), token).AsTask();
+
+        int Count(int n)
+        {
+            _done += n;
+            report(_done);
+            return n;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) inner.Dispose();
+            base.Dispose(disposing);
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => _done; set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 
     static string Bullet(string line) => Regex.Replace(line, @"^(\s*)[-*]\s+", "$1• ");
 }

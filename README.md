@@ -91,7 +91,7 @@ language, Restart and Close.
 ## Install
 
 1. Download **MMP.zip** from the [latest release](../../releases/latest).
-2. Extract it and double-click **MMP Launcher.bat**. It also installs the .NET Desktop Runtime 8 if it is missing.
+2. Extract it and double-click **MMP Launcher.bat**. Nothing else needs to be installed.
 3. When it says "Installation complete!", start the app with the **mey music player** shortcut on your desktop.
 
 MMP starts with Windows from then on (you can turn that off in the tray menu) and updates itself: it checks
@@ -136,12 +136,6 @@ it anywhere, on any screen.
 </details>
 
 <details>
-<summary><b>It says .NET is missing.</b></summary>
-
-Run **MMP Launcher.bat** again.
-</details>
-
-<details>
 <summary><b>Something doesn't work.</b></summary>
 
 MMP writes unexpected errors to `%LOCALAPPDATA%\MMP\error.log`. It stays on your PC; attach it when you
@@ -170,7 +164,7 @@ docs/       the pictures in this README
 .github/    the workflow that builds the releases
 ```
 
-`tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 8 SDK if needed).
+`tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 10 SDK if needed).
 `tools/debug.bat` starts the installed app with a debug window.
 
 ## Privacy
@@ -183,8 +177,6 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
   lyrics are on (tray menu → *Lyrics*).
 - **Discord**: what MMP shows on your Discord profile goes to the Discord app on your PC, which shows it to your
   friends. The song is shown only from Spotify. Turn it off in the tray menu → *Show on Discord*.
-- **Microsoft** (`aka.ms`, `dotnet.microsoft.com`): the launcher downloads the .NET 8 runtime if your PC doesn't
-  have it.
 
 MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
 

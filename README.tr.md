@@ -92,7 +92,7 @@ tarafı, dil, Yeniden başlat ve Kapat.
 ## Kurulum
 
 1. [Son sürümden](../../releases/latest) **MMP.zip**'i indir.
-2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla. Eksikse .NET Desktop Runtime 8'i de kurar.
+2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla. Başka bir şey kurman gerekmez.
 3. "Installation complete!" yazınca uygulamayı masaüstündeki **mey music player** kısayoluyla aç.
 
 MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin) ve kendini günceller: açılışta
@@ -137,12 +137,6 @@ yere, istediğin ekrana koyabilirsin.
 </details>
 
 <details>
-<summary><b>".NET eksik" diyor.</b></summary>
-
-**MMP Launcher.bat**'ı tekrar çalıştır.
-</details>
-
-<details>
 <summary><b>Bir şey çalışmıyor.</b></summary>
 
 MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya bilgisayarında kalır;
@@ -174,7 +168,6 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
   şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
 - **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da
   arkadaşlarına gösterir. Şarkı sadece Spotify'dan gösterilir. Kapatmak için tray menüsü → *Discord'da göster*.
-- **Microsoft** (`aka.ms`, `dotnet.microsoft.com`): bilgisayarında yoksa launcher .NET 8 runtime'ı indirir.
 
 MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
 

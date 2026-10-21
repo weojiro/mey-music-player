@@ -127,6 +127,9 @@ public partial class MainWindow : Window
     // mouse out of the game (shortcut 1)
     bool _mouseOut, _playerFocused;
     IntPtr _dropsWin;                     // a game seen dropping to the desktop without the focus: the drawn cursor next time
+    // games (process names) that drop to the desktop without the focus, kept in settings.ini; GTA San Andreas (MTA,
+    // SA-MP) runs in exclusive full screen, which Windows 11 often doesn't report
+    readonly HashSet<string> _focusGames = new(StringComparer.OrdinalIgnoreCase) { "gta_sa" };
 
     // ... or, in a game that changed the screen's resolution, a cursor drawn in the player
     bool _cursorMode, _cursorAnchored, _vDown, _hadClip;
@@ -2432,6 +2435,8 @@ public partial class MainWindow : Window
                     if (valid) (_keys[k == "showKey" ? 0 : 1].Mods, _keys[k == "showKey" ? 0 : 1].Vk) = (mods, vk);
                 }
                 else if (k == "onTop") _onTop = v == "1";
+                else if (k == "focusGames")
+                    foreach (string g in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)) _focusGames.Add(g);
                 else if (k == "size" && int.TryParse(v, out int sz)) _size = Math.Clamp(sz, MinSize, MaxSize);
             }
         }
@@ -2458,6 +2463,7 @@ public partial class MainWindow : Window
                 $"showKey={_keys[0].Mods},{_keys[0].Vk}",
                 $"cursorKey={_keys[1].Mods},{_keys[1].Vk}",
                 $"onTop={(_onTop ? 1 : 0)}",
+                $"focusGames={string.Join(",", _focusGames)}",
                 $"size={_size}"
             });
         }
@@ -2719,12 +2725,19 @@ public partial class MainWindow : Window
             // a game in exclusive full screen that was not recognised drops to the desktop: bring it back at once
             // and use the drawn cursor instead
             IntPtr game = _gameWin;
-            var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+            var check = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(150) };
+            long until = Environment.TickCount64 + 3000;      // an old game takes a while to drop
             check.Tick += (_, _) =>
             {
+                if (!_mouseOut || _gameWin != game || !IsWindow(game)) { check.Stop(); return; }
+                if (!IsIconic(game))
+                {
+                    if (Environment.TickCount64 > until) check.Stop();
+                    return;
+                }
                 check.Stop();
-                if (!_mouseOut || _gameWin != game || !IsWindow(game) || !IsIconic(game)) return;
                 _dropsWin = game;
+                if (ProcessNameOf(game) is string name && _focusGames.Add(name)) SaveSettings();
                 EndMouseOut();
                 ShowWindow(game, SW_RESTORE);
                 SetForegroundWindow(game);
@@ -2781,6 +2794,13 @@ public partial class MainWindow : Window
         else SetMouseOut(true);
     }
 
+    static string? ProcessNameOf(IntPtr hwnd)
+    {
+        if (GetWindowThreadProcessId(hwnd, out uint pid) == 0 || pid == 0) return null;
+        try { using var p = Process.GetProcessById((int)pid); return p.ProcessName; }
+        catch { return null; }
+    }
+
     // A game in exclusive full screen drops to the desktop as soon as it loses the focus, so the focus must stay with
     // it: Windows says so for Direct3D games, a game at another resolution than the screen's own (1080p on a 1440p
     // screen) is one, and so is a game already seen dropping
@@ -2788,6 +2808,7 @@ public partial class MainWindow : Window
     {
         IntPtr fg = GetForegroundWindow();
         if (fg != IntPtr.Zero && fg == _dropsWin) return true;
+        if (fg != IntPtr.Zero && ProcessNameOf(fg) is string name && _focusGames.Contains(name)) return true;
         if (SHQueryUserNotificationState(out int state) == 0 && state == QUNS_RUNNING_D3D_FULL_SCREEN) return true;
         if (!IsFullScreenAppActive()) return false;
         if (!GetWindowRect(fg, out RECT r)) return false;

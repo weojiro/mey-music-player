@@ -106,8 +106,9 @@ orta, orta üst ya da sol), dil, Yeniden başlat ve Kapat. *Orta*, görev çubu�
 2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla. Başka bir şey kurman gerekmez.
 3. "Installation complete!" yazınca uygulamayı masaüstündeki **mey music player** kısayoluyla aç.
 
-MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin) ve kendini günceller: açılışta
-ve günde bir kez yeni sürüme bakar. Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
+MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin). Açılışta ve günde bir kez
+GitHub'da yeni sürüm var mı diye bakar ve güncellemeden önce sana sorar. Yeni sürüm sadece bu repo'nun
+release'lerinden gelir ve MMP kurmadan önce SHA-256'sını kontrol eder. Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
 
 ## Sorular
 

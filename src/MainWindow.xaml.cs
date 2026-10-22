@@ -373,10 +373,12 @@ public partial class MainWindow : Window
 
     // ---------- the cover: click = open / close, drag = move (also used by the drawn cursor) ----------
 
+    bool _dragBlocked;                  // a drag on "Center": nothing moves, and it is no click either
+
     void CoverPress(Point at)
     {
         _clicks++;
-        _dragMoved = false;
+        _dragMoved = _dragBlocked = false;
         _dragStartCursorX = (int)at.X;
         _dragStartCursorY = (int)at.Y;
         _dragStartCoverX = _gapX;
@@ -389,7 +391,7 @@ public partial class MainWindow : Window
         if (!_free) dy = 0;
         if (!_dragMoved && Math.Abs(dx) < 5 && Math.Abs(dy) < 5) return;       // small wobble = still a click
         // "Center" and "Center, above" stay in the middle: a drag moves nothing (and is no click either)
-        if (_center && !_free) { _dragMoved = true; return; }
+        if (_center && !_free) { _dragMoved = _dragBlocked = true; return; }
         if (!_dragMoved)
         {
             // the card stays open through a click, only a real drag hides it
@@ -416,7 +418,7 @@ public partial class MainWindow : Window
     {
         if (_dragMoved)
         {
-            if (!_dragging) return;         // a drag that moved nothing ("Center")
+            if (_dragBlocked) return;       // a drag that moved nothing ("Center")
             DropCover();
             if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title)) _hoverTimer.Start();   // card comes back after the drop
         }
@@ -601,6 +603,15 @@ public partial class MainWindow : Window
 
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
+        // the icons may have moved while the taskbar was away (apps opened, closed): look again once it is up
+        if (fullyOn && !_wasFullyOn && _scans > 0) RunMeasure();
+        _wasFullyOn = fullyOn;
+        // on the taskbar, the cover waits for the first look at the icons, so it never shows up on them
+        if (!_above && _scans == 0)
+        {
+            if (visible && !_measuring) RunMeasure();
+            visible = false;
+        }
 
         int currentTaskbarH = r.Height;
         int h = (_fullHeight > 0 && _fullHeight <= currentTaskbarH) ? _fullHeight : currentTaskbarH;
@@ -799,6 +810,7 @@ public partial class MainWindow : Window
         Dispatcher.BeginInvoke(new Action(() => { _pxKey = default; Update(); }));
 
     int TrayLeft => _trayLeft > 0 ? _trayLeft : (int)(_screenW * 0.75);
+    bool _wasFullyOn;
 
     int FullWidth(int size) => (int)Math.Round(DesignW * size / 40.0);
 
@@ -821,7 +833,11 @@ public partial class MainWindow : Window
         // "Center": the whole open player sits in the middle of the taskbar, not only the cover
         int wanted = _center && _userX == null ? _last.Left + (_last.Right - _last.Left - FullWidth(size)) / 2 : restX;
         int x = SnapToFree(wanted, size, taskbarLeft, FullWidth(size));
-        return x >= 0 ? x : restX;
+        if (x >= 0) return x;
+        // no free room is wide enough: open from the widest one, so as few icons as possible are covered
+        var widest = FreeGaps(taskbarLeft).OrderByDescending(g => g.b - g.a).FirstOrDefault();
+        if (widest.b <= widest.a) return restX;
+        return _side == Side.Left ? widest.a + MarginPx : widest.b - MarginPx - size;
     }
 
     List<(int a, int b)> FreeGaps(int taskbarLeft)
@@ -966,7 +982,8 @@ public partial class MainWindow : Window
                 {
                     var info = el.Current;
                     var rc = info.BoundingRectangle;
-                    if (rc.IsEmpty || rc.Width <= 0) continue;
+                    // hidden or off-screen items (a button Windows keeps but doesn't show) would block free room
+                    if (rc.IsEmpty || rc.Width < 4 || rc.Height < 4 || info.IsOffscreen) continue;
                     int l = (int)rc.Left, rr = (int)Math.Ceiling(rc.Right);
                     bool counted = IsItemType(info.ControlType) && rr <= trayLeft;
                     if (info.AutomationId == "StartButton") _startLeft = l;

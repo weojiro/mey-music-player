@@ -1148,19 +1148,25 @@ public partial class MainWindow : Window
         else _lyricsTimer.Stop();
     }
 
+    // Right after sign-in (Start with Windows) Windows' media service may not be ready yet: try again a few times
     async void InitMedia()
     {
-        try
+        for (int attempt = 1; ; attempt++)
         {
-            _mgr = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-            _mgr.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(new Action(OnSessionChanged));
-            OnSessionChanged();
-        }
-        catch (Exception ex)
-        {
-            _mediaStatus = "media API unavailable: " + ex.Message;
-            ErrorLog.Write("media init", ex);
-            Refresh();
+            try
+            {
+                _mgr = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
+                _mgr.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(new Action(OnSessionChanged));
+                OnSessionChanged();
+                return;
+            }
+            catch (Exception ex)
+            {
+                _mediaStatus = "media API unavailable: " + ex.Message;
+                Refresh();
+                if (attempt >= 6) { ErrorLog.Write("media init", ex); return; }
+            }
+            await Task.Delay(5000);
         }
     }
 
@@ -2545,13 +2551,9 @@ public partial class MainWindow : Window
         return key?.GetValue(RunName) != null;
     }
 
-    static string StartupCommand()
-    {
-        string exe = Environment.ProcessPath ?? "";
-        string bat = Path.Combine(Path.GetDirectoryName(exe) ?? "", "MMP Launcher.bat");
-        // "start" alone would open the .bat with cmd /k, leaving its window (in System32) open after it is done
-        return File.Exists(bat) ? $"cmd.exe /c start \"\" /min cmd.exe /c \"\"{bat}\" /run\"" : $"\"{exe}\"";
-    }
+    // MMP.exe itself: it has the .NET runtime inside, so nothing needs checking first (it used to go through the
+    // launcher, two command windows flashing at sign-in). An old entry is rewritten when MMP starts.
+    static string StartupCommand() => $"\"{Environment.ProcessPath}\"";
 
     static void SetStartup(bool on)
     {

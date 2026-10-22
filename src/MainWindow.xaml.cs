@@ -628,7 +628,9 @@ public partial class MainWindow : Window
                 int gap = (int)Math.Round(AboveGap * VisualTreeHelper.GetDpi(this).DpiScaleX);
                 int state = overGame && !taskbarInFront ? YSpot : sinking ? YSink : YAbove;
                 if (state == YAbove)
-                    coverY = taskbarVisible && !keepAbove ? (atBottom ? r.Top - gap - size : r.Bottom + gap) : _gapY;
+                    // a taskbar all the way up always takes it back above it (it may have stopped half way down,
+                    // under the mouse, as the taskbar was hiding)
+                    coverY = taskbarVisible && (!keepAbove || fullyOn) ? (atBottom ? r.Top - gap - size : r.Bottom + gap) : _gapY;
                 else if (state == YSink)
                     coverY = atBottom ? _screenH : -size;
                 coverY = SmoothY(coverY, state);
@@ -867,6 +869,7 @@ public partial class MainWindow : Window
             _center = _above = false;       // a spot of the user's own: no longer the middle
         }
         _posVersion++;
+        RunMeasure();       // the icons may have moved since the last look: dropped on them, it moves off them
         SaveSettings();
         Update();
     }
@@ -1086,11 +1089,17 @@ public partial class MainWindow : Window
         return false;
     }
 
+    // the mouse on the player, or just left it: a small slip off it doesn't drop it
+    long _lastOnPlayer;
+    const int PlayerSlack = 16, PlayerGraceMs = 700;
+
     bool CursorOnPlayer()
     {
         if (!GetCursorPos(out var c)) return false;
-        const int slack = 8;
-        return c.X >= _winX - slack && c.X <= _winX + _winW + slack && c.Y >= _gapY - slack && c.Y <= _gapY + _coverSize + slack;
+        bool on = c.X >= _winX - PlayerSlack && c.X <= _winX + _winW + PlayerSlack
+               && c.Y >= _gapY - PlayerSlack && c.Y <= _gapY + _coverSize + PlayerSlack;
+        if (on) _lastOnPlayer = Environment.TickCount64;
+        return on || Environment.TickCount64 - _lastOnPlayer < PlayerGraceMs;
     }
 
     void OnRender(object? sender, EventArgs e)

@@ -1307,48 +1307,6 @@ public partial class MainWindow : Window
         return crop;
     }
 
-    BitmapSource? TryGetAppIcon(string aumid)
-    {
-        if (string.IsNullOrEmpty(aumid)) return null;
-        string key = ProcessKey(aumid);
-        if (key == "") return null;     // "" is in every process name: it would pick a random app's icon
-        var processes = Array.Empty<Process>();
-        try
-        {
-            processes = Process.GetProcesses();
-            foreach (var p in processes)
-            {
-                try
-                {
-                    // ordinal: with a Turkish culture ToLower would turn "I" into "ı" and miss the match
-                    if (p.ProcessName.Contains(key, StringComparison.OrdinalIgnoreCase) ||
-                        key.Contains(p.ProcessName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        string path = p.MainModule?.FileName ?? "";
-                        if (File.Exists(path))
-                        {
-                            using var sysIcon = System.Drawing.Icon.ExtractAssociatedIcon(path);
-                            if (sysIcon != null)
-                            {
-                                var bs = Imaging.CreateBitmapSourceFromHIcon(
-                                    sysIcon.Handle, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                                bs.Freeze();
-                                return bs;
-                            }
-                        }
-                    }
-                }
-                catch { }
-            }
-        }
-        catch { }
-        finally
-        {
-            foreach (var p in processes) p.Dispose();     // each one holds a process handle
-        }
-        return null;
-    }
-
     void ApplyCover(BitmapSource? cover)
     {
         if (cover != null)
@@ -1360,20 +1318,12 @@ public partial class MainWindow : Window
         }
         else
         {
-            var appIcon = TryGetAppIcon(_source);
-            if (appIcon != null)
-            {
-                Cover.Background = new ImageBrush(appIcon) { Stretch = Stretch.UniformToFill };
-                Glyph.Visibility = Visibility.Collapsed;
-                SetChameleon(DefaultBg, DefaultAccent);
-            }
-            else
-            {
-                Cover.Background = _defaultCoverBrush;
-                Glyph.Text = "\uEC4F"; // music note
-                Glyph.Visibility = Visibility.Visible;
-                SetChameleon(DefaultBg, DefaultAccent);
-            }
+            // no cover (a video, a file without one): the music note, like with nothing playing; an app's own icon
+            // looked blurry and out of place there
+            Cover.Background = _defaultCoverBrush;
+            Glyph.Text = "\uEC4F"; // music note
+            Glyph.Visibility = Visibility.Visible;
+            SetChameleon(DefaultBg, DefaultAccent);
         }
     }
 

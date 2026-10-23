@@ -85,7 +85,7 @@ up as "Something is playing".
 
 ### Equalizer
 
-Tray menu → *Equalizer*: 18 bands, a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
+Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
 stereo width, balance, reduce vocals). Changes are heard at once, in every app. The sound goes through
 [Equalizer APO](https://sourceforge.net/projects/equalizerapo/), a free and open-source sound tool for Windows; if
 it isn't installed, the Equalizer window can download its official setup (about 12 MB, checked before it runs) and

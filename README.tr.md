@@ -86,7 +86,7 @@ olarak görünür.
 
 ### Ekolayzer
 
-Tray menüsü → *Ekolayzer*: 18 bant, ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
+Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
 güçlendirme, stereo genişlik, denge, vokali azalt). Değişiklikler anında, her uygulamada duyulur. Ses, Windows için
 ücretsiz ve açık kaynak bir ses aracı olan [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) üzerinden
 geçer; kurulu değilse Ekolayzer penceresi resmi kurulumunu indirip (yaklaşık 12 MB, çalıştırmadan önce kontrol

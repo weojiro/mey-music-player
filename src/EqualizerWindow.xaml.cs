@@ -68,7 +68,11 @@ public partial class EqualizerWindow : Window
         BuildGraph();
         _applyTimer.Tick += (_, _) => { _applyTimer.Stop(); Apply(); };
         // while the setup or the device picker may be open: the page follows what they did
-        _installTimer.Tick += (_, _) => { if (Equalizer.Installed != _installed || Equalizer.NeedsRestart != (RestartCard.Visibility == Visibility.Visible)) RefreshInstalled(); };
+        _installTimer.Tick += (_, _) =>
+        {
+            if (Equalizer.Installed != _installed || Equalizer.NeedsRestart != (RestartCard.Visibility == Visibility.Visible)) RefreshInstalled();
+            else ShowDevices();
+        };
 
         OnBox.Checked += (_, _) => { if (!_loading) { _eq.On = true; Changed(); } };
         OnBox.Unchecked += (_, _) => { if (!_loading) { _eq.On = false; Changed(); } };
@@ -116,8 +120,17 @@ public partial class EqualizerWindow : Window
         Controls.IsEnabled = OnBox.IsEnabled = _installed;
         Dim();
         RestartCard.Visibility = _installed && Equalizer.NeedsRestart ? Visibility.Visible : Visibility.Collapsed;
+        ShowDevices();
         if (_installed) Apply();
         else _installTimer.Start();      // the setup may be running: the page comes alive once it is done
+    }
+
+    // the devices it already works on, so it is clear whether the device picker is needed at all
+    void ShowDevices()
+    {
+        var devices = Equalizer.Devices();
+        DevicesNow.Text = string.Format(T("eqDevicesNow"), string.Join(", ", devices));
+        DevicesNow.Visibility = devices.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     async void Install()

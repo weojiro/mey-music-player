@@ -119,6 +119,7 @@
                     <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="DevicesText"/>
                     <StackPanel Grid.Column="1" HorizontalAlignment="Left" MaxWidth="560">
                         <TextBlock FontSize="12" Foreground="{StaticResource Dim}" TextWrapping="Wrap" x:Name="DevicesHint"/>
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="DevicesNow"/>
                         <Button HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource Btn}" x:Name="DevicesButton"/>
                     </StackPanel>
                 </Grid>

@@ -112,10 +112,32 @@ static class Equalizer
         {
             string exe = Path.Combine(dir, name);
             if (!File.Exists(exe)) continue;
-            try { Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, Verb = "runas" }); return true; }
+            // from its own folder: it finds its Qt files there, and fails to start from anywhere else
+            try { Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, Verb = "runas", WorkingDirectory = dir }); return true; }
             catch { return false; }     // the user said no to Windows' question
         }
         return false;
+    }
+
+    // The output devices Equalizer APO works on: its setup keeps a backup_<device>_<name>.reg file for each one it
+    // was added to, and removes it again.
+    public static string[] Devices()
+    {
+        if (InstallDir is not { } dir) return Array.Empty<string>();
+        try
+        {
+            return Directory.GetFiles(dir, "backup_*.reg")
+                .Where(f => File.ReadAllText(f).Contains(@"\Render\"))
+                .Select(f =>
+                {
+                    string n = Path.GetFileNameWithoutExtension(f)["backup_".Length..];
+                    int i = n.LastIndexOf('_');
+                    return i > 0 ? $"{n[(i + 1)..]} ({n[..i]})" : n;      // as Windows shows it: "Headphones (USB Audio)"
+                })
+                .Order().ToArray();
+        }
+        catch (IOException) { return Array.Empty<string>(); }
+        catch (UnauthorizedAccessException) { return Array.Empty<string>(); }
     }
 
     // Lets every user change the config folder (Windows asks once). Only needed when the folder was made read-only.

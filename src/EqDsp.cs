@@ -14,7 +14,6 @@ sealed class EqDsp
     // filter memory: [filter, channel]
     readonly double[,] _z1 = new double[Equalizer.Frequencies.Length + 1, 2], _z2 = new double[Equalizer.Frequencies.Length + 1, 2];
     readonly Reverb _reverb;
-    readonly Limiter _limiter;
     double[]? _fitFor, _fitted;     // the last fit: dragging a slider doesn't fit the bands again
     readonly object _setLock = new();
 
@@ -31,7 +30,6 @@ sealed class EqDsp
     {
         _rate = rate;
         _reverb = new Reverb(rate);
-        _limiter = new Limiter(rate);
         _c = new Coeffs();
     }
 
@@ -148,50 +146,20 @@ sealed class EqDsp
         }
         if (c.Wet > 0) _reverb.Process(buf, frames, c.Dry, c.Wet);
         else _reverb.Clear();
-        _limiter.Process(buf, frames);
+        Clip(buf, frames);
     }
 
-    // Turned far up, the sound goes over the top. Windows' own limiter then squeezes everything and it pumps; this one
-    // looks 1.5 ms ahead and only takes the peaks down, smoothly, so everything can be turned all the way up.
-    sealed class Limiter
+    // Turned far up, the sound goes over the top. Windows' own limiter would then turn everything down and it pumps.
+    // Here nothing is turned down: only what goes over the top is rounded off, like a player that clips (AIMP), so
+    // turned all the way up it stays as loud as it gets.
+    const float Knee = 0.8f, Room = 1 - Knee;
+
+    static void Clip(float[] buf, int frames)
     {
-        const float Ceiling = 0.98f;
-        readonly float[] _delay;        // interleaved, the look-ahead
-        readonly float[] _peaks;        // each delayed frame's louder channel
-        readonly int _length;
-        readonly float _attack, _release;
-        int _pos;
-        float _gain = 1;
-
-        public Limiter(int rate)
+        for (int i = 0; i < frames * 2; i++)
         {
-            _length = Math.Max(1, rate * 3 / 2000);
-            _delay = new float[_length * 2];
-            _peaks = new float[_length];
-            _attack = 1 - MathF.Exp(-3f / _length);                 // there within the look-ahead
-            _release = 1 - MathF.Exp(-1f / (rate * 0.15f));         // back up over about 150 ms
-        }
-
-        public void Process(float[] buf, int frames)
-        {
-            for (int i = 0; i < frames; i++)
-            {
-                float l = buf[2 * i], r = buf[2 * i + 1];
-                float outL = _delay[2 * _pos], outR = _delay[2 * _pos + 1];
-                _delay[2 * _pos] = l;
-                _delay[2 * _pos + 1] = r;
-                _peaks[_pos] = MathF.Max(MathF.Abs(l), MathF.Abs(r));
-                if (++_pos >= _length) _pos = 0;
-
-                float peak = 0;
-                for (int k = 0; k < _length; k++) peak = MathF.Max(peak, _peaks[k]);
-                float target = peak > Ceiling ? Ceiling / peak : 1;
-                _gain += (target - _gain) * (target < _gain ? _attack : _release);
-
-                // whatever still gets past (a sudden peak) is held at the ceiling
-                buf[2 * i] = Math.Clamp(outL * _gain, -Ceiling, Ceiling);
-                buf[2 * i + 1] = Math.Clamp(outR * _gain, -Ceiling, Ceiling);
-            }
+            float v = buf[i], a = MathF.Abs(v);
+            if (a > Knee) buf[i] = MathF.CopySign(Knee + Room * MathF.Tanh((a - Knee) / Room), v);     // never past 1
         }
     }
 

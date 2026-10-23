@@ -88,11 +88,14 @@ up as "Something is playing".
 ### Equalizer
 
 Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
-stereo width, balance, reduce vocals). Changes are heard at once, in every app. The sound goes through
-[Equalizer APO](https://sourceforge.net/projects/equalizerapo/), a free and open-source sound tool for Windows; if
-it isn't installed, the Equalizer window can download its official setup (about 12 MB, checked before it runs) and
-start it. Windows asks for permission, you choose your sound devices, then restart the computer. The equalizer keeps
-working while MMP is closed; turn it off with the switch in the Equalizer window.
+reverb, stereo width, balance, reduce vocals). Save up to 5 of your own sounds. Changes are heard at once.
+
+It only changes the apps you turn on (Spotify by default; browsers and music players show up while they are open).
+Discord, games and everything else sound as they are. For this MMP uses
+[VB-CABLE](https://vb-audio.com/Cable/), a free virtual audio cable by VB-Audio (donationware): the Equalizer window
+can download its official driver pack (about 1.3 MB, checked before it runs) and install it once. Windows asks for
+permission; your default sound devices stay as they are. The equalizer works while MMP is running; when MMP closes or
+the equalizer is off, the apps play as before. Equalizer APO, used by v1.3, isn't needed any more.
 
 ### Quick controls
 
@@ -203,8 +206,8 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
 - **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) and **SoundCloud** (`soundcloud.com`, only for a
   SoundCloud song): the song's title and artist, to find its cover for Discord (Discord shows a picture only from a web
   address). Only while *Show on Discord* is on.
-- **SourceForge** (`downloads.sourceforge.net`): Equalizer APO's setup, only when you click *Download and install* in
-  the Equalizer window.
+- **VB-Audio** (`download.vb-audio.com`): VB-CABLE's driver pack, only when you click *Install VB-CABLE* in the
+  Equalizer window.
 
 ## License
 

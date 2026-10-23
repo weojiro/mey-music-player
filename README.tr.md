@@ -89,11 +89,15 @@ olarak görünür.
 ### Ekolayzer
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
-güçlendirme, stereo genişlik, denge, vokali azalt). Değişiklikler anında, her uygulamada duyulur. Ses, Windows için
-ücretsiz ve açık kaynak bir ses aracı olan [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) üzerinden
-geçer; kurulu değilse Ekolayzer penceresi resmi kurulumunu indirip (yaklaşık 12 MB, çalıştırmadan önce kontrol
-edilir) başlatabilir. Windows izin ister, ses cihazlarını seçersin, sonra bilgisayarı yeniden başlatırsın. Ekolayzer
-MMP kapalıyken de çalışmaya devam eder; Ekolayzer penceresindeki düğmeyle kapatabilirsin.
+güçlendirme, yankı, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilirsin.
+Değişiklikler anında duyulur.
+
+Sadece açtığın uygulamaları değiştirir (varsayılan Spotify; tarayıcılar ve müzik çalarlar açıkken listede görünür).
+Discord, oyunlar ve diğer her şey olduğu gibi kalır. Bunun için MMP, VB-Audio'nun ücretsiz sanal ses kablosu
+[VB-CABLE](https://vb-audio.com/Cable/)'ı kullanır (bağış usulü): Ekolayzer penceresi resmi sürücü paketini indirip
+(yaklaşık 1,3 MB, çalıştırmadan önce kontrol edilir) bir kez kurabilir. Windows izin ister; varsayılan ses cihazların
+aynen kalır. Ekolayzer MMP açıkken çalışır; MMP kapanınca ya da ekolayzer kapalıyken uygulamalar eskisi gibi çalar.
+v1.3'ün kullandığı Equalizer APO'ya artık gerek yok.
 
 ### Hızlı kontroller
 
@@ -194,7 +198,7 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
 - **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) ve **SoundCloud** (`soundcloud.com`, sadece
   SoundCloud şarkısında): Discord'daki kapak için şarkının adı ve sanatçısı (Discord resmi sadece bir internet
   adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
-- **SourceForge** (`downloads.sourceforge.net`): Equalizer APO'nun kurulumu, sadece Ekolayzer penceresinde *İndir ve
+- **VB-Audio** (`download.vb-audio.com`): VB-CABLE'ın sürücü paketi, sadece Ekolayzer penceresinde *VB-CABLE'ı
   kur*'a bastığında.
 
 ## Lisans

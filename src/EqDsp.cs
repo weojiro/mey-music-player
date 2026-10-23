@@ -1,0 +1,224 @@
+using System.Numerics;
+
+namespace TaskbarPlayerProto;
+
+// The equalizer's sound processing on 2-channel float samples: preamp, the 20 bands, bass boost, the stereo mix
+// (width, vocals, balance) and a small-room reverb. Set() may be called from any thread; Process() picks the new
+// values up at its next block.
+sealed class EqDsp
+{
+    const double BandQ = 2.0;
+    readonly int _rate;
+    Coeffs _c;
+
+    // filter memory: [filter, channel]
+    readonly double[,] _z1 = new double[Equalizer.Frequencies.Length + 1, 2], _z2 = new double[Equalizer.Frequencies.Length + 1, 2];
+    readonly Reverb _reverb;
+
+    sealed class Coeffs
+    {
+        public bool On;
+        public double Pre = 1;
+        public double[] B0 = Array.Empty<double>(), B1 = Array.Empty<double>(), B2 = Array.Empty<double>(), A1 = Array.Empty<double>(), A2 = Array.Empty<double>();
+        public double LL = 1, LR, RL, RR = 1;
+        public float Dry = 1, Wet;
+    }
+
+    public EqDsp(int rate)
+    {
+        _rate = rate;
+        _reverb = new Reverb(rate);
+        _c = new Coeffs();
+    }
+
+    public void Set(EqSettings s)
+    {
+        var c = new Coeffs { On = s.On, Pre = Math.Pow(10, s.Preamp / 20) };
+        var filters = new List<(double b0, double b1, double b2, double a1, double a2)>();
+        if (s.Bands.Any(b => b != 0))
+            filters.AddRange(FitBands(s.Bands).Select((g, i) => Peaking(BandFreq(i), g, BandQ)));
+        if (s.Bass > 0) filters.Add(LowShelf(105, s.Bass));
+        c.B0 = filters.Select(f => f.b0).ToArray();
+        c.B1 = filters.Select(f => f.b1).ToArray();
+        c.B2 = filters.Select(f => f.b2).ToArray();
+        c.A1 = filters.Select(f => f.a1).ToArray();
+        c.A2 = filters.Select(f => f.a2).ToArray();
+
+        // the same mix as before: the middle (what both channels have, mostly the voice) and the sides turned up or
+        // down, then each channel's share of the balance
+        double mid = 1 - s.Vocals / 100.0, side = s.Width / 100.0;
+        double left = s.Balance > 0 ? 1 - s.Balance / 100.0 : 1, right = s.Balance < 0 ? 1 + s.Balance / 100.0 : 1;
+        double same = (mid + side) / 2, other = (mid - side) / 2;
+        c.LL = same * left; c.LR = other * left; c.RL = other * right; c.RR = same * right;
+
+        double r = s.Reverb / 100.0;
+        c.Wet = (float)(r * 0.9);
+        c.Dry = (float)(1 - r * 0.25);
+        _c = c;
+    }
+
+    // the top bands sit above what a 44.1 kHz stream can carry: they move just under it
+    double BandFreq(int i) => Math.Min(Equalizer.Frequencies[i], _rate * 0.45);
+
+    // The bands overlap, so neighbours add up (three bands at +6 would give about +9). The filters' gains are fitted
+    // until the curve passes through each band's value, the way the graph shows it.
+    double[] FitBands(double[] target)
+    {
+        int n = target.Length;
+        var gains = (double[])target.Clone();
+        for (int round = 0; round < 12; round++)
+        {
+            var filters = gains.Select((g, i) => Peaking(BandFreq(i), g, BandQ)).ToArray();
+            for (int i = 0; i < n; i++)
+            {
+                double w = 2 * Math.PI * BandFreq(i) / _rate, db = 0;
+                foreach (var f in filters) db += Db(f, w);
+                gains[i] = Math.Clamp(gains[i] + 0.8 * (target[i] - db), -24, 24);
+            }
+        }
+        return gains;
+    }
+
+    static double Db((double b0, double b1, double b2, double a1, double a2) f, double w)
+    {
+        var z1 = Complex.FromPolarCoordinates(1, -w);
+        var z2 = z1 * z1;
+        return 20 * Math.Log10(Complex.Abs((f.b0 + f.b1 * z1 + f.b2 * z2) / (1 + f.a1 * z1 + f.a2 * z2)));
+    }
+
+    // RBJ cookbook filters, normalised so a0 = 1
+    (double, double, double, double, double) Peaking(double freq, double gain, double q)
+    {
+        double a = Math.Pow(10, gain / 40), w = 2 * Math.PI * freq / _rate, alpha = Math.Sin(w) / (2 * q), cos = Math.Cos(w);
+        double a0 = 1 + alpha / a;
+        return ((1 + alpha * a) / a0, -2 * cos / a0, (1 - alpha * a) / a0, -2 * cos / a0, (1 - alpha / a) / a0);
+    }
+
+    (double, double, double, double, double) LowShelf(double freq, double gain)
+    {
+        double a = Math.Pow(10, gain / 40), w = 2 * Math.PI * freq / _rate, cos = Math.Cos(w);
+        double alpha = Math.Sin(w) / 2 * Math.Sqrt(2), sq = 2 * Math.Sqrt(a) * alpha;
+        double a0 = (a + 1) + (a - 1) * cos + sq;
+        return (a * ((a + 1) - (a - 1) * cos + sq) / a0, 2 * a * ((a - 1) - (a + 1) * cos) / a0, a * ((a + 1) - (a - 1) * cos - sq) / a0,
+            -2 * ((a - 1) + (a + 1) * cos) / a0, ((a + 1) + (a - 1) * cos - sq) / a0);
+    }
+
+    // interleaved stereo, in place
+    public void Process(float[] buf, int frames)
+    {
+        var c = _c;
+        if (!c.On) return;
+        int nf = c.B0.Length;
+        bool mix = c.LL != 1 || c.LR != 0 || c.RL != 0 || c.RR != 1;
+        for (int i = 0; i < frames; i++)
+        {
+            double l = buf[2 * i] * c.Pre, r = buf[2 * i + 1] * c.Pre;
+            for (int f = 0; f < nf; f++)
+            {
+                // transposed direct form II
+                double yl = c.B0[f] * l + _z1[f, 0];
+                _z1[f, 0] = c.B1[f] * l - c.A1[f] * yl + _z2[f, 0];
+                _z2[f, 0] = c.B2[f] * l - c.A2[f] * yl;
+                l = yl;
+                double yr = c.B0[f] * r + _z1[f, 1];
+                _z1[f, 1] = c.B1[f] * r - c.A1[f] * yr + _z2[f, 1];
+                _z2[f, 1] = c.B2[f] * r - c.A2[f] * yr;
+                r = yr;
+            }
+            if (mix)
+            {
+                double nl = c.LL * l + c.LR * r;
+                r = c.RL * l + c.RR * r;
+                l = nl;
+            }
+            buf[2 * i] = (float)l;
+            buf[2 * i + 1] = (float)r;
+        }
+        if (c.Wet > 0) _reverb.Process(buf, frames, c.Dry, c.Wet);
+        else _reverb.Clear();
+    }
+
+    // Freeverb (Jezar's public domain reverb) tuned to a small room, like the cabin of a car: short delays, quick
+    // decay, the highs soaked up.
+    sealed class Reverb
+    {
+        static readonly int[] CombTuning = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
+        static readonly int[] AllpassTuning = { 556, 441, 341, 225 };
+        const int Spread = 23;
+        const float Feedback = 0.76f, Damp = 0.55f, InputGain = 0.015f;
+
+        readonly float[][] _comb = new float[16][], _allpass = new float[8][];
+        readonly int[] _combPos = new int[16], _allpassPos = new int[8];
+        readonly float[] _combStore = new float[16];
+        bool _clear = true;
+
+        public Reverb(int rate)
+        {
+            double scale = rate / 44100.0 * 0.55;      // a smaller room than Freeverb's own
+            for (int i = 0; i < 8; i++)
+            {
+                _comb[i] = new float[Math.Max(1, (int)(CombTuning[i] * scale))];
+                _comb[i + 8] = new float[Math.Max(1, (int)((CombTuning[i] + Spread) * scale))];
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                _allpass[i] = new float[Math.Max(1, (int)(AllpassTuning[i] * scale))];
+                _allpass[i + 4] = new float[Math.Max(1, (int)((AllpassTuning[i] + Spread) * scale))];
+            }
+        }
+
+        public void Clear()
+        {
+            if (_clear) return;
+            foreach (var a in _comb) Array.Clear(a);
+            foreach (var a in _allpass) Array.Clear(a);
+            Array.Clear(_combStore);
+            _clear = true;
+        }
+
+        public void Process(float[] buf, int frames, float dry, float wet)
+        {
+            _clear = false;
+            for (int i = 0; i < frames; i++)
+            {
+                float inL = buf[2 * i], inR = buf[2 * i + 1];
+                float input = (inL + inR) * InputGain;
+                float outL = 0, outR = 0;
+                for (int c = 0; c < 8; c++)
+                {
+                    outL += Comb(c, input);
+                    outR += Comb(c + 8, input);
+                }
+                for (int a = 0; a < 4; a++)
+                {
+                    outL = Allpass(a, outL);
+                    outR = Allpass(a + 4, outR);
+                }
+                buf[2 * i] = inL * dry + outL * wet;
+                buf[2 * i + 1] = inR * dry + outR * wet;
+            }
+        }
+
+        float Comb(int c, float input)
+        {
+            var b = _comb[c];
+            ref int pos = ref _combPos[c];
+            float output = b[pos];
+            _combStore[c] = output * (1 - Damp) + _combStore[c] * Damp + 1e-20f;      // + a tiny bit: no denormals
+            b[pos] = input + _combStore[c] * Feedback;
+            if (++pos >= b.Length) pos = 0;
+            return output;
+        }
+
+        float Allpass(int a, float input)
+        {
+            var b = _allpass[a];
+            ref int pos = ref _allpassPos[a];
+            float stored = b[pos];
+            float output = stored - input;
+            b[pos] = input + stored * 0.5f;
+            if (++pos >= b.Length) pos = 0;
+            return output;
+        }
+    }
+}

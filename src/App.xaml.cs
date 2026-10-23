@@ -11,7 +11,11 @@ public partial class App : Application
     {
         // unexpected errors are written to error.log; a UI error does not take the player off the taskbar
         DispatcherUnhandledException += (_, a) => { ErrorLog.Write("ui", a.Exception); a.Handled = true; };
-        AppDomain.CurrentDomain.UnhandledException += (_, a) => { if (a.ExceptionObject is Exception ex) ErrorLog.Write("crash", ex); };
+        AppDomain.CurrentDomain.UnhandledException += (_, a) =>
+        {
+            if (a.ExceptionObject is Exception ex) ErrorLog.Write("crash", ex);
+            EqEngine.Stop();       // the equalizer's apps go back to their own device before MMP is gone
+        };
         TaskScheduler.UnobservedTaskException += (_, a) => { ErrorLog.Write("task", a.Exception); a.SetObserved(); };
 
         // Only one copy at a time. After an update the old copy is still shutting down: wait for it.
@@ -31,6 +35,12 @@ public partial class App : Application
 
         Task.Run(DeleteOldExe);
         RefreshLauncher();
+        SessionEnding += (_, _) => EqEngine.Stop();
+        Task.Run(() =>
+        {
+            Equalizer.ApoCleanup();
+            EqEngine.Start(Equalizer.Load());
+        });
 
         base.OnStartup(e);
     }
@@ -72,6 +82,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        EqEngine.Stop();
         try { _single?.ReleaseMutex(); } catch { }
         base.OnExit(e);
     }

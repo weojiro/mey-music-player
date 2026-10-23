@@ -9,8 +9,8 @@ using System.Windows.Threading;
 
 namespace TaskbarPlayerProto;
 
-// The equalizer (tray menu): 18 bands, a preamp, presets and a few effects, played through Equalizer APO.
-// Every change is heard at once. Without Equalizer APO the page shows what it needs and can install it.
+// The equalizer (tray menu): 20 bands, a preamp, presets, saved sounds and a few effects, on the apps the user turns
+// on. Every change is heard at once. Without VB-CABLE the page says what it needs and can install it.
 public partial class EqualizerWindow : Window
 {
     const double Column = 40, GraphH = 230, GraphTop = 22, GraphBottom = 24;     // the band graph, in pixels
@@ -19,14 +19,14 @@ public partial class EqualizerWindow : Window
     static readonly Color ChipBack = Color.FromRgb(0x2D, 0x2D, 0x2D);
     static readonly Brush DimBrush = new SolidColorBrush(Color.FromRgb(0x9A, 0xA0, 0xA6));
     static readonly Brush GridBrush = new SolidColorBrush(Color.FromRgb(0x33, 0x33, 0x33));
+    static readonly Brush RedBrush = new SolidColorBrush(Color.FromRgb(0xF2, 0x8B, 0x82));
 
     readonly MainWindow _main;
     readonly EqSettings _eq = Equalizer.Load();
-    readonly DispatcherTimer _applyTimer = new() { Interval = TimeSpan.FromMilliseconds(120) };
-    readonly DispatcherTimer _installTimer = new() { Interval = TimeSpan.FromSeconds(2) };
+    readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(2) };
     CancellationTokenSource? _download;
-    bool _installed, _loading;
-    int _busyTries;
+    bool _cable, _loading;
+    string _openApps = "";
 
     // the graph
     readonly Ellipse[] _dots = new Ellipse[Equalizer.Frequencies.Length];
@@ -46,123 +46,129 @@ public partial class EqualizerWindow : Window
         OnBox.Content = T("eqOn");
         NeedText.Text = T("eqNeed");
         StepsText.Text = T("eqSteps");
-        InstallButton.Content = Equalizer.SetupAvailable ? T("eqInstall") : T("eqGet");
+        InstallButton.Content = T("eqInstall");
+        AppsText.Text = T("eqApps");
+        AppsHint.Text = T("eqAppsHint");
+        AppsNone.Text = T("eqAppsNone");
         PresetsText.Text = T("eqPresets");
         ResetButton.Content = T("reset");
+        SavedText.Text = T("eqSaved");
+        SaveButton.Content = T("eqSave");
         BandHint.Text = T("eqBandHint");
         PreampText.Text = T("eqPreamp");
         EffectsText.Text = T("eqEffects");
         BassLabel.Text = T("eqBassBoost");
+        ReverbLabel.Text = T("eqReverb");
         WidthLabel.Text = T("eqWidth");
         BalanceLabel.Text = T("eqBalance");
         VocalsLabel.Text = T("eqVocals");
         EffectsHint.Text = T("eqVocalsHint");
-        DevicesText.Text = T("eqDevices");
-        DevicesHint.Text = T("eqDevicesHint");
-        DevicesButton.Content = T("eqChoose");
-        WriteText.Text = T("eqNoWrite");
-        WriteButton.Content = T("eqAllow");
         RestartText.Text = T("eqRestart");
         RestartButton.Content = T("eqRestartNow");
+        ApoText.Text = T("eqApoGone");
+        ApoText.Visibility = Equalizer.ApoCleanup() ? Visibility.Visible : Visibility.Collapsed;
 
         BuildGraph();
-        _applyTimer.Tick += (_, _) => { _applyTimer.Stop(); Apply(); };
-        // while the setup or the device picker may be open: the page follows what they did
-        _installTimer.Tick += (_, _) =>
-        {
-            if (Equalizer.Installed != _installed || Equalizer.NeedsRestart != (RestartCard.Visibility == Visibility.Visible)) RefreshInstalled();
-            else ShowDevices();
-        };
+        // apps open and close, the cable may get installed: the page follows
+        _timer.Tick += (_, _) => { RefreshApps(); if (EqEngine.CableInstalled != _cable) RefreshCable(); };
 
         OnBox.Checked += (_, _) => { if (!_loading) { _eq.On = true; Changed(); } };
         OnBox.Unchecked += (_, _) => { if (!_loading) { _eq.On = false; Changed(); } };
         ResetButton.Click += (_, _) => Reset();
         InstallButton.Click += (_, _) => Install();
-        DevicesButton.Click += (_, _) => { if (Equalizer.OpenDevicePicker()) _installTimer.Start(); };
         RestartButton.Click += (_, _) => Equalizer.Restart();
-        WriteButton.Click += (_, _) => { if (Equalizer.AllowWriting()) Apply(); };
+        CableLink.Click += (_, _) => { try { Process.Start(new ProcessStartInfo(Equalizer.CableSite) { UseShellExecute = true }); } catch { } };
+        SaveButton.Click += (_, _) => SaveCurrent();
+        SaveName.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCurrent(); };
 
-        PreampSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Preamp = PreampSlider.Value; Changed(); };
-        BassSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Bass = BassSlider.Value; Changed(); };
-        WidthSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Width = (int)WidthSlider.Value; Changed(); };
-        BalanceSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Balance = (int)BalanceSlider.Value; Changed(); };
-        VocalsSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Vocals = (int)VocalsSlider.Value; Changed(); };
+        PreampSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Preamp = PreampSlider.Value; Edited(); };
+        BassSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Bass = BassSlider.Value; Edited(); };
+        ReverbSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Reverb = (int)ReverbSlider.Value; Edited(); };
+        WidthSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Width = (int)WidthSlider.Value; Edited(); };
+        BalanceSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Balance = (int)BalanceSlider.Value; Edited(); };
+        VocalsSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Vocals = (int)VocalsSlider.Value; Edited(); };
         // right-click: back to the default
         PreampSlider.MouseRightButtonUp += (_, _) => PreampSlider.Value = 0;
         BassSlider.MouseRightButtonUp += (_, _) => BassSlider.Value = 0;
+        ReverbSlider.MouseRightButtonUp += (_, _) => ReverbSlider.Value = 0;
         WidthSlider.MouseRightButtonUp += (_, _) => WidthSlider.Value = 100;
         BalanceSlider.MouseRightButtonUp += (_, _) => BalanceSlider.Value = 0;
         VocalsSlider.MouseRightButtonUp += (_, _) => VocalsSlider.Value = 0;
 
         MaxHeight = SystemParameters.WorkArea.Height;
         SourceInitialized += (_, _) => OptionsWindow.DarkTitleBar(this);
-        Closed += (_, _) =>
-        {
-            _installTimer.Stop();
-            _download?.Cancel();
-            if (_applyTimer.IsEnabled) { _applyTimer.Stop(); Apply(); }
-        };
+        Closed += (_, _) => { _timer.Stop(); _download?.Cancel(); };
 
+        SaveName.Text = NextName();
         RefreshAll();
-        RefreshInstalled();
+        RefreshCable();
+        RefreshApps();
+        _timer.Start();
     }
 
     string T(string key) => _main.Text(key);
 
     static string Db(double v) => (v > 0 ? "+" : "") + v.ToString("0.#", CultureInfo.CurrentCulture);
 
-    // ---------- Equalizer APO there or not ----------
+    // ---------- VB-CABLE there or not ----------
 
-    void RefreshInstalled()
+    void RefreshCable()
     {
-        _installed = Equalizer.Installed;
-        InstallCard.Visibility = _installed ? Visibility.Collapsed : Visibility.Visible;
-        Controls.IsEnabled = OnBox.IsEnabled = _installed;
+        _cable = EqEngine.CableInstalled;
+        InstallCard.Visibility = _cable ? Visibility.Collapsed : Visibility.Visible;
+        if (_cable) RestartCard.Visibility = Visibility.Collapsed;
+        Controls.IsEnabled = OnBox.IsEnabled = _cable;
         Dim();
-        RestartCard.Visibility = _installed && Equalizer.NeedsRestart ? Visibility.Visible : Visibility.Collapsed;
-        ShowDevices();
-        if (_installed) Apply();
-        else _installTimer.Start();      // the setup may be running: the page comes alive once it is done
-    }
-
-    // the devices it already works on, so it is clear whether the device picker is needed at all
-    void ShowDevices()
-    {
-        var devices = Equalizer.Devices();
-        DevicesNow.Text = string.Format(T("eqDevicesNow"), string.Join(", ", devices));
-        DevicesNow.Visibility = devices.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     async void Install()
     {
-        if (!Equalizer.SetupAvailable)
-        {
-            // another kind of PC (ARM): Equalizer APO's own download page
-            try { Process.Start(new ProcessStartInfo(Equalizer.FilesPage) { UseShellExecute = true }); } catch { }
-            return;
-        }
         InstallButton.IsEnabled = false;
         _download = new CancellationTokenSource();
         var progress = new Progress<double>(p => InstallStatus.Text = string.Format(T("eqDownloading"), (int)(p * 100)));
         InstallStatus.Foreground = DimBrush;
-        var result = await Equalizer.DownloadAndRunAsync(progress, _download.Token);
+        var task = Equalizer.InstallCableAsync(progress, _download.Token);
+        await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(3)));
+        if (!task.IsCompleted && IsLoaded) InstallStatus.Text = T("eqSetupOpen");      // downloaded: the setup is working
+        var result = await task;
         if (!IsLoaded) return;
+        InstallButton.IsEnabled = true;
+        InstallStatus.Text = "";
         switch (result)
         {
-            case Equalizer.SetupResult.Started:
-                InstallStatus.Text = T("eqSetupOpen");
-                InstallButton.IsEnabled = true;
+            case Equalizer.SetupResult.Done:
+                RefreshCable();
                 break;
-            case Equalizer.SetupResult.Declined:
-                InstallStatus.Text = "";
-                InstallButton.IsEnabled = true;
+            case Equalizer.SetupResult.NeedsRestart:
+                RestartCard.Visibility = Visibility.Visible;
                 break;
-            default:
+            case Equalizer.SetupResult.Failed:
                 InstallStatus.Text = T("eqDlFailed");
-                InstallStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xF2, 0x8B, 0x82));
-                InstallButton.IsEnabled = true;
+                InstallStatus.Foreground = RedBrush;
                 break;
         }
+    }
+
+    // ---------- the apps ----------
+
+    void RefreshApps()
+    {
+        var open = Equalizer.OpenApps();
+        string key = string.Join(",", open.Select(a => a.Process)) + "|" + string.Join(",", _eq.Apps);
+        if (key == _openApps) return;
+        _openApps = key;
+        AppChips.Children.Clear();
+        foreach (var (process, name) in open)
+        {
+            bool on = _eq.Apps.Contains(process, StringComparer.OrdinalIgnoreCase);
+            AppChips.Children.Add(Chip((on ? "✓  " : "") + name, on, () =>
+            {
+                if (_eq.Apps.RemoveAll(a => a.Equals(process, StringComparison.OrdinalIgnoreCase)) == 0) _eq.Apps.Add(process);
+                Changed();
+                RefreshApps();
+            }));
+        }
+        AppsNone.Visibility = open.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // ---------- settings ----------
@@ -170,26 +176,24 @@ public partial class EqualizerWindow : Window
     void Changed()
     {
         Equalizer.Save(_eq);
+        EqEngine.Update(_eq);
         RefreshValues();
-        _applyTimer.Stop();
-        _applyTimer.Start();
     }
 
-    void Apply()
+    // a slider moved: it's no longer exactly a saved sound
+    void Edited()
     {
-        if (!_installed) return;
-        var result = Equalizer.Apply(_eq);
-        if (result == Equalizer.ApplyResult.Busy && ++_busyTries <= 20) { _applyTimer.Start(); return; }    // once more in a moment
-        _busyTries = 0;
-        WriteCard.Visibility = result == Equalizer.ApplyResult.Denied ? Visibility.Visible : Visibility.Collapsed;
+        if (_eq.Preset.StartsWith("saved:")) _eq.Preset = "custom";
+        Changed();
     }
 
     void Reset()
     {
-        var fresh = new EqSettings { On = _eq.On };
+        var fresh = new EqSettings();
         _eq.Bands = fresh.Bands;
         _eq.Preamp = fresh.Preamp;
         _eq.Bass = fresh.Bass;
+        _eq.Reverb = fresh.Reverb;
         _eq.Width = fresh.Width;
         _eq.Balance = fresh.Balance;
         _eq.Vocals = fresh.Vocals;
@@ -206,12 +210,50 @@ public partial class EqualizerWindow : Window
         Changed();
     }
 
+    void UseSaved(SavedEq saved)
+    {
+        saved.ApplyTo(_eq);
+        SaveName.Text = saved.Name;
+        RefreshAll();
+        Changed();
+    }
+
+    string NextName()
+    {
+        for (int i = 1; ; i++)
+        {
+            string name = string.Format(T("eqDefaultName"), i);
+            if (!_eq.Saved.Any(s => s.Name == name)) return name;
+        }
+    }
+
+    // saves the sound as it is now; the same name replaces the old one
+    void SaveCurrent()
+    {
+        string name = SaveName.Text.Trim();
+        if (name.Length == 0) name = NextName();
+        int i = _eq.Saved.FindIndex(s => s.Name == name);
+        if (i < 0 && _eq.Saved.Count >= Equalizer.MaxSaved) { SavedFull.Text = T("eqSavedFull"); return; }
+        var saved = SavedEq.From(_eq, name);
+        if (i >= 0) _eq.Saved[i] = saved; else _eq.Saved.Add(saved);
+        _eq.Preset = "saved:" + name;
+        Changed();
+    }
+
+    void DeleteSaved(SavedEq saved)
+    {
+        _eq.Saved.Remove(saved);
+        if (_eq.Preset == "saved:" + saved.Name) _eq.Preset = "custom";
+        Changed();
+    }
+
     void RefreshAll()
     {
         _loading = true;
         OnBox.IsChecked = _eq.On;
         PreampSlider.Value = _eq.Preamp;
         BassSlider.Value = _eq.Bass;
+        ReverbSlider.Value = _eq.Reverb;
         WidthSlider.Value = _eq.Width;
         BalanceSlider.Value = _eq.Balance;
         VocalsSlider.Value = _eq.Vocals;
@@ -219,14 +261,15 @@ public partial class EqualizerWindow : Window
         RefreshValues();
     }
 
-    // without Equalizer APO, or switched off: the controls fade, so it shows that nothing changes the sound
-    void Dim() => Controls.Opacity = !_installed ? 0.4 : _eq.On ? 1 : 0.45;
+    // without VB-CABLE, or switched off: the controls fade, so it shows that nothing changes the sound
+    void Dim() => Controls.Opacity = !_cable ? 0.4 : _eq.On ? 1 : 0.45;
 
     void RefreshValues()
     {
         Dim();
         PreampValue.Text = Db(_eq.Preamp) + " dB";
         BassValue.Text = Db(_eq.Bass) + " dB";
+        ReverbValue.Text = _eq.Reverb + " %";
         WidthValue.Text = _eq.Width + " %";
         BalanceValue.Text = _eq.Balance == 0 ? T("center")
             : (_eq.Balance < 0 ? T("left") : T("right")) + " " + Math.Abs(_eq.Balance) + " %";
@@ -238,11 +281,31 @@ public partial class EqualizerWindow : Window
     void RefreshChips()
     {
         PresetChips.Children.Clear();
-        foreach (var (key, bands) in Equalizer.Presets) AddChip(T("eqP_" + key), _eq.Preset == key, () => UsePreset(key, bands));
-        if (_eq.Preset == "custom") AddChip(T("eqP_custom"), true, null);
+        foreach (var (key, bands) in Equalizer.Presets) PresetChips.Children.Add(Chip(T("eqP_" + key), _eq.Preset == key, () => UsePreset(key, bands)));
+        if (_eq.Preset == "custom") PresetChips.Children.Add(Chip(T("eqP_custom"), true, null));
+
+        SavedChips.Children.Clear();
+        foreach (var saved in _eq.Saved)
+        {
+            bool on = _eq.Preset == "saved:" + saved.Name;
+            var chip = Chip(saved.Name, on, () => UseSaved(saved));
+            chip.Padding = new Thickness(14, 6, 32, 6);
+            var delete = new Button
+            {
+                Content = "✕", Style = (Style)FindResource("Chip"), FontSize = 10, Padding = new Thickness(6, 2, 6, 2),
+                Background = Brushes.Transparent, Foreground = new SolidColorBrush(on ? Ink : Light),
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 6),
+                ToolTip = T("delete")
+            };
+            delete.Click += (_, _) => DeleteSaved(saved);
+            SavedChips.Children.Add(new Grid { Children = { chip, delete } });
+        }
+        bool full = _eq.Saved.Count >= Equalizer.MaxSaved;
+        SavedFull.Text = full ? T("eqSavedFull") : "";
+        SavedChips.Margin = new Thickness(0, 0, 0, _eq.Saved.Count > 0 ? 4 : 0);
     }
 
-    void AddChip(string text, bool on, Action? click)
+    Button Chip(string text, bool on, Action? click)
     {
         var b = new Button
         {
@@ -250,7 +313,7 @@ public partial class EqualizerWindow : Window
             Background = new SolidColorBrush(on ? Light : ChipBack), Foreground = new SolidColorBrush(on ? Ink : Light)
         };
         if (click != null) b.Click += (_, _) => click();
-        PresetChips.Children.Add(b);
+        return b;
     }
 
     // ---------- the band graph ----------

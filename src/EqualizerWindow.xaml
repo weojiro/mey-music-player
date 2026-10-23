@@ -88,7 +88,7 @@
                         <RowDefinition/>
                     </Grid.RowDefinitions>
                     <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="PreampText"/>
-                    <Slider Grid.Column="2" LargeChange="1" Maximum="12" Minimum="-12" SmallChange="0.5" Style="{StaticResource Range}" TickFrequency="0.5" x:Name="PreampSlider"/>
+                    <Slider Grid.Column="2" LargeChange="1" Maximum="15" Minimum="-15" SmallChange="0.5" Style="{StaticResource Range}" TickFrequency="0.5" x:Name="PreampSlider"/>
                     <TextBlock Grid.Column="3" Margin="10,0,0,0" MinWidth="70" VerticalAlignment="Center" x:Name="PreampValue"/>
 
                     <!-- effects -->

@@ -30,17 +30,19 @@ sealed class EqSettings
 static class Equalizer
 {
     public static readonly int[] Frequencies =
-        { 31, 63, 87, 125, 175, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 16000 };
-    public const double MaxGain = 12;
+        { 31, 43, 63, 87, 125, 175, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 16000, 22000 };
+    public const double MaxGain = 15;
+    // the bands of v1.3.0's first build, for settings saved with it
+    static readonly int[] OldFrequencies = { 31, 63, 87, 125, 175, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 16000 };
 
     public static readonly (string Key, double[] Bands)[] Presets =
     {
-        ("flat",   new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }),
-        ("bass",   new double[] { 7, 6, 5.5, 4.5, 3.5, 2.5, 1.5, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }),
-        ("vocal",  new double[] { -2, -2, -1.5, -1, 0, 1, 2, 3, 3.5, 3.5, 3, 2.5, 2, 1, 0, -0.5, -1, -1.5 }),
-        ("rock",   new double[] { 5, 4.5, 4, 3, 1.5, 0, -1, -1.5, -1, 0, 1, 2, 3, 3.5, 4, 4, 4, 4 }),
-        ("pop",    new double[] { -1, -0.5, 0, 1, 2, 3, 3.5, 3.5, 3, 2, 1, 0, -0.5, -0.5, 0, 0.5, 1, 1 }),
-        ("treble", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1.5, 2.5, 3.5, 4.5, 5.5, 6, 6.5, 7 }),
+        ("flat",   new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }),
+        ("bass",   new double[] { 7, 6.5, 6, 5.5, 4.5, 3.5, 2.5, 1.5, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }),
+        ("vocal",  new double[] { -2, -2, -2, -1.5, -1, 0, 1, 2, 3, 3.5, 3.5, 3, 2.5, 2, 1, 0, -0.5, -1, -1.5, -1.5 }),
+        ("rock",   new double[] { 5, 5, 4.5, 4, 3, 1.5, 0, -1, -1.5, -1, 0, 1, 2, 3, 3.5, 4, 4, 4, 4, 4 }),
+        ("pop",    new double[] { -1, -1, -0.5, 0, 1, 2, 3, 3.5, 3.5, 3, 2, 1, 0, -0.5, -0.5, 0, 0.5, 1, 1, 1 }),
+        ("treble", new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 1, 1.5, 2.5, 3.5, 4.5, 5.5, 6, 6.5, 7, 7 }),
     };
 
     // the official setup from SourceForge; checked before it runs
@@ -147,7 +149,17 @@ static class Equalizer
     {
         var bands = new double[Frequencies.Length];
         var old = s.Bands ?? Array.Empty<double>();
-        for (int i = 0; i < bands.Length && i < old.Length; i++) bands[i] = Math.Clamp(old[i], -MaxGain, MaxGain);
+        if (old.Length == OldFrequencies.Length)
+        {
+            // saved with the 18 bands: each band keeps its value, a new band takes its lower neighbour's
+            for (int i = 0, j = 0; i < bands.Length; i++)
+            {
+                while (j + 1 < OldFrequencies.Length && OldFrequencies[j + 1] <= Frequencies[i]) j++;
+                bands[i] = Math.Clamp(old[j], -MaxGain, MaxGain);
+            }
+        }
+        else
+            for (int i = 0; i < bands.Length && i < old.Length; i++) bands[i] = Math.Clamp(old[i], -MaxGain, MaxGain);
         s.Bands = bands;
         s.Preamp = Math.Clamp(s.Preamp, -MaxGain, MaxGain);
         s.Bass = Math.Clamp(s.Bass, 0, MaxGain);
@@ -193,19 +205,23 @@ static class Equalizer
         return sb.ToString();
     }
 
-    // Writes MMP's file and makes sure config.txt includes it. False when the folder can't be written.
-    public static bool Apply(EqSettings s, out string? error)
+    public enum ApplyResult { Done, Busy, Denied }
+
+    // Writes MMP's file and makes sure config.txt includes it. Busy: Equalizer APO was reading a file just then (try
+    // again in a moment); Denied: the folder can't be written at all.
+    public static ApplyResult Apply(EqSettings s)
     {
-        error = null;
-        if (ConfigDir is not { } dir) { error = "not installed"; return false; }
+        if (ConfigDir is not { } dir) return ApplyResult.Denied;
+        try { File.WriteAllText(Path.Combine(dir, OwnFile + ".tmp"), ""); }
+        catch { return ApplyResult.Denied; }
         try
         {
             WriteAtomic(Path.Combine(dir, OwnFile), ConfigText(s));
             AddInclude(Path.Combine(dir, "config.txt"));
-            return true;
+            return ApplyResult.Done;
         }
-        catch (UnauthorizedAccessException ex) { error = ex.Message; return false; }
-        catch (IOException ex) { error = ex.Message; return false; }
+        catch (UnauthorizedAccessException) { return ApplyResult.Busy; }   // replacing a file that is open fails this way
+        catch (IOException) { return ApplyResult.Busy; }
     }
 
     // a new file moved over the old one: Equalizer APO never reads a half-written file

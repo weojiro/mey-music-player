@@ -26,6 +26,7 @@ public partial class EqualizerWindow : Window
     readonly DispatcherTimer _installTimer = new() { Interval = TimeSpan.FromSeconds(2) };
     CancellationTokenSource? _download;
     bool _installed, _loading;
+    int _busyTries;
 
     // the graph
     readonly Ellipse[] _dots = new Ellipse[Equalizer.Frequencies.Length];
@@ -113,7 +114,7 @@ public partial class EqualizerWindow : Window
         _installed = Equalizer.Installed;
         InstallCard.Visibility = _installed ? Visibility.Collapsed : Visibility.Visible;
         Controls.IsEnabled = OnBox.IsEnabled = _installed;
-        Controls.Opacity = _installed ? 1 : 0.4;
+        Dim();
         RestartCard.Visibility = _installed && Equalizer.NeedsRestart ? Visibility.Visible : Visibility.Collapsed;
         if (_installed) Apply();
         else _installTimer.Start();      // the setup may be running: the page comes alive once it is done
@@ -164,8 +165,10 @@ public partial class EqualizerWindow : Window
     void Apply()
     {
         if (!_installed) return;
-        bool ok = Equalizer.Apply(_eq, out _);
-        WriteCard.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+        var result = Equalizer.Apply(_eq);
+        if (result == Equalizer.ApplyResult.Busy && ++_busyTries <= 20) { _applyTimer.Start(); return; }    // once more in a moment
+        _busyTries = 0;
+        WriteCard.Visibility = result == Equalizer.ApplyResult.Denied ? Visibility.Visible : Visibility.Collapsed;
     }
 
     void Reset()
@@ -203,8 +206,12 @@ public partial class EqualizerWindow : Window
         RefreshValues();
     }
 
+    // without Equalizer APO, or switched off: the controls fade, so it shows that nothing changes the sound
+    void Dim() => Controls.Opacity = !_installed ? 0.4 : _eq.On ? 1 : 0.45;
+
     void RefreshValues()
     {
+        Dim();
         PreampValue.Text = Db(_eq.Preamp) + " dB";
         BassValue.Text = Db(_eq.Bass) + " dB";
         WidthValue.Text = _eq.Width + " %";
@@ -245,8 +252,8 @@ public partial class EqualizerWindow : Window
         int n = Equalizer.Frequencies.Length;
         Graph.Width = n * Column;
         Graph.Height = GraphTop + GraphH + GraphBottom;
-        // lines at +12, +6, 0, -6, -12 dB with their values on the left
-        foreach (double g in new[] { 12.0, 6, 0, -6, -12 })
+        // a line every 5 dB
+        foreach (double g in new[] { 15.0, 10, 5, 0, -5, -10, -15 })
         {
             var line = new Line
             {

@@ -1418,7 +1418,7 @@ public partial class MainWindow : Window
     object? DiscordActivity()
     {
         if (!_discordOn) return _lastActivity = null;     // turned on again later: no old song while the cover loads
-        var app = _playing ? MusicNow() : null;
+        var app = _title.Trim().Length > 0 ? MusicNow() : null;
         bool song = app != null;
         if (song)
         {
@@ -1435,7 +1435,7 @@ public partial class MainWindow : Window
         var buttons = new[] { new Dictionary<string, object> { ["label"] = Tr("dcButton"), ["url"] = RepoUrl } };
         if (!song)
         {
-            // paused, something private or nothing: a small card that names MMP
+            // something private, or nothing at all: a small card that names MMP
             return _lastActivity = new Dictionary<string, object>
             {
                 ["type"] = 2,                                       // listening
@@ -1450,13 +1450,13 @@ public partial class MainWindow : Window
             };
         }
         // a song: laid out like a music app's own card (title, artist, album, a progress bar, the cover with the app's
-        // logo in the corner); the member list shows the artist
+        // logo in the corner); the member list shows the artist. Paused: "Paused" in place of the album, no bar
         string? cover = _coverSong == SongKey() ? _coverUrl : null;
         string large = cover ?? app!.LogoUrl ?? DiscordLogo;
         var assets = new Dictionary<string, object>
         {
             ["large_image"] = large,
-            ["large_text"] = Fit(_album.Trim().Length > 0 ? _album : _title)
+            ["large_text"] = Fit(!_playing ? Tr("dcPaused") : _album.Trim().Length > 0 ? _album : _title)
         };
         if (cover != null && app!.LogoUrl != null) { assets["small_image"] = app.LogoUrl; assets["small_text"] = app.Name; }
         else if (large != DiscordLogo) { assets["small_image"] = DiscordLogo; assets["small_text"] = "mey music player"; assets["small_url"] = RepoUrl; }
@@ -1469,7 +1469,7 @@ public partial class MainWindow : Window
             ["assets"] = assets,
             ["buttons"] = buttons
         };
-        if (SongTimes() is (long start, long end))
+        if (_playing && SongTimes() is (long start, long end))
             activity["timestamps"] = new Dictionary<string, object> { ["start"] = start, ["end"] = end };
         return _lastActivity = activity;
     }

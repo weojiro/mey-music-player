@@ -104,8 +104,7 @@ working while MMP is closed; turn it off with the switch in the Equalizer window
 | Ctrl + Alt | hides / shows the player |
 | Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Show over games*) |
 
-Right-click the tray icon for Options, Hide player, Lyrics, Equalizer, Show on Discord, Start with Windows, the cover's place (right, center, center
-above or left), the language, Restart and Close. *Center* puts the cover in the middle of the taskbar when the taskbar
+In the tray menu, *Position* puts the cover on the right, in the center, center above or on the left. *Center* puts the cover in the middle of the taskbar when the taskbar
 icons are on the left, and the open player stays in the middle too. *Center, above* puts it in the middle just above the
 taskbar (also with the icons in the middle); over a full-screen game it goes down to where the taskbar is.
 
@@ -148,16 +147,6 @@ players. Lyrics are for Spotify only.
 MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser, all tabs
 share one volume. In Firefox the volume can't be changed from MMP (Firefox doesn't tell Windows which app
 it is), but everything else works.
-</details>
-
-<details>
-<summary><b>What does it send over the internet?</b></summary>
-
-It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
-go to [LRCLIB](https://lrclib.net) to find its lyrics; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
-With *Show on Discord* on, the song's title and artist go to Deezer and Apple Music (and SoundCloud for a
-SoundCloud song) to find the cover's web address. Equalizer APO's setup comes from SourceForge, only when you
-click *Download and install*. Nothing else.
 </details>
 
 <details>
@@ -214,8 +203,6 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
   address). Only while *Show on Discord* is on.
 - **SourceForge** (`downloads.sourceforge.net`): Equalizer APO's setup, only when you click *Download and install* in
   the Equalizer window.
-
-MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
 
 ## License
 

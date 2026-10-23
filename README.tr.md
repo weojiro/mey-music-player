@@ -105,8 +105,7 @@ MMP kapalıyken de çalışmaya devam eder; Ekolayzer penceresindeki düğmeyle 
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
 | Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
 
-Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Ekolayzer, Discord'da göster, Windows ile başlat, kapağın yeri (sağ,
-orta, orta üst ya da sol), dil, Yeniden başlat ve Kapat. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
+Tray menüsündeki *Konum*, kapağı sağa, ortaya, orta üste ya da sola koyar. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
 çubuğunun ortasına koyar; açılan oynatıcı da ortada durur. *Orta üst*, kapağı görev çubuğunun hemen üstüne, ortaya koyar
 (simgeler ortadayken de); tam ekran oyunda görev çubuğunun yerine iner.
 
@@ -148,16 +147,6 @@ YouTube ya da SoundCloud çalan tarayıcılar (Chrome, Edge, Brave, Opera, Firef
 MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda bütün
 sekmeler tek bir sesi paylaşır. Firefox'ta ses MMP'den değiştirilemez (Firefox Windows'a hangi uygulama
 olduğunu söylemiyor), geri kalan her şey çalışır.
-</details>
-
-<details>
-<summary><b>İnternete ne gönderiyor?</b></summary>
-
-Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
-albümü ve süresi [LRCLIB](https://lrclib.net)'e gider; bulunan sözler `%LOCALAPPDATA%\MMP\lyrics` içinde
-saklanır. *Discord'da göster* açıkken şarkının adı ve sanatçısı, kapağın internet adresini bulmak için Deezer'a,
-Apple Music'e (SoundCloud şarkısında SoundCloud'a da) gider. Equalizer APO'nun kurulumu, sadece *İndir ve kur*'a
-tıklayınca SourceForge'dan iner. Başka bir şey gönderilmez.
 </details>
 
 <details>
@@ -205,8 +194,6 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
   adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
 - **SourceForge** (`downloads.sourceforge.net`): Equalizer APO'nun kurulumu, sadece Ekolayzer penceresinde *İndir ve
   kur*'a bastığında.
-
-MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
 
 ## Lisans
 

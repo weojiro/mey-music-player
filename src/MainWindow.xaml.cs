@@ -1204,6 +1204,7 @@ public partial class MainWindow : Window
             var info = s.GetPlaybackInfo();
             _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
             SetMediaType(info);
+            ApplyTimeline(s.GetTimelineProperties());       // Discord's progress bar
             var props = await s.TryGetMediaPropertiesAsync();
             if (s != _session || seq != _hiddenSeq || _shown) return;
             _title = props.Title ?? "";
@@ -1232,6 +1233,7 @@ public partial class MainWindow : Window
         {
             _mediaDirty = true;
             if (kind != Smtc.Timeline) RefreshHiddenInfo();
+            else if (_discordOn) try { if (_session is { } hs) ApplyTimeline(hs.GetTimelineProperties()); } catch { }
             return;
         }
         var s = _session;
@@ -1407,7 +1409,6 @@ public partial class MainWindow : Window
     const string DiscordLogo = "https://weojiro.github.io/mey-music-player/img/mmp-logo.png?v=2";     // ?v: Discord keeps a copy per address
     DiscordPresence? _discord;
     bool _discordOn = true;
-    readonly long _discordStart = DateTimeOffset.UtcNow.ToUnixTimeSeconds();    // the time counts from the start
     readonly DispatcherTimer _discordTimer = new() { Interval = TimeSpan.FromSeconds(2) };
 
     // Sent as a game, because Discord puts games before Spotify, with "Listening via MMP" (in the app's language) as the
@@ -1431,27 +1432,61 @@ public partial class MainWindow : Window
             if (pending && Environment.TickCount64 - _waitSince < CoverWaitMs && _lastActivity != null) return _lastActivity;
         }
         static string Fit(string t) { t = t.Trim(); return t.Length < 2 ? t + "  " : t.Length > 128 ? t[..127] + "…" : t; }
-        string? cover = song && _coverSong == SongKey() ? _coverUrl : null;
-        string? picture = cover ?? app?.LogoUrl;
-        var assets = picture == null
-            ? new Dictionary<string, object> { ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl }
-            : new Dictionary<string, object>
-            {
-                ["large_image"] = picture,
-                ["large_text"] = Fit(cover != null && _album.Trim().Length > 0 ? _album : app!.Name),
-                ["small_image"] = DiscordLogo, ["small_text"] = "mey music player", ["small_url"] = RepoUrl
-            };
-        return _lastActivity = new Dictionary<string, object>
+        var buttons = new[] { new Dictionary<string, object> { ["label"] = Tr("dcButton"), ["url"] = RepoUrl } };
+        if (!song)
         {
-            ["type"] = 0,                                           // a game: before Spotify on the profile
-            ["status_display_type"] = 2,                            // the member list shows "details", not the app name
-            ["details"] = Fit(Tr(_playing ? "dcVia" : "dcPaused")),
-            ["state"] = Fit(song ? (_artist.Trim().Length > 0 ? $"{_title} — {_artist}" : _title)
-                          : _playing ? Tr("dcSome") : Tr("dcIdle")),
-            ["timestamps"] = new Dictionary<string, object> { ["start"] = _discordStart },
-            ["assets"] = assets,
-            ["buttons"] = new[] { new Dictionary<string, object> { ["label"] = Tr("dcButton"), ["url"] = RepoUrl } }
+            // paused, something private or nothing: a small card that names MMP
+            return _lastActivity = new Dictionary<string, object>
+            {
+                ["type"] = 2,                                       // listening
+                ["status_display_type"] = 2,                        // the member list shows "Paused" / "Something is playing"
+                ["details"] = Fit(Tr(_playing ? "dcSome" : "dcPaused")),
+                ["state"] = Fit(_playing ? "mey music player" : Tr("dcIdle")),
+                ["assets"] = new Dictionary<string, object>
+                {
+                    ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl
+                },
+                ["buttons"] = buttons
+            };
+        }
+        // a song: laid out like a music app's own card (title, artist, album, a progress bar, the cover with the app's
+        // logo in the corner); the member list shows the artist
+        string? cover = _coverSong == SongKey() ? _coverUrl : null;
+        string large = cover ?? app!.LogoUrl ?? DiscordLogo;
+        var assets = new Dictionary<string, object>
+        {
+            ["large_image"] = large,
+            ["large_text"] = Fit(_album.Trim().Length > 0 ? _album : _title)
         };
+        if (cover != null && app!.LogoUrl != null) { assets["small_image"] = app.LogoUrl; assets["small_text"] = app.Name; }
+        else if (large != DiscordLogo) { assets["small_image"] = DiscordLogo; assets["small_text"] = "mey music player"; assets["small_url"] = RepoUrl; }
+        var activity = new Dictionary<string, object>
+        {
+            ["type"] = 2,                                           // listening
+            ["status_display_type"] = 1,                            // the member list shows the state: the artist
+            ["details"] = Fit(_title),
+            ["state"] = Fit(_artist.Trim().Length > 0 ? _artist : app!.Name),
+            ["assets"] = assets,
+            ["buttons"] = buttons
+        };
+        if (SongTimes() is (long start, long end))
+            activity["timestamps"] = new Dictionary<string, object> { ["start"] = start, ["end"] = end };
+        return _lastActivity = activity;
+    }
+
+    // The progress bar: when the song started and when it ends, in Unix seconds. Kept while the song plays on as
+    // expected (each new value would send the card again); moved when it was paused or skipped through.
+    string _timesSong = "";
+    long _timesStart;
+
+    (long, long)? SongTimes()
+    {
+        var length = _tlEnd - _tlStart;
+        if (length.TotalSeconds < 2) return null;
+        long start = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - (long)CurrentPosition().TotalSeconds;
+        string song = SongKey();
+        if (song != _timesSong || Math.Abs(start - _timesStart) > 2) { _timesSong = song; _timesStart = start; }
+        return (_timesStart, _timesStart + (long)length.TotalSeconds);
     }
 
     // ---------- where the song plays (MusicSources): asked again until it is recognised, then kept for the song ----------

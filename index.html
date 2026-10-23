@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>mey music player – a music player you design, for the Windows taskbar</title>
-<meta name="description" content="mey music player (MMP) is a free, open-source music player for the Windows taskbar: the cover of what's playing, the controls, Spotify lyrics and players you design yourself, visible even over games. Works with Spotify, YouTube and SoundCloud.">
+<meta name="description" content="mey music player (MMP) is a free, open-source music player for the Windows taskbar: the cover of what's playing, the controls, Spotify lyrics, players you design yourself, a 20-band equalizer and the song on your Discord profile, visible even over games. Works with Spotify, YouTube and SoundCloud.">
 <meta name="keywords" content="mey music player, MMP, music player, windows music player, taskbar music player, spotify mini player, now playing, windows 11, windows 10">
 <link rel="canonical" href="https://weojiro.github.io/mey-music-player/">
 <meta name="theme-color" content="#0e0e0f">
@@ -390,7 +390,7 @@ footer a:hover { color: var(--fg); }
         <article class="tile narrow">
           <div class="shot"><img src="img/tray-menu.png?v=2" width="232" height="396" alt="The tray menu"></div>
           <h3 data-i18n="f6.t">A tidy tray menu</h3>
-          <p data-i18n="f6.p">Options, hide player, lyrics, Discord, startup, side of the taskbar and 11 languages.</p>
+          <p data-i18n="f6.p">Options, hide player, lyrics, equalizer, Discord, startup, side of the taskbar and 11 languages.</p>
         </article>
         <article class="tile">
           <h3 data-i18n="f7.t">Anywhere, even over games</h3>
@@ -399,6 +399,14 @@ footer a:hover { color: var(--fg); }
         <article class="tile">
           <h3 data-i18n="f8.t">Every player, its own place</h3>
           <p data-i18n="f8.p">Each saved player remembers its side, its spot, Free move, its size and Show over games, and comes back just as you left it.</p>
+        </article>
+        <article class="tile">
+          <h3 data-i18n="f9.t">On your Discord profile</h3>
+          <p data-i18n="f9.p">Your friends see what you're listening to: the title, artist and album, a progress bar and the cover. Works with Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud and more. Videos stay private.</p>
+        </article>
+        <article class="tile">
+          <h3 data-i18n="f10.t">A 20-band equalizer</h3>
+          <p data-i18n="f10.p">20 bands like AIMP, ±15 dB, a preamp, presets and effects: bass boost, stereo width, balance, reduce vocals. Heard at once, in every app. Works through the free Equalizer APO, which MMP can download and start for you.</p>
         </article>
       </div>
     </div>
@@ -453,6 +461,7 @@ footer a:hover { color: var(--fg); }
         <div><code>github.com</code><span data-i18n="p.gh">Checks for a new version when it starts and once a day.</span></div>
         <div><code>lrclib.net</code><span data-i18n="p.lrc">Only with Lyrics on: the title, artist, album and length of the Spotify song, to find its lyrics.</span></div>
         <div><code>deezer.com · apple.com · soundcloud.com</code><span data-i18n="p.cover">Only with Show on Discord on: the title and artist of the song, to find its cover for Discord.</span></div>
+        <div><code>sourceforge.net</code><span data-i18n="p.eq">Only when you click Download and install in the Equalizer window: Equalizer APO's setup.</span></div>
         <div><code data-i18n="p.else.k">anything else</code><span data-i18n="p.else">Nothing. Even the error log stays on your PC.</span></div>
       </div>
     </div>
@@ -468,7 +477,7 @@ footer a:hover { color: var(--fg); }
       <ol class="install" style="padding:0;margin:0">
         <li><h3 data-i18n="i1.t">Download</h3><p data-i18n-html="i1.p">Get <b>MMP.zip</b> from the latest release on GitHub.</p></li>
         <li><h3 data-i18n="i2.t">Run the launcher</h3><p data-i18n-html="i2.p">Extract it and double-click <b>MMP Launcher.bat</b>. Nothing else needs to be installed.</p></li>
-        <li><h3 data-i18n="i3.t">Start it</h3><p data-i18n-html="i3.p">Use the <b>mey music player</b> shortcut on your desktop. From then on it starts with Windows and updates itself.</p></li>
+        <li><h3 data-i18n="i3.t">Start it</h3><p data-i18n-html="i3.p">Use the <b>mey music player</b> shortcut on your desktop. From then on it starts with Windows, and asks you before it updates.</p></li>
       </ol>
       <p class="req" data-i18n="i.req">Windows 10 (1809 or newer, 64-bit) and Windows 11.</p>
     </div>
@@ -483,9 +492,10 @@ footer a:hover { color: var(--fg); }
       </div>
       <div class="faq">
         <details><summary data-i18n="q1">Windows says "Windows protected your PC".</summary><p data-i18n="a1">The app is not signed with a paid certificate yet. Choose More info, then Run anyway. The code is all on GitHub.</p></details>
-        <details><summary data-i18n="q2">Which apps does it work with?</summary><p data-i18n="a2">Anything that shows up in the Windows media controls: Spotify, browsers playing YouTube, SoundCloud and most music and video players. Lyrics are for Spotify only.</p></details>
+        <details><summary data-i18n="q2">Which apps does it work with?</summary><p data-i18n="a2">Anything that shows up in the Windows media controls: Spotify, browsers (Chrome, Edge, Brave, Opera, Firefox) playing YouTube or SoundCloud, and most music and video players. Lyrics are for Spotify only.</p></details>
         <details><summary data-i18n="q3">The volume doesn't move the slider inside Spotify.</summary><p data-i18n="a3">MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser all tabs share one volume, and Firefox's volume can't be changed from MMP.</p></details>
         <details><summary data-i18n="q4">My taskbar is on the side or on another screen.</summary><p data-i18n="a4">On the taskbar MMP sits on the main screen, at the bottom or the top. Turn on Free move in Options to put it anywhere, on any screen.</p></details>
+        <details><summary data-i18n="q6">Is it safe?</summary><p data-i18n="a6">The code is all on GitHub. Every release is built from it by GitHub Actions and comes with its SHA-256. MMP updates only from those releases, checks the SHA-256 first and asks you before it updates.</p></details>
         <details><summary data-i18n="q5">How do I remove it?</summary><p data-i18n-html="a5">Turn off Start with Windows and choose Close in the tray menu, then delete the <code class="path">%LOCALAPPDATA%\MMP</code> folder and the desktop shortcut.</p></details>
       </div>
     </div>
@@ -620,7 +630,9 @@ footer a:hover { color: var(--fg); }
     "k1.k": "Kapakta tekerlek", "k1.v": "sonraki / önceki şarkı", "k2.k": "Kapağa orta tık", "k2.v": "çal / duraklat",
     "k3.k": "İlerleme çubuğunda tekerlek", "k3.v": "5 saniye ileri ya da geri", "k4.k": "Ses ikonunda tekerlek", "k4.v": "ses (üstüne gelince % görünür); tıklayınca sessiz",
     "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses", "k6.v": "oynatıcıyı gizle / göster", "k7.v": "fareyi tam ekran oyundan al",
-    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, oynatıcıyı gizle, şarkı sözleri, Discord, başlangıç, görev çubuğunun tarafı ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Oyun imleci gizlerken tıklamalar oyuna gider. Ctrl + Alt + X ile fareyi oyundan alıp şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
+    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, oynatıcıyı gizle, şarkı sözleri, ekolayzer, Discord, başlangıç, görev çubuğunun tarafı ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Oyun imleci gizlerken tıklamalar oyuna gider. Ctrl + Alt + X ile fareyi oyundan alıp şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
+    "f9.t": "Discord profilinde", "f9.p": "Arkadaşların ne dinlediğini görür: şarkının adı, sanatçısı, albümü, ilerleme çubuğu ve kapak. Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud ve daha fazlasıyla çalışır. Videolar gizli kalır.",
+    "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar ve efektler: bas güçlendirme, stereo genişlik, denge, vokali azalt. Anında, her uygulamada duyulur. Ücretsiz Equalizer APO ile çalışır; MMP onu senin için indirip başlatabilir.",
     "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dört tane daha.",
     "d.lead": "Tray menüsünden Ayarlar'ı aç. Değiştirdiğin her şey görev çubuğunda hemen görünür ve kendiliğinden kaydedilir.",
     "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak. Saydamlık kaydırıcısıyla saydam yap.",
@@ -632,18 +644,19 @@ footer a:hover { color: var(--fg); }
     "p.lead": "MMP ücretsiz ve MIT lisansıyla açık kaynak. İnternete gönderdiği her şey bu kadar:",
     "p.gh": "Açılışta ve günde bir kez yeni sürüm var mı diye bakar.", "p.lrc": "Sadece şarkı sözleri açıkken: sözleri bulmak için Spotify şarkısının adı, sanatçısı, albümü ve süresi.",
     "p.cover": "Sadece Discord'da göster açıkken: Discord'daki kapağı bulmak için şarkının adı ve sanatçısı.",
+    "p.eq": "Sadece Ekolayzer penceresinde İndir ve kur'a tıklayınca: Equalizer APO'nun kurulumu.",
     "p.else.k": "başka bir şey", "p.else": "Hiçbir şey. Hata günlüğü bile bilgisayarında kalır.",
     "i.eyebrow": "kurulum", "i.title": "Üç adım, bir dakika kadar.",
     "i1.t": "İndir", "i1.p": "GitHub'daki son sürümden <b>MMP.zip</b>'i al.",
     "i2.t": "Launcher'ı çalıştır", "i2.p": "Klasöre çıkar ve <b>MMP Launcher.bat</b>'a çift tıkla. Başka bir şey kurman gerekmez.",
-    "i3.t": "Başlat", "i3.p": "Masaüstündeki <b>mey music player</b> kısayolunu kullan. Artık Windows ile açılır ve kendini günceller.",
+    "i3.t": "Başlat", "i3.p": "Masaüstündeki <b>mey music player</b> kısayolunu kullan. Artık Windows ile açılır ve güncellemeden önce sana sorar.",
     "i.req": "Windows 10 (1809 veya daha yeni, 64-bit) ve Windows 11.",
     "q.eyebrow": "sorular", "q.title": "Bilmekte fayda var",
     "q1": "Windows \"Windows bilgisayarınızı korudu\" diyor.", "a1": "Uygulama henüz ücretli bir sertifikayla imzalanmadı. Ek bilgi'ye, sonra Yine de çalıştır'a tıkla. Kodun tamamı GitHub'da.",
-    "q2": "Hangi uygulamalarla çalışır?", "a2": "Windows medya kontrollerinde görünen her şeyle: Spotify, YouTube açık tarayıcılar, SoundCloud ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify için.",
+    "q2": "Hangi uygulamalarla çalışır?", "a2": "Windows medya kontrollerinde görünen her şeyle: Spotify, YouTube ya da SoundCloud açık tarayıcılar (Chrome, Edge, Brave, Opera, Firefox) ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify için.",
     "q3": "Ses ayarı Spotify'ın içindeki çubuğu oynatmıyor.", "a3": "MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda tüm sekmeler tek ses paylaşır, Firefox'un sesi ise MMP'den değiştirilemez.",
     "q4": "Görev çubuğum yanda ya da başka bir ekranda.", "a4": "Görev çubuğunda MMP ana ekranda, altta ya da üstte durur. Ayarlar'dan Serbest hareketi açarsan istediğin yere, istediğin ekrana koyabilirsin.",
-    "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil.",
+    "q6": "Güvenli mi?", "a6": "Kodun hepsi GitHub'da. Her sürüm GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir. MMP sadece bu sürümlerden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.", "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil.",
     "end.title": "Müziğin daha iyi<br><span class=\"accent\">bir yeri hak ediyor.</span>",
     "foot.mit": "MIT lisansı", "foot.issue": "Sorun bildir"
   };

@@ -24,6 +24,7 @@ public partial class EqualizerWindow : Window
     readonly MainWindow _main;
     readonly EqSettings _eq = Equalizer.Load();
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(2) };
+    readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(400) };
     CancellationTokenSource? _download;
     bool _cable, _loading;
     string _openApps = "";
@@ -71,6 +72,7 @@ public partial class EqualizerWindow : Window
         BuildGraph();
         // apps open and close, the cable may get installed: the page follows
         _timer.Tick += (_, _) => { RefreshApps(); if (EqEngine.CableInstalled != _cable) RefreshCable(); };
+        _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); Equalizer.Save(_eq); };
 
         OnBox.Checked += (_, _) => { if (!_loading) { _eq.On = true; Changed(); } };
         OnBox.Unchecked += (_, _) => { if (!_loading) { _eq.On = false; Changed(); } };
@@ -94,10 +96,22 @@ public partial class EqualizerWindow : Window
         WidthSlider.MouseRightButtonUp += (_, _) => WidthSlider.Value = 100;
         BalanceSlider.MouseRightButtonUp += (_, _) => BalanceSlider.Value = 0;
         VocalsSlider.MouseRightButtonUp += (_, _) => VocalsSlider.Value = 0;
+        // the mouse wheel: up or down a step
+        Wheel(PreampSlider, 0.5);
+        Wheel(BassSlider, 0.5);
+        Wheel(ReverbSlider, 2);
+        Wheel(WidthSlider, 5);
+        Wheel(BalanceSlider, 5);
+        Wheel(VocalsSlider, 2);
 
         MaxHeight = SystemParameters.WorkArea.Height;
         SourceInitialized += (_, _) => OptionsWindow.DarkTitleBar(this);
-        Closed += (_, _) => { _timer.Stop(); _download?.Cancel(); };
+        Closed += (_, _) =>
+        {
+            _timer.Stop();
+            _download?.Cancel();
+            if (_saveTimer.IsEnabled) { _saveTimer.Stop(); Equalizer.Save(_eq); }
+        };
 
         SaveName.Text = NextName();
         RefreshAll();
@@ -107,6 +121,12 @@ public partial class EqualizerWindow : Window
     }
 
     string T(string key) => _main.Text(key);
+
+    static void Wheel(Slider slider, double step) => slider.PreviewMouseWheel += (_, e) =>
+    {
+        slider.Value = Math.Clamp(slider.Value + (e.Delta > 0 ? step : -step), slider.Minimum, slider.Maximum);
+        e.Handled = true;       // the page doesn't scroll under it
+    };
 
     static string Db(double v) => (v > 0 ? "+" : "") + v.ToString("0.#", CultureInfo.CurrentCulture);
 
@@ -173,18 +193,22 @@ public partial class EqualizerWindow : Window
 
     // ---------- settings ----------
 
-    void Changed()
+    // Heard at once; the file is written a moment after the last change. While a slider or a dot is dragged only what
+    // moved is redrawn (full: the chips and the graph too), so dragging stays smooth.
+    void Changed(bool full = true)
     {
-        Equalizer.Save(_eq);
         EqEngine.Update(_eq);
-        RefreshValues();
+        _saveTimer.Stop();
+        _saveTimer.Start();
+        if (full) RefreshValues(); else RefreshLabels();
     }
 
     // a slider moved: it's no longer exactly a saved sound
     void Edited()
     {
-        if (_eq.Preset.StartsWith("saved:")) _eq.Preset = "custom";
-        Changed();
+        bool wasSaved = _eq.Preset.StartsWith("saved:");
+        if (wasSaved) _eq.Preset = "custom";
+        Changed(wasSaved);
     }
 
     void Reset()
@@ -266,6 +290,13 @@ public partial class EqualizerWindow : Window
 
     void RefreshValues()
     {
+        RefreshLabels();
+        RefreshChips();
+        RefreshGraph();
+    }
+
+    void RefreshLabels()
+    {
         Dim();
         PreampValue.Text = Db(_eq.Preamp) + " dB";
         BassValue.Text = Db(_eq.Bass) + " dB";
@@ -274,8 +305,6 @@ public partial class EqualizerWindow : Window
         BalanceValue.Text = _eq.Balance == 0 ? T("center")
             : (_eq.Balance < 0 ? T("left") : T("right")) + " " + Math.Abs(_eq.Balance) + " %";
         VocalsValue.Text = _eq.Vocals + " %";
-        RefreshChips();
-        RefreshGraph();
     }
 
     void RefreshChips()
@@ -389,8 +418,11 @@ public partial class EqualizerWindow : Window
         gain = Math.Clamp(Math.Round(gain * 2) / 2, -Equalizer.MaxGain, Equalizer.MaxGain);     // half a dB steps
         if (_eq.Bands[band] == gain) return;
         _eq.Bands[band] = gain;
+        string before = _eq.Preset;
         _eq.Preset = Equalizer.Presets.FirstOrDefault(p => p.Bands.SequenceEqual(_eq.Bands)).Key ?? "custom";
-        Changed();
+        bool chips = _eq.Preset != before;
+        Changed(chips);
+        if (!chips) RefreshGraph();
     }
 
     void RefreshGraph()

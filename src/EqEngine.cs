@@ -16,7 +16,7 @@ static class EqEngine
     const string CableName = "VB-Audio Virtual Cable";
 
     static readonly object Gate = new();
-    static EqSettings _settings = new() { On = false };
+    static volatile EqSettings _settings = new() { On = false };
     static Thread? _scanThread, _pumpThread;
     static volatile bool _running;
     static readonly AutoResetEvent Wake = new(false);
@@ -32,7 +32,8 @@ static class EqEngine
     static readonly Dictionary<int, string> _routed = new();    // pid -> program file
     static Source? _cableSource;                                // older Windows: VB-CABLE's own output, all apps at once
     static WasapiOut? _output;
-    static Mixer? _mixer;
+    static volatile Mixer? _mixer;
+    static readonly Dictionary<int, (string Name, string File)> _processes = new();     // pid -> name and program file
     static string? _outputId;
     static long _lastSound;
     static volatile bool _heard;
@@ -52,13 +53,12 @@ static class EqEngine
 
     public static void Update(EqSettings settings)
     {
+        // no lock: the scan may be busy, and a slider being dragged must never wait for it
         var copy = JsonSerializer.Deserialize<EqSettings>(JsonSerializer.Serialize(settings))!;
-        lock (Gate)
-        {
-            _settings = copy;
-            _mixer?.Dsp.Set(copy);
-        }
-        Wake.Set();     // on, off or other apps: at once
+        var old = _settings;
+        _settings = copy;
+        _mixer?.Dsp.Set(copy);
+        if (old.On != copy.On || !old.Apps.SequenceEqual(copy.Apps)) Wake.Set();      // on, off or other apps: at once
     }
 
     // MMP is closing: every app goes back to where it was
@@ -136,18 +136,21 @@ static class EqEngine
                 {
                     int pid = (int)sessions[i].GetProcessID;
                     if (pid == 0 || pid == Environment.ProcessId || playing.ContainsKey(pid)) continue;
+                    if (_processes.TryGetValue(pid, out var known)) { playing[pid] = known; continue; }
                     try
                     {
                         using var p = Process.GetProcessById(pid);
                         string file;
                         try { file = p.MainModule?.FileName ?? p.ProcessName; } catch { file = p.ProcessName; }
-                        playing[pid] = (p.ProcessName.ToLowerInvariant(), file);
+                        playing[pid] = _processes[pid] = (p.ProcessName.ToLowerInvariant(), file);
                     }
                     catch { }
                 }
             }
             catch { }
         }
+
+        foreach (var pid in _processes.Keys.Where(p => !playing.ContainsKey(p)).ToList()) _processes.Remove(pid);
 
         foreach (var (pid, (name, file)) in playing)
         {

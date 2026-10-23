@@ -14,6 +14,9 @@ sealed class EqDsp
     // filter memory: [filter, channel]
     readonly double[,] _z1 = new double[Equalizer.Frequencies.Length + 1, 2], _z2 = new double[Equalizer.Frequencies.Length + 1, 2];
     readonly Reverb _reverb;
+    readonly Limiter _limiter;
+    double[]? _fitFor, _fitted;     // the last fit: dragging a slider doesn't fit the bands again
+    readonly object _setLock = new();
 
     sealed class Coeffs
     {
@@ -28,15 +31,24 @@ sealed class EqDsp
     {
         _rate = rate;
         _reverb = new Reverb(rate);
+        _limiter = new Limiter(rate);
         _c = new Coeffs();
     }
 
     public void Set(EqSettings s)
     {
+        lock (_setLock) _c = Build(s);
+    }
+
+    Coeffs Build(EqSettings s)
+    {
         var c = new Coeffs { On = s.On, Pre = Math.Pow(10, s.Preamp / 20) };
         var filters = new List<(double b0, double b1, double b2, double a1, double a2)>();
         if (s.Bands.Any(b => b != 0))
-            filters.AddRange(FitBands(s.Bands).Select((g, i) => Peaking(BandFreq(i), g, BandQ)));
+        {
+            if (_fitFor == null || !_fitFor.SequenceEqual(s.Bands)) { _fitted = FitBands(s.Bands); _fitFor = (double[])s.Bands.Clone(); }
+            filters.AddRange(_fitted!.Select((g, i) => Peaking(BandFreq(i), g, BandQ)));
+        }
         if (s.Bass > 0) filters.Add(LowShelf(105, s.Bass));
         c.B0 = filters.Select(f => f.b0).ToArray();
         c.B1 = filters.Select(f => f.b1).ToArray();
@@ -54,7 +66,7 @@ sealed class EqDsp
         double r = s.Reverb / 100.0;
         c.Wet = (float)(r * 0.9);
         c.Dry = (float)(1 - r * 0.25);
-        _c = c;
+        return c;
     }
 
     // the top bands sit above what a 44.1 kHz stream can carry: they move just under it
@@ -136,6 +148,51 @@ sealed class EqDsp
         }
         if (c.Wet > 0) _reverb.Process(buf, frames, c.Dry, c.Wet);
         else _reverb.Clear();
+        _limiter.Process(buf, frames);
+    }
+
+    // Turned far up, the sound goes over the top. Windows' own limiter then squeezes everything and it pumps; this one
+    // looks 1.5 ms ahead and only takes the peaks down, smoothly, so everything can be turned all the way up.
+    sealed class Limiter
+    {
+        const float Ceiling = 0.98f;
+        readonly float[] _delay;        // interleaved, the look-ahead
+        readonly float[] _peaks;        // each delayed frame's louder channel
+        readonly int _length;
+        readonly float _attack, _release;
+        int _pos;
+        float _gain = 1;
+
+        public Limiter(int rate)
+        {
+            _length = Math.Max(1, rate * 3 / 2000);
+            _delay = new float[_length * 2];
+            _peaks = new float[_length];
+            _attack = 1 - MathF.Exp(-3f / _length);                 // there within the look-ahead
+            _release = 1 - MathF.Exp(-1f / (rate * 0.15f));         // back up over about 150 ms
+        }
+
+        public void Process(float[] buf, int frames)
+        {
+            for (int i = 0; i < frames; i++)
+            {
+                float l = buf[2 * i], r = buf[2 * i + 1];
+                float outL = _delay[2 * _pos], outR = _delay[2 * _pos + 1];
+                _delay[2 * _pos] = l;
+                _delay[2 * _pos + 1] = r;
+                _peaks[_pos] = MathF.Max(MathF.Abs(l), MathF.Abs(r));
+                if (++_pos >= _length) _pos = 0;
+
+                float peak = 0;
+                for (int k = 0; k < _length; k++) peak = MathF.Max(peak, _peaks[k]);
+                float target = peak > Ceiling ? Ceiling / peak : 1;
+                _gain += (target - _gain) * (target < _gain ? _attack : _release);
+
+                // whatever still gets past (a sudden peak) is held at the ceiling
+                buf[2 * i] = Math.Clamp(outL * _gain, -Ceiling, Ceiling);
+                buf[2 * i + 1] = Math.Clamp(outR * _gain, -Ceiling, Ceiling);
+            }
+        }
     }
 
     // Freeverb (Jezar's public domain reverb) tuned to a small room, like the cabin of a car: short delays, quick

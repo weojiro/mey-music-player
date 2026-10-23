@@ -77,8 +77,10 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 
 ### Discord profilinde
 
+<p><img src="docs/discord-card.png" alt="Discord profil kartı: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
+
 *Discord'da göster* açıkken (tray menüsü) Discord profilinde mey music player dinlediğin görünür: şarkının adı,
-sanatçısı ve albümü, ilerleme çubuğu ve köşesinde uygulama logosu olan kapak. Duraklatılan şarkı kartta "Duraklatıldı"
+sanatçısı ve albümü, ilerleme çubuğu ve köşesinde uygulama logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
 olarak kalır. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
 diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
 şarkılarda da. Kapak bulunamazsa uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"

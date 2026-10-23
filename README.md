@@ -76,8 +76,10 @@ Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
+<p><img src="docs/discord-card.png" alt="The Discord profile card: listening to mey music player, with the cover, title, artist, album and progress bar" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
+
 With *Show on Discord* on (tray menu), your Discord profile shows that you're listening to mey music player: the
-song's title, artist and album, a progress bar and the cover with the app's logo in the corner. A paused song stays
+song's title, artist and album, a progress bar and the cover with the app's logo in the corner. In the member list, the artist shows under your name. A paused song stays
 on the card as "Paused". That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
 and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
 on SoundCloud. When the cover can't be found, the app's logo shows. Videos and other websites stay private: they show

@@ -127,7 +127,7 @@ public partial class OptionsWindow : Window
         PreviewMouseLeftButtonDown += OnPageClick;
         MaxHeight = SystemParameters.WorkArea.Height;   // taller pages scroll
         StateChanged += (_, _) => _pvAnim.Run(WindowState != WindowState.Minimized);
-        SourceInitialized += (_, _) => DarkTitleBar();
+        SourceInitialized += (_, _) => DarkTitleBar(this);
         _main.CoverChanged += OnCoverChanged;
         Closed += (_, _) =>
         {
@@ -148,9 +148,9 @@ public partial class OptionsWindow : Window
 
     StickerSpec? SelectedSpec => Current is { } p && _selected >= 0 && _selected < p.Stickers.Count ? p.Stickers[_selected] : null;
 
-    void DarkTitleBar()
+    internal static void DarkTitleBar(Window window)
     {
-        var hwnd = new WindowInteropHelper(this).Handle;
+        var hwnd = new WindowInteropHelper(window).Handle;
         int on = 1;
         if (DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref on, sizeof(int)) != 0)
             DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE - 1, ref on, sizeof(int));    // 19 on Windows 10 1809-1909

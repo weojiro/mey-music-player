@@ -77,11 +77,21 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 
 ### Discord profilinde
 
-*Discord'da göster* açıkken (tray menüsü) Discord profilinde MMP üzerinden dinlediğin, şarkının adı ve kapağı
-görünür. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
+*Discord'da göster* açıkken (tray menüsü) Discord profilinde mey music player dinlediğin görünür: şarkının adı,
+sanatçısı ve albümü, ilerleme çubuğu ve köşesinde uygulama logosu olan kapak. Duraklatılan şarkı kartta "Duraklatıldı"
+olarak kalır. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
 diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
 şarkılarda da. Kapak bulunamazsa uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
 olarak görünür.
+
+### Ekolayzer
+
+Tray menüsü → *Ekolayzer*: 18 bant, ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
+güçlendirme, stereo genişlik, denge, vokali azalt). Değişiklikler anında, her uygulamada duyulur. Ses, Windows için
+ücretsiz ve açık kaynak bir ses aracı olan [Equalizer APO](https://sourceforge.net/projects/equalizerapo/) üzerinden
+geçer; kurulu değilse Ekolayzer penceresi resmi kurulumunu indirip (yaklaşık 12 MB, çalıştırmadan önce kontrol
+edilir) başlatabilir. Windows izin ister, ses cihazlarını seçersin, sonra bilgisayarı yeniden başlatırsın. Ekolayzer
+MMP kapalıyken de çalışmaya devam eder; Ekolayzer penceresindeki düğmeyle kapatabilirsin.
 
 ### Hızlı kontroller
 
@@ -185,6 +195,8 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
 - **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) ve **SoundCloud** (`soundcloud.com`, sadece
   SoundCloud şarkısında): Discord'daki kapak için şarkının adı ve sanatçısı (Discord resmi sadece bir internet
   adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
+- **SourceForge** (`downloads.sourceforge.net`): Equalizer APO'nun kurulumu, sadece Ekolayzer penceresinde *İndir ve
+  kur*'a bastığında.
 
 MMP varsayılan olarak Windows ile başlar; kapatmak için tray menüsü → *Windows ile başlat*.
 

@@ -76,11 +76,21 @@ Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
-With *Show on Discord* on (tray menu), your Discord profile shows that you're listening via MMP, with the song's
-name and cover. That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
+With *Show on Discord* on (tray menu), your Discord profile shows that you're listening to mey music player: the
+song's title, artist and album, a progress bar and the cover with the app's logo in the corner. A paused song stays
+on the card as "Paused". That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
 and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
 on SoundCloud. When the cover can't be found, the app's logo shows. Videos and other websites stay private: they show
 up as "Something is playing".
+
+### Equalizer
+
+Tray menu → *Equalizer*: 18 bands, a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
+stereo width, balance, reduce vocals). Changes are heard at once, in every app. The sound goes through
+[Equalizer APO](https://sourceforge.net/projects/equalizerapo/), a free and open-source sound tool for Windows; if
+it isn't installed, the Equalizer window can download its official setup (about 12 MB, checked before it runs) and
+start it. Windows asks for permission, you choose your sound devices, then restart the computer. The equalizer keeps
+working while MMP is closed; turn it off with the switch in the Equalizer window.
 
 ### Quick controls
 
@@ -194,6 +204,8 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
 - **Deezer** (`api.deezer.com`), **Apple Music** (`itunes.apple.com`) and **SoundCloud** (`soundcloud.com`, only for a
   SoundCloud song): the song's title and artist, to find its cover for Discord (Discord shows a picture only from a web
   address). Only while *Show on Discord* is on.
+- **SourceForge** (`downloads.sourceforge.net`): Equalizer APO's setup, only when you click *Download and install* in
+  the Equalizer window.
 
 MMP starts with Windows by default; turn it off in the tray menu → *Start with Windows*.
 

@@ -1,0 +1,136 @@
+<Window x:Class="TaskbarPlayerProto.EqualizerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Background="#1F1F1F"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        FontSize="13"
+        Foreground="#E3E3E3"
+        ResizeMode="CanMinimize"
+        SizeToContent="WidthAndHeight"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- styles: Theme.xaml (the same look as Options) -->
+    <Window.Resources>
+        <ResourceDictionary Source="Theme.xaml"/>
+    </Window.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,22,28,24" MinWidth="640">
+
+            <Grid>
+                <StackPanel>
+                    <TextBlock FontSize="20" FontWeight="SemiBold" x:Name="TitleText"/>
+                    <TextBlock Foreground="{StaticResource Dim}" Margin="0,4,0,0" x:Name="SubText"/>
+                </StackPanel>
+                <CheckBox HorizontalAlignment="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" x:Name="OnBox"/>
+            </Grid>
+
+            <!-- Equalizer APO isn't installed: what it is, and a button that downloads and starts its setup -->
+            <Border Background="{StaticResource Card}" CornerRadius="12" Margin="0,18,0,0" Padding="20,18" Visibility="Collapsed" x:Name="InstallCard">
+                <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+                    <TextBlock TextWrapping="Wrap" x:Name="NeedText"/>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="StepsText"/>
+                    <StackPanel Margin="0,14,0,0" Orientation="Horizontal">
+                        <Button Background="#E3E3E3" Foreground="#1F1F1F" Style="{StaticResource Btn}" x:Name="InstallButton"/>
+                        <TextBlock Margin="12,0,0,0" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="InstallStatus"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- installed (or a device added) since the computer was started: it works after a restart -->
+            <Border Background="{StaticResource Card}" CornerRadius="12" Margin="0,18,0,0" Padding="20,14" Visibility="Collapsed" x:Name="RestartCard">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock MaxWidth="520" HorizontalAlignment="Left" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="RestartText"/>
+                    <Button Background="#E3E3E3" Foreground="#1F1F1F" Grid.Column="1" Margin="14,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="RestartButton"/>
+                </Grid>
+            </Border>
+
+            <StackPanel x:Name="Controls">
+                <!-- presets, and back to flat -->
+                <Grid Margin="0,20,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="PresetsText"/>
+                    <WrapPanel Grid.Column="1" x:Name="PresetChips"/>
+                    <Button Foreground="#F28B82" Grid.Column="2" Style="{StaticResource Btn}" VerticalAlignment="Top" x:Name="ResetButton"/>
+                </Grid>
+
+                <!-- the 18 bands: drag a dot up or down; the curve shows the sound -->
+                <Border Background="{StaticResource Card}" CornerRadius="12" Margin="0,14,0,0" Padding="16,10">
+                    <Canvas Background="Transparent" Cursor="Hand" FlowDirection="LeftToRight" HorizontalAlignment="Center" x:Name="Graph"/>
+                </Border>
+                <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="2,8,0,0" TextWrapping="Wrap" x:Name="BandHint"/>
+
+                <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="300"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition Height="18"/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="PreampText"/>
+                    <Slider Grid.Column="2" LargeChange="1" Maximum="12" Minimum="-12" SmallChange="0.5" Style="{StaticResource Range}" TickFrequency="0.5" x:Name="PreampSlider"/>
+                    <TextBlock Grid.Column="3" Margin="10,0,0,0" MinWidth="70" VerticalAlignment="Center" x:Name="PreampValue"/>
+
+                    <!-- effects -->
+                    <TextBlock Grid.Row="2" Margin="0,5,0,0" Style="{StaticResource Section}" VerticalAlignment="Top" x:Name="EffectsText"/>
+                    <TextBlock Grid.Column="1" Grid.Row="2" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="BassLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="2" LargeChange="1" Maximum="12" SmallChange="0.5" Style="{StaticResource Range}" TickFrequency="0.5" x:Name="BassSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="2" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="BassValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="3" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="WidthLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="3" Maximum="200" Style="{StaticResource Range}" x:Name="WidthSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="3" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="WidthValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="4" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="BalanceLabel"/>
+                    <Slider FlowDirection="LeftToRight" Grid.Column="2" Grid.Row="4" Maximum="100" Minimum="-100" Style="{StaticResource Range}" x:Name="BalanceSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="4" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="BalanceValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="5" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="VocalsLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="5" Style="{StaticResource Range}" x:Name="VocalsSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="5" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="VocalsValue"/>
+                </Grid>
+                <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="110,6,0,0" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" x:Name="EffectsHint"/>
+
+                <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
+
+                <!-- which sound devices Equalizer APO works on -->
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="DevicesText"/>
+                    <StackPanel Grid.Column="1" HorizontalAlignment="Left" MaxWidth="560">
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" TextWrapping="Wrap" x:Name="DevicesHint"/>
+                        <Button HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource Btn}" x:Name="DevicesButton"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+
+            <!-- MMP can't write into Equalizer APO's folder: one click lets it (Windows asks) -->
+            <Border Background="{StaticResource Card}" CornerRadius="10" Margin="0,16,0,0" Padding="16,12" Visibility="Collapsed" x:Name="WriteCard">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Foreground="#F28B82" MaxWidth="460" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="WriteText"/>
+                    <Button Margin="14,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="WriteButton"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

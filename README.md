@@ -13,7 +13,7 @@
 mey music player (MMP) is a free, open-source music player for the Windows taskbar. It puts the cover of
 whatever is playing next to your taskbar icons: Spotify, YouTube in your browser, SoundCloud or any app that
 uses the Windows media controls. Click the cover and a small player slides open with the controls, the time
-and, for Spotify, the lyrics.
+and, for Spotify, the lyrics. It can also show the song on your Discord profile and has a 20-band equalizer.
 
 Make it yours: let it take its colours from the cover, or pick your own colours, make it see-through and add
 PNGs or GIFs. Put it anywhere on the screen and keep it visible over full-screen games, where **Ctrl + Alt + X**
@@ -104,7 +104,7 @@ working while MMP is closed; turn it off with the switch in the Equalizer window
 | Ctrl + Alt | hides / shows the player |
 | Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Show over games*) |
 
-Right-click the tray icon for Options, Hide player, Lyrics, Start with Windows, the cover's place (right, center, center
+Right-click the tray icon for Options, Hide player, Lyrics, Equalizer, Show on Discord, Start with Windows, the cover's place (right, center, center
 above or left), the language, Restart and Close. *Center* puts the cover in the middle of the taskbar when the taskbar
 icons are on the left, and the open player stays in the middle too. *Center, above* puts it in the middle just above the
 taskbar (also with the icons in the middle); over a full-screen game it goes down to where the taskbar is.
@@ -128,10 +128,18 @@ The app is not signed with a paid certificate. Choose *More info* and then *Run 
 </details>
 
 <details>
+<summary><b>Is it safe?</b></summary>
+
+The code is all here. Every release is built from it by GitHub Actions, not on a PC, and comes with its SHA-256.
+MMP updates only from this repository's releases, checks the SHA-256 first and asks you before it updates.
+</details>
+
+<details>
 <summary><b>Which apps does it work with?</b></summary>
 
 Anything that shows up in the Windows media controls (the media box in the volume / quick settings flyout):
-Spotify, browsers playing YouTube or SoundCloud, and most music and video players. Lyrics are for Spotify only.
+Spotify, browsers (Chrome, Edge, Brave, Opera, Firefox) playing YouTube or SoundCloud, and most music and video
+players. Lyrics are for Spotify only.
 </details>
 
 <details>
@@ -148,8 +156,8 @@ it is), but everything else works.
 It asks GitHub for new versions. With Lyrics on, the title, artist, album and length of the Spotify song
 go to [LRCLIB](https://lrclib.net) to find its lyrics; found lyrics are kept in `%LOCALAPPDATA%\MMP\lyrics`.
 With *Show on Discord* on, the song's title and artist go to Deezer and Apple Music (and SoundCloud for a
-SoundCloud song) to find the cover's web address.
-Nothing else.
+SoundCloud song) to find the cover's web address. Equalizer APO's setup comes from SourceForge, only when you
+click *Download and install*. Nothing else.
 </details>
 
 <details>

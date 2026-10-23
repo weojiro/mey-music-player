@@ -13,7 +13,7 @@
 mey music player (MMP), Windows görev çubuğu için ücretsiz ve açık kaynak bir müzik oynatıcı. O an çalan
 şeyin kapağını görev çubuğundaki ikonlarının yanına koyar: Spotify, tarayıcıdaki YouTube, SoundCloud ya da
 Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı açılır;
-butonlar, süre ve Spotify'da şarkı sözleri oradadır.
+butonlar, süre ve Spotify'da şarkı sözleri oradadır. Şarkıyı Discord profilinde de gösterebilir, 20 bantlı bir ekolayzeri de var.
 
 Onu kendine göre yap: renklerini kapaktan alsın ya da kendi renklerini seç, saydam yap, PNG veya GIF ekle.
 Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ctrl + Alt + X** ile fareyi oyundan alıp
@@ -105,7 +105,7 @@ MMP kapalıyken de çalışmaya devam eder; Ekolayzer penceresindeki düğmeyle 
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
 | Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
 
-Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Windows ile başlat, kapağın yeri (sağ,
+Tray ikonuna sağ tıklayınca: Ayarlar, Oynatıcıyı gizle, Şarkı sözleri, Ekolayzer, Discord'da göster, Windows ile başlat, kapağın yeri (sağ,
 orta, orta üst ya da sol), dil, Yeniden başlat ve Kapat. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
 çubuğunun ortasına koyar; açılan oynatıcı da ortada durur. *Orta üst*, kapağı görev çubuğunun hemen üstüne, ortaya koyar
 (simgeler ortadayken de); tam ekran oyunda görev çubuğunun yerine iner.
@@ -129,10 +129,17 @@ Uygulama ücretli bir sertifikayla imzalanmadı. *Ek bilgi*'ye, sonra *Yine de �
 </details>
 
 <details>
+<summary><b>Güvenli mi?</b></summary>
+
+Kodun hepsi burada. Her sürüm bir bilgisayarda değil, GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir.
+MMP sadece bu repo'nun sürümlerinden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.
+</details>
+
+<details>
 <summary><b>Hangi uygulamalarla çalışıyor?</b></summary>
 
 Windows medya kontrollerinde görünen her şeyle (ses / hızlı ayarlar menüsündeki medya kutusu): Spotify,
-YouTube ya da SoundCloud çalan tarayıcılar ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify'da.
+YouTube ya da SoundCloud çalan tarayıcılar (Chrome, Edge, Brave, Opera, Firefox) ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify'da.
 </details>
 
 <details>
@@ -149,7 +156,8 @@ olduğunu söylemiyor), geri kalan her şey çalışır.
 Yeni sürüm için GitHub'a bakar. Şarkı sözleri açıksa, sözleri bulmak için Spotify şarkısının adı, sanatçısı,
 albümü ve süresi [LRCLIB](https://lrclib.net)'e gider; bulunan sözler `%LOCALAPPDATA%\MMP\lyrics` içinde
 saklanır. *Discord'da göster* açıkken şarkının adı ve sanatçısı, kapağın internet adresini bulmak için Deezer'a,
-Apple Music'e (SoundCloud şarkısında SoundCloud'a da) gider. Başka bir şey gönderilmez.
+Apple Music'e (SoundCloud şarkısında SoundCloud'a da) gider. Equalizer APO'nun kurulumu, sadece *İndir ve kur*'a
+tıklayınca SourceForge'dan iner. Başka bir şey gönderilmez.
 </details>
 
 <details>

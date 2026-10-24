@@ -12,7 +12,9 @@ namespace TaskbarPlayerProto;
 public partial class StreamWindow : Window
 {
     static readonly SolidColorBrush ChipOff = new(Color.FromArgb(0x60, 0x2D, 0x2D, 0x2D));
-    static readonly SolidColorBrush ChipOn = new(Color.FromRgb(0xE3, 0xE3, 0xE3));
+    static readonly SolidColorBrush ChipText = new(Color.FromRgb(0xE3, 0xE3, 0xE3));
+    SolidColorBrush _chipOn = new(Color.FromRgb(0xE3, 0xE3, 0xE3));
+    Color? _color;
 
     readonly MainWindow _main;
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
@@ -56,10 +58,10 @@ public partial class StreamWindow : Window
 
     void ShowMode()
     {
-        BarsButton.Background = Viz.Wave ? ChipOff : ChipOn;
-        BarsButton.Foreground = Viz.Wave ? ChipOn : Brushes.Black;
-        WaveButton.Background = Viz.Wave ? ChipOn : ChipOff;
-        WaveButton.Foreground = Viz.Wave ? Brushes.Black : ChipOn;
+        BarsButton.Background = Viz.Wave ? ChipOff : _chipOn;
+        BarsButton.Foreground = Viz.Wave ? ChipText : Brushes.Black;
+        WaveButton.Background = Viz.Wave ? _chipOn : ChipOff;
+        WaveButton.Foreground = Viz.Wave ? Brushes.Black : ChipText;
     }
 
     // on every screen frame (the drawing is light); a frame WPF hands over twice is skipped
@@ -91,10 +93,30 @@ public partial class StreamWindow : Window
                 ? new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A))
                 : new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
         }
+        // chameleon: the bars, the wave, the progress bar and the chosen button take the cover's colour, like the player
+        var color = Bright(_main.Chameleon.Accent);
+        if (color != _color)
+        {
+            _color = color;
+            Viz.SetColor(color);
+            Progress.Background = new SolidColorBrush(color);
+            _chipOn = new SolidColorBrush(color);
+            ShowMode();
+        }
         double part = length.TotalSeconds > 1 ? Math.Clamp(position.TotalSeconds / length.TotalSeconds, 0, 1) : 0;
         Progress.Width = 620 * part;
         TimeText.Text = length.TotalSeconds > 1 ? $"{Clock(position)} / {Clock(length)}" : "";
         NeedCable.Visibility = EqEngine.CableInstalled ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // a dark cover colour would vanish on the dark window: lifted toward white until it shows
+    static Color Bright(Color c)
+    {
+        double light = (0.299 * c.R + 0.587 * c.G + 0.114 * c.B) / 255;
+        if (light >= 0.62) return c;
+        double t = (0.62 - light) / (1 - light);
+        byte Mix(byte v) => (byte)(v + (255 - v) * t);
+        return Color.FromRgb(Mix(c.R), Mix(c.G), Mix(c.B));
     }
 
     static string Clock(TimeSpan t) => t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"m\:ss");
@@ -105,8 +127,14 @@ sealed class Visualizer : FrameworkElement
 {
     const int Size = 2048, Bands = 48;
     const double MinHz = 40, MaxHz = 16000;
-    static readonly Brush BarBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF)));
-    static readonly Pen WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xD8, 0xFF, 0xFF, 0xFF)), 4.5) { LineJoin = PenLineJoin.Round });
+    Brush BarBrush = Freeze(new SolidColorBrush(Color.FromArgb(0xA0, 0xFF, 0xFF, 0xFF)));
+    Pen WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xE0, 0xFF, 0xFF, 0xFF)), 4.5) { LineJoin = PenLineJoin.Round });
+
+    public void SetColor(Color c)
+    {
+        BarBrush = Freeze(new SolidColorBrush(Color.FromArgb(0xC0, c.R, c.G, c.B)));
+        WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xF0, c.R, c.G, c.B)), 4.5) { LineJoin = PenLineJoin.Round });
+    }
 
     readonly float[] _samples = new float[Size];
     readonly double[] _levels = new double[Bands];
@@ -144,7 +172,8 @@ sealed class Visualizer : FrameworkElement
             db += 3 * Math.Log2(Math.Sqrt(lo * hi) / 1000);
             double level = Math.Clamp((db + 62) / 56, 0, 1);
             // up at once, down slowly
-            _levels[b] = level > _levels[b] ? _levels[b] + (level - _levels[b]) * 0.55 : _levels[b] - Math.Min(0.03, _levels[b] - level);
+            // up and down both glide: a bar that jumps up and drops leaves a trail on the screen and on a stream
+            _levels[b] += (level - _levels[b]) * (level > _levels[b] ? 0.22 : 0.08);
         }
     }
 
@@ -212,7 +241,8 @@ sealed class Visualizer : FrameworkElement
         for (int p = 0; p < n; p++)
         {
             double next = (_target[Math.Max(p - 1, 0)] + 2 * _target[p] + _target[Math.Min(p + 1, n - 1)]) / 4;
-            _wave[p] += (next * _waveGain - _wave[p]) * 0.06;
+            // and never more than a small step per frame: a sudden hit glides instead of jumping, so it leaves no trail
+            _wave[p] += Math.Clamp((next * _waveGain - _wave[p]) * 0.06, -0.018, 0.018);
         }
 
         double mid = h * 0.55, amp = h * 0.38;

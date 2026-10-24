@@ -123,6 +123,7 @@
                         <RowDefinition/>
                         <RowDefinition/>
                         <RowDefinition/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
                     <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="PreampText"/>
                     <Slider Grid.Column="2" LargeChange="1" Maximum="15" Minimum="-15" SmallChange="0.5" Style="{StaticResource Range}" TickFrequency="0.5" x:Name="PreampSlider"/>
@@ -136,15 +137,18 @@
                     <TextBlock Grid.Column="1" Grid.Row="3" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ReverbLabel"/>
                     <Slider Grid.Column="2" Grid.Row="3" Style="{StaticResource Range}" x:Name="ReverbSlider"/>
                     <TextBlock Grid.Column="3" Grid.Row="3" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="ReverbValue"/>
-                    <TextBlock Grid.Column="1" Grid.Row="4" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="WidthLabel"/>
-                    <Slider Grid.Column="2" Grid.Row="4" Maximum="200" Style="{StaticResource Range}" x:Name="WidthSlider"/>
-                    <TextBlock Grid.Column="3" Grid.Row="4" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="WidthValue"/>
-                    <TextBlock Grid.Column="1" Grid.Row="5" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="BalanceLabel"/>
-                    <Slider FlowDirection="LeftToRight" Grid.Column="2" Grid.Row="5" Maximum="100" Minimum="-100" Style="{StaticResource Range}" x:Name="BalanceSlider"/>
-                    <TextBlock Grid.Column="3" Grid.Row="5" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="BalanceValue"/>
-                    <TextBlock Grid.Column="1" Grid.Row="6" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="VocalsLabel"/>
-                    <Slider Grid.Column="2" Grid.Row="6" Style="{StaticResource Range}" x:Name="VocalsSlider"/>
-                    <TextBlock Grid.Column="3" Grid.Row="6" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="VocalsValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="4" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="EnhancerLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="4" Style="{StaticResource Range}" x:Name="EnhancerSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="4" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="EnhancerValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="5" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="WidthLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="5" Maximum="200" Style="{StaticResource Range}" x:Name="WidthSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="5" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="WidthValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="6" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="BalanceLabel"/>
+                    <Slider FlowDirection="LeftToRight" Grid.Column="2" Grid.Row="6" Maximum="100" Minimum="-100" Style="{StaticResource Range}" x:Name="BalanceSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="6" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="BalanceValue"/>
+                    <TextBlock Grid.Column="1" Grid.Row="7" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="VocalsLabel"/>
+                    <Slider Grid.Column="2" Grid.Row="7" Style="{StaticResource Range}" x:Name="VocalsSlider"/>
+                    <TextBlock Grid.Column="3" Grid.Row="7" Margin="10,0,0,0" VerticalAlignment="Center" x:Name="VocalsValue"/>
                 </Grid>
                 <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="110,6,0,0" TextWrapping="Wrap" MaxWidth="560" HorizontalAlignment="Left" x:Name="EffectsHint"/>
             </StackPanel>

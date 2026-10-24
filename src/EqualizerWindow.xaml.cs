@@ -60,6 +60,7 @@ public partial class EqualizerWindow : Window
         EffectsText.Text = T("eqEffects");
         BassLabel.Text = T("eqBassBoost");
         ReverbLabel.Text = T("eqReverb");
+        EnhancerLabel.Text = T("eqEnhancer");
         WidthLabel.Text = T("eqWidth");
         BalanceLabel.Text = T("eqBalance");
         VocalsLabel.Text = T("eqVocals");
@@ -86,6 +87,7 @@ public partial class EqualizerWindow : Window
         PreampSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Preamp = PreampSlider.Value; Edited(); };
         BassSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Bass = BassSlider.Value; Edited(); };
         ReverbSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Reverb = (int)ReverbSlider.Value; Edited(); };
+        EnhancerSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Enhancer = (int)EnhancerSlider.Value; Edited(); };
         WidthSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Width = (int)WidthSlider.Value; Edited(); };
         BalanceSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Balance = (int)BalanceSlider.Value; Edited(); };
         VocalsSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Vocals = (int)VocalsSlider.Value; Edited(); };
@@ -93,6 +95,7 @@ public partial class EqualizerWindow : Window
         PreampSlider.MouseRightButtonUp += (_, _) => PreampSlider.Value = 0;
         BassSlider.MouseRightButtonUp += (_, _) => BassSlider.Value = 0;
         ReverbSlider.MouseRightButtonUp += (_, _) => ReverbSlider.Value = 0;
+        EnhancerSlider.MouseRightButtonUp += (_, _) => EnhancerSlider.Value = 0;
         WidthSlider.MouseRightButtonUp += (_, _) => WidthSlider.Value = 100;
         BalanceSlider.MouseRightButtonUp += (_, _) => BalanceSlider.Value = 0;
         VocalsSlider.MouseRightButtonUp += (_, _) => VocalsSlider.Value = 0;
@@ -100,6 +103,7 @@ public partial class EqualizerWindow : Window
         Wheel(PreampSlider, 0.5);
         Wheel(BassSlider, 0.5);
         Wheel(ReverbSlider, 2);
+        Wheel(EnhancerSlider, 2);
         Wheel(WidthSlider, 5);
         Wheel(BalanceSlider, 5);
         Wheel(VocalsSlider, 2);
@@ -218,6 +222,7 @@ public partial class EqualizerWindow : Window
         _eq.Preamp = fresh.Preamp;
         _eq.Bass = fresh.Bass;
         _eq.Reverb = fresh.Reverb;
+        _eq.Enhancer = fresh.Enhancer;
         _eq.Width = fresh.Width;
         _eq.Balance = fresh.Balance;
         _eq.Vocals = fresh.Vocals;
@@ -278,6 +283,7 @@ public partial class EqualizerWindow : Window
         PreampSlider.Value = _eq.Preamp;
         BassSlider.Value = _eq.Bass;
         ReverbSlider.Value = _eq.Reverb;
+        EnhancerSlider.Value = _eq.Enhancer;
         WidthSlider.Value = _eq.Width;
         BalanceSlider.Value = _eq.Balance;
         VocalsSlider.Value = _eq.Vocals;
@@ -301,6 +307,7 @@ public partial class EqualizerWindow : Window
         PreampValue.Text = Db(_eq.Preamp) + " dB";
         BassValue.Text = Db(_eq.Bass) + " dB";
         ReverbValue.Text = _eq.Reverb + " %";
+        EnhancerValue.Text = _eq.Enhancer + " %";
         WidthValue.Text = _eq.Width + " %";
         BalanceValue.Text = _eq.Balance == 0 ? T("center")
             : (_eq.Balance < 0 ? T("left") : T("right")) + " " + Math.Abs(_eq.Balance) + " %";

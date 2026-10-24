@@ -19,6 +19,7 @@ sealed class EqSettings
     public int Balance { get; set; }            // -100 (left) .. 100 (right)
     public int Vocals { get; set; }             // reduce vocals, 0..100 %
     public int Reverb { get; set; }             // 0..100 %
+    public int Enhancer { get; set; }           // brighter, clearer highs (like a car stereo's sound retriever), 0..100 %
     public string Preset { get; set; } = "flat";    // a preset's key, "saved:<name>" or "custom"
     public List<string> Apps { get; set; } = new() { "spotify" };      // process names that go through it
     public List<SavedEq> Saved { get; set; } = new();
@@ -35,17 +36,19 @@ sealed class SavedEq
     public int Balance { get; set; }
     public int Vocals { get; set; }
     public int Reverb { get; set; }
+    public int Enhancer { get; set; }
 
     public static SavedEq From(EqSettings s, string name) => new()
     {
         Name = name, Bands = (double[])s.Bands.Clone(), Preamp = s.Preamp, Bass = s.Bass, Width = s.Width,
-        Balance = s.Balance, Vocals = s.Vocals, Reverb = s.Reverb
+        Balance = s.Balance, Vocals = s.Vocals, Reverb = s.Reverb, Enhancer = s.Enhancer
     };
 
     public void ApplyTo(EqSettings s)
     {
         s.Bands = (double[])Bands.Clone();
         s.Preamp = Preamp; s.Bass = Bass; s.Width = Width; s.Balance = Balance; s.Vocals = Vocals; s.Reverb = Reverb;
+        s.Enhancer = Enhancer;
         s.Preset = "saved:" + Name;
     }
 }
@@ -139,6 +142,7 @@ static class Equalizer
         s.Balance = Math.Clamp(s.Balance, -100, 100);
         s.Vocals = Math.Clamp(s.Vocals, 0, 100);
         s.Reverb = Math.Clamp(s.Reverb, 0, 100);
+        s.Enhancer = Math.Clamp(s.Enhancer, 0, 100);
         s.Apps ??= new();
         s.Saved = (s.Saved ?? new()).Where(x => x.Name.Trim().Length > 0).Take(MaxSaved).ToList();
         foreach (var x in s.Saved) x.Bands = CleanBands(x.Bands);

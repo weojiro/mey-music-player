@@ -12,6 +12,7 @@ sealed class EqDsp
     Coeffs _c;
 
     // filter memory: [filter, channel]
+    readonly double[] _ez1 = new double[2], _ez2 = new double[2];
     readonly double[,] _z1 = new double[Equalizer.Frequencies.Length + 1, 2], _z2 = new double[Equalizer.Frequencies.Length + 1, 2];
     readonly Reverb _reverb;
     double[]? _fitFor, _fitted;     // the last fit: dragging a slider doesn't fit the bands again
@@ -24,6 +25,7 @@ sealed class EqDsp
         public double[] B0 = Array.Empty<double>(), B1 = Array.Empty<double>(), B2 = Array.Empty<double>(), A1 = Array.Empty<double>(), A2 = Array.Empty<double>();
         public double LL = 1, LR, RL, RR = 1;
         public float Dry = 1, Wet;
+        public double Exc, EB0, EB1, EB2, EA1, EA2;      // the enhancer: how much, and its high-pass filter
     }
 
     public EqDsp(int rate)
@@ -64,6 +66,9 @@ sealed class EqDsp
         double r = s.Reverb / 100.0;
         c.Wet = (float)(r * 0.9);
         c.Dry = (float)(1 - r * 0.25);
+
+        c.Exc = s.Enhancer / 100.0 * 0.6;
+        (c.EB0, c.EB1, c.EB2, c.EA1, c.EA2) = HighPass(3000);
         return c;
     }
 
@@ -104,6 +109,13 @@ sealed class EqDsp
         return ((1 + alpha * a) / a0, -2 * cos / a0, (1 - alpha * a) / a0, -2 * cos / a0, (1 - alpha / a) / a0);
     }
 
+    (double, double, double, double, double) HighPass(double freq)
+    {
+        double w = 2 * Math.PI * freq / _rate, cos = Math.Cos(w), alpha = Math.Sin(w) / (2 * Math.Sqrt(0.5));
+        double a0 = 1 + alpha;
+        return ((1 + cos) / 2 / a0, -(1 + cos) / a0, (1 + cos) / 2 / a0, -2 * cos / a0, (1 - alpha) / a0);
+    }
+
     (double, double, double, double, double) LowShelf(double freq, double gain)
     {
         double a = Math.Pow(10, gain / 40), w = 2 * Math.PI * freq / _rate, cos = Math.Cos(w);
@@ -141,12 +153,26 @@ sealed class EqDsp
                 r = c.RL * l + c.RR * r;
                 l = nl;
             }
+            if (c.Exc > 0)
+            {
+                // the enhancer: the highs, lightly saturated (new overtones), added back on top
+                l += c.Exc * Math.Tanh(3 * Excite(c, l, 0));
+                r += c.Exc * Math.Tanh(3 * Excite(c, r, 1));
+            }
             buf[2 * i] = (float)l;
             buf[2 * i + 1] = (float)r;
         }
         if (c.Wet > 0) _reverb.Process(buf, frames, c.Dry, c.Wet);
         else _reverb.Clear();
         Clip(buf, frames);
+    }
+
+    double Excite(Coeffs c, double x, int ch)
+    {
+        double y = c.EB0 * x + _ez1[ch];
+        _ez1[ch] = c.EB1 * x - c.EA1 * y + _ez2[ch];
+        _ez2[ch] = c.EB2 * x - c.EA2 * y;
+        return y;
     }
 
     // Turned far up, the sound goes over the top. Windows' own limiter would then turn everything down and it pumps.

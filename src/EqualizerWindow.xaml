@@ -95,6 +95,8 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBox MaxLength="24" Style="{StaticResource Field}" VerticalAlignment="Center" Width="170" x:Name="SaveName"/>
                             <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="SaveButton"/>
+                            <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="ExportButton"/>
+                            <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="ImportButton"/>
                             <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="12,0,0,0" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="SavedFull"/>
                         </StackPanel>
                     </StackPanel>

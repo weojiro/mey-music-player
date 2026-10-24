@@ -89,7 +89,8 @@ olarak görünür.
 ### Ekolayzer
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
-güçlendirme, yankı, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilirsin.
+güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilir,
+`.mmpeq` dosyası olarak dışa ve içe aktarabilirsin.
 Değişiklikler anında duyulur.
 
 Sadece açtığın uygulamaları değiştirir (varsayılan Spotify; tarayıcılar ve müzik çalarlar açıkken listede görünür).

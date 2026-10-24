@@ -64,8 +64,8 @@ sealed class EqDsp
         c.LL = same * left; c.LR = other * left; c.RL = other * right; c.RR = same * right;
 
         double r = s.Reverb / 100.0;
-        c.Wet = (float)(r * 0.9);
-        c.Dry = (float)(1 - r * 0.25);
+        c.Wet = (float)(r * 1.3);
+        c.Dry = (float)(1 - r * 0.8);       // all the way up the reverb is as loud as the song itself, like AIMP's
 
         c.Exc = s.Enhancer / 100.0 * 0.6;
         (c.EB0, c.EB1, c.EB2, c.EA1, c.EA2) = HighPass(3000);
@@ -189,22 +189,29 @@ sealed class EqDsp
         }
     }
 
-    // Freeverb (Jezar's public domain reverb) tuned to a small room, like the cabin of a car: short delays, quick
-    // decay, the highs soaked up.
+    // Freeverb (Jezar's public domain reverb) in a small room, tuned against AIMP's reverb by measuring both on the
+    // same song: as strong, as wide and as bright.
     sealed class Reverb
     {
         static readonly int[] CombTuning = { 1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617 };
         static readonly int[] AllpassTuning = { 556, 441, 341, 225 };
-        const int Spread = 23;
-        const float Feedback = 0.76f, Damp = 0.55f, InputGain = 0.015f;
+        const int Spread = 150;        // the left and right rooms differ a lot: a wide sound
+        const float Feedback = 0.78f, Damp = 0.35f, InputGain = 0.015f, Cross = -0.4f;
+        const float LowHz = 80, HighHz = 8000;
 
         readonly float[][] _comb = new float[16][], _allpass = new float[8][];
         readonly int[] _combPos = new int[16], _allpassPos = new int[8];
         readonly float[] _combStore = new float[16];
         bool _clear = true;
 
+        // what goes into the room: no deep bass (it booms) and no top highs (they hiss), like AIMP's
+        readonly float _lowCut, _highCut;
+        float _lowState, _highState;
+
         public Reverb(int rate)
         {
+            _lowCut = 1 - MathF.Exp(-2 * MathF.PI * LowHz / rate);
+            _highCut = 1 - MathF.Exp(-2 * MathF.PI * HighHz / rate);
             double scale = rate / 44100.0 * 0.55;      // a smaller room than Freeverb's own
             for (int i = 0; i < 8; i++)
             {
@@ -224,6 +231,7 @@ sealed class EqDsp
             foreach (var a in _comb) Array.Clear(a);
             foreach (var a in _allpass) Array.Clear(a);
             Array.Clear(_combStore);
+            _lowState = _highState = 0;
             _clear = true;
         }
 
@@ -234,6 +242,9 @@ sealed class EqDsp
             {
                 float inL = buf[2 * i], inR = buf[2 * i + 1];
                 float input = (inL + inR) * InputGain;
+                _highState += (input - _highState) * _highCut;
+                _lowState += (_highState - _lowState) * _lowCut;
+                input = _highState - _lowState;
                 float outL = 0, outR = 0;
                 for (int c = 0; c < 8; c++)
                 {
@@ -245,8 +256,9 @@ sealed class EqDsp
                     outL = Allpass(a, outL);
                     outR = Allpass(a + 4, outR);
                 }
-                buf[2 * i] = inL * dry + outL * wet;
-                buf[2 * i + 1] = inR * dry + outR * wet;
+                // a little of the other side, upside down: wider still
+                buf[2 * i] = inL * dry + (outL + outR * Cross) * wet;
+                buf[2 * i + 1] = inR * dry + (outR + outL * Cross) * wet;
             }
         }
 
@@ -273,3 +285,4 @@ sealed class EqDsp
         }
     }
 }
+

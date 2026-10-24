@@ -88,7 +88,8 @@ up as "Something is playing".
 ### Equalizer
 
 Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
-reverb, stereo width, balance, reduce vocals). Save up to 5 of your own sounds. Changes are heard at once.
+reverb, enhancer, stereo width, balance, reduce vocals). Save up to 5 of your own sounds, and export or import them
+as `.mmpeq` files. Changes are heard at once.
 
 It only changes the apps you turn on (Spotify by default; browsers and music players show up while they are open).
 Discord, games and everything else sound as they are. For this MMP uses

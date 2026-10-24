@@ -150,6 +150,40 @@ static class Equalizer
         return s;
     }
 
+    // ---------- a sound in a file (export / import) ----------
+
+    public const string SoundExtension = ".mmpeq";
+
+    // readable by people too: letters like "ö" stay as they are, not ö
+    public static void ExportSound(SavedEq sound, string path) =>
+        File.WriteAllText(path, JsonSerializer.Serialize(sound, new JsonSerializerOptions
+        {
+            WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        }));
+
+    // null when the file isn't a sound MMP can use
+    public static SavedEq? ImportSound(string path)
+    {
+        try
+        {
+            var x = JsonSerializer.Deserialize<SavedEq>(File.ReadAllText(path));
+            if (x?.Bands is not { Length: > 0 }) return null;
+            x.Name = (x.Name ?? "").Trim();
+            if (x.Name.Length == 0) x.Name = Path.GetFileNameWithoutExtension(path);
+            if (x.Name.Length > 24) x.Name = x.Name[..24];
+            x.Bands = CleanBands(x.Bands);
+            x.Preamp = Math.Clamp(x.Preamp, -MaxGain, MaxGain);
+            x.Bass = Math.Clamp(x.Bass, 0, MaxGain);
+            x.Width = Math.Clamp(x.Width, 0, 200);
+            x.Balance = Math.Clamp(x.Balance, -100, 100);
+            x.Vocals = Math.Clamp(x.Vocals, 0, 100);
+            x.Reverb = Math.Clamp(x.Reverb, 0, 100);
+            x.Enhancer = Math.Clamp(x.Enhancer, 0, 100);
+            return x;
+        }
+        catch { return null; }
+    }
+
     public static void Save(EqSettings s)
     {
         try

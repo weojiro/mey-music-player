@@ -324,7 +324,7 @@ public partial class EqualizerWindow : Window
                 Content = "✕", Style = (Style)FindResource("Chip"), FontSize = 10, Padding = new Thickness(6, 2, 6, 2),
                 Background = Brushes.Transparent, Foreground = new SolidColorBrush(on ? Ink : Light),
                 HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 6),
-                ToolTip = T("delete")
+                ToolTip = T("remove")
             };
             delete.Click += (_, _) => DeleteSaved(saved);
             SavedChips.Children.Add(new Grid { Children = { chip, delete } });

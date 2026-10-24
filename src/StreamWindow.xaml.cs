@@ -30,6 +30,8 @@ public partial class StreamWindow : Window
     readonly MainWindow _main;
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     BitmapSource? _cover;
+    string _song = "";
+    bool _bigShown;
 
     public StreamWindow(MainWindow main)
     {
@@ -79,6 +81,7 @@ public partial class StreamWindow : Window
     TimeSpan _lastRender;
     void OnFrame(object? sender, EventArgs e)
     {
+        if (WindowState == WindowState.Minimized) return;       // nothing to see: no drawing
         if (e is RenderingEventArgs r && r.RenderingTime == _lastRender) return;
         if (e is RenderingEventArgs r2) _lastRender = r2.RenderingTime;
         Viz.Step();
@@ -96,14 +99,19 @@ public partial class StreamWindow : Window
         var (title, artist, cover, position, length) = _main.NowPlaying();
         SongText.Text = title;
         ArtistText.Text = artist;
-        if (!ReferenceEquals(cover, _cover))
+        // Windows hands the same song's cover over again on every change of its details: only a new song drops the big
+        // cover, otherwise it would flicker back to the small one and download again
+        string song = title + "\n" + artist;
+        bool newSong = song != _song;
+        if (newSong || !ReferenceEquals(cover, _cover))
         {
             _cover = cover;
-            _bigUrl = null;
             Backdrop.Source = cover == null ? null : Tiny(cover);
-            CoverBox.Background = cover == null
-                ? new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A))
-                : new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
+            if (newSong) { _song = song; _bigUrl = null; _bigShown = false; }
+            if (!_bigShown)
+                CoverBox.Background = cover == null
+                    ? new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A))
+                    : new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
         }
         // Windows gives the cover small (300 px from Spotify): blurry this big. The same cover found on the web for the
         // Discord card comes in a large size too
@@ -144,6 +152,7 @@ public partial class StreamWindow : Window
             image.EndInit();
             image.Freeze();
             CoverBox.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
+            _bigShown = true;
         }
         catch { }       // the small one stays
     }

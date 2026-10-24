@@ -37,6 +37,7 @@ static class EqEngine
     static string? _outputId;
     static long _lastSound;
     static int _skipId;
+    static volatile string? _cableId;
 
     // the stream window is open: the chosen apps go through MMP even with the equalizer off (unchanged), so a
     // Discord stream of MMP's window carries the sound
@@ -77,14 +78,50 @@ static class EqEngine
         if (old.On != copy.On || !old.Apps.SequenceEqual(copy.Apps)) Wake.Set();      // on, off or other apps: at once
     }
 
-    // MMP is closing: every app goes back to where it was
-    public static void Stop()
+    // MMP is closing: every app goes back to where it was. An app that was on the cable and is closed now can only be
+    // put back once it runs again (Windows takes a running program): helper (MMP --restore-routes, no window) waits
+    // for it, unless MMP is closing because Windows is.
+    static bool _stopped;
+    public static void Stop(bool leaveHelper = true)
     {
+        if (_stopped) return;           // Windows closing calls it, then the app's exit again
+        _stopped = true;
         _running = false;
         Wake.Set();
         _scanThread?.Join(1500);
         _pumpThread?.Join(500);
-        lock (Gate) StopAll();
+        lock (Gate)
+        {
+            StopAll();
+            if (leaveHelper && _routes.Count > 0 && Environment.ProcessPath is { } exe)
+                try { Process.Start(new ProcessStartInfo(exe, "--restore-routes") { UseShellExecute = false }); } catch { }
+        }
+    }
+
+    // MMP --restore-routes: puts each closed app back on its own device as soon as it runs; ends when all are back,
+    // when MMP itself starts again (it does the same), or after a day
+    public static void RestoreRoutes()
+    {
+        var until = DateTime.Now.AddDays(1);
+        while (_routes.Count > 0 && DateTime.Now < until)
+        {
+            if (Mutex.TryOpenExisting(@"Local\MMP-single-instance", out var main)) { main.Dispose(); return; }
+            foreach (var (file, before) in _routes.ToList())
+            {
+                foreach (var p in Process.GetProcessesByName(Path.GetFileNameWithoutExtension(file)))
+                {
+                    try
+                    {
+                        string path;
+                        try { path = p.MainModule?.FileName ?? ""; } catch { path = ""; }
+                        if (path.Length > 0 && !path.Equals(file, StringComparison.OrdinalIgnoreCase)) continue;
+                        if (AppRouting.Set(p.Id, before)) { _routes.Remove(file); SaveRoutes(); break; }
+                    }
+                    finally { p.Dispose(); }
+                }
+            }
+            Thread.Sleep(1500);
+        }
     }
 
     public static string? CableId()
@@ -139,6 +176,7 @@ static class EqEngine
         var devices = en.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
         var cable = devices.FirstOrDefault(d => d.FriendlyName.Contains(CableName) && d.FriendlyName.StartsWith("CABLE Input"));
         _cableSeen = cable != null;
+        _cableId = cable?.ID;
         var output = en.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) ? en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) : null;
         if (output != null && cable != null && output.ID == cable.ID) output = null;
         if (_outputId != null && output?.ID != _outputId) DropSources();       // another device: maybe another rate
@@ -183,7 +221,7 @@ static class EqEngine
                 if (!AppRouting.Set(pid, cable!.ID)) continue;
                 _routed[pid] = file;
             }
-            else if (!want && !_routed.ContainsKey(pid) && cable != null && AppRouting.Is(AppRouting.Get(pid), cable.ID) && _routes.ContainsKey(file))
+            else if (!want && _routes.ContainsKey(file) && !_routed.ContainsKey(pid) && cable != null && AppRouting.Is(AppRouting.Get(pid), cable.ID))
                 Unroute(pid, file);     // left on the cable by MMP (a crash, or switched off while closed)
             if (want && !_sources.ContainsKey(pid) && ProcessLoopback.Supported)
             {
@@ -197,8 +235,8 @@ static class EqEngine
         {
             bool alive = playing.TryGetValue(pid, out var app);
             if (alive && on && apps.Contains(app.Name)) continue;
-            if (alive) Unroute(pid, file);
             _routed.Remove(pid);
+            if (alive) Unroute(pid, file);
             if (_sources.Remove(pid, out var src))
             {
                 _snapshot = _snapshot.Where(x => x != src).ToArray();
@@ -232,10 +270,10 @@ static class EqEngine
         var s = _settings;
         var mixer = _mixer;
         if (!s.On || !s.TrackFade || mixer == null) return;
-        int id = ++_skipId;
+        int id = Interlocked.Increment(ref _skipId);
         mixer.Dsp.Fade(0, 250);
         await Task.Delay(260);
-        _ = Task.Delay(2500).ContinueWith(_ => { if (_skipId == id) _mixer?.Dsp.Fade(1, 600); });
+        _ = Task.Delay(2500).ContinueWith(_ => { if (Volatile.Read(ref _skipId) == id) _mixer?.Dsp.Fade(1, 600); });
     }
 
     // a new song started (however it was skipped): a moment of silence, then it comes up over a second and a half
@@ -244,7 +282,7 @@ static class EqEngine
         var s = _settings;
         var mixer = _mixer;
         if (!s.On || !s.TrackFade || mixer == null) return;
-        _skipId++;
+        Interlocked.Increment(ref _skipId);
         mixer.Dsp.Fade(1, 1500, 250);
     }
 
@@ -257,11 +295,18 @@ static class EqEngine
         return true;
     }
 
+    // back to the device it used before; the saved device is forgotten only when no other process of the same program
+    // is still on the cable (a browser's second process would otherwise go to the default instead of the user's own)
     static void Unroute(int pid, string file)
     {
         string before = _routes.TryGetValue(file, out var b) ? b : "";
-        if (AppRouting.Set(pid, before) && _routes.Remove(file)) SaveRoutes();
+        if (!AppRouting.Set(pid, before)) return;
+        bool others = _routed.Any(r => r.Key != pid && r.Value.Equals(file, StringComparison.OrdinalIgnoreCase));
+        if (!others && _routes.Remove(file)) SaveRoutes();
     }
+
+    // the cable's device id, as the last scan saw it (the volume control looks there for the apps MMP plays)
+    public static string? CableDeviceId => _cableId;
 
     static void DropSources()
     {
@@ -303,11 +348,11 @@ static class EqEngine
     static void StopAll()
     {
         StopOutput();
-        foreach (var (pid, file) in _routed)
+        foreach (var (pid, file) in _routed.ToList())
         {
+            _routed.Remove(pid);
             try { using var p = Process.GetProcessById(pid); Unroute(pid, file); } catch { }
         }
-        _routed.Clear();
         DropSources();
     }
 
@@ -338,6 +383,7 @@ static class EqEngine
         readonly float[] _ring;
         readonly int _max, _keep;
         int _read, _count;
+        float[] _packet = new float[4096];
         readonly object _lock = new();
 
         public Source(AudioClient client, int rate, bool loopback = true)
@@ -365,12 +411,14 @@ static class EqEngine
                 {
                     IntPtr data = _capture.GetBuffer(out int frames, out var flags);
                     int n = frames * 2;
+                    if (_packet.Length < n) _packet = new float[n];
+                    if ((flags & AudioClientBufferFlags.Silent) != 0) Array.Clear(_packet, 0, n);
+                    else Marshal.Copy(data, _packet, 0, n);
                     lock (_lock)
                     {
-                        bool silent = (flags & AudioClientBufferFlags.Silent) != 0;
                         for (int i = 0; i < n; i++)
                         {
-                            float v = silent ? 0 : Marshal.PtrToStructure<float>(data + i * 4);
+                            float v = _packet[i];
                             if (v > 1e-4f || v < -1e-4f) sound = true;
                             _ring[(_read + _count) % _ring.Length] = v;
                             if (_count < _ring.Length) _count++; else _read = (_read + 1) % _ring.Length;

@@ -6,6 +6,7 @@ namespace TaskbarPlayerProto;
 public partial class App : Application
 {
     Mutex? _single;
+    bool _helper;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -17,6 +18,15 @@ public partial class App : Application
             EqEngine.Stop();       // the equalizer's apps go back to their own device before MMP is gone
         };
         TaskScheduler.UnobservedTaskException += (_, a) => { ErrorLog.Write("task", a.Exception); a.SetObserved(); };
+
+        // left behind by a closing MMP: puts closed apps back on their own sound device when they run again
+        if (e.Args.Contains("--restore-routes"))
+        {
+            _helper = true;
+            EqEngine.RestoreRoutes();
+            Shutdown();
+            return;
+        }
 
         // Only one copy at a time. After an update the old copy is still shutting down: wait for it.
         bool afterUpdate = e.Args.Contains("--after-update");
@@ -35,7 +45,7 @@ public partial class App : Application
 
         Task.Run(DeleteOldExe);
         RefreshLauncher();
-        SessionEnding += (_, _) => EqEngine.Stop();
+        SessionEnding += (_, _) => EqEngine.Stop(leaveHelper: false);     // Windows is closing: nothing to wait for
         Task.Run(() =>
         {
             Equalizer.ApoCleanup();
@@ -82,7 +92,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        EqEngine.Stop();
+        if (!_helper) EqEngine.Stop();
         try { _single?.ReleaseMutex(); } catch { }
         base.OnExit(e);
     }

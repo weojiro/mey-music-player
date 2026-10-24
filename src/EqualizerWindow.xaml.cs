@@ -182,9 +182,24 @@ public partial class EqualizerWindow : Window
 
     // ---------- the apps ----------
 
-    void RefreshApps()
+    // the open apps are looked up off the window's thread (listing every process takes a moment); a click shows the
+    // last list again at once
+    List<(string Process, string Name)> _open = new();
+    bool _looking;
+
+    async void RefreshApps()
     {
-        var open = Equalizer.OpenApps();
+        if (_looking) return;
+        _looking = true;
+        try { _open = await Task.Run(Equalizer.OpenApps); }
+        catch { }
+        finally { _looking = false; }
+        if (IsLoaded) ShowApps();
+    }
+
+    void ShowApps()
+    {
+        var open = _open;
         string key = string.Join(",", open.Select(a => a.Process)) + "|" + string.Join(",", _eq.Apps);
         if (key == _openApps) return;
         _openApps = key;
@@ -196,7 +211,7 @@ public partial class EqualizerWindow : Window
             {
                 if (_eq.Apps.RemoveAll(a => a.Equals(process, StringComparison.OrdinalIgnoreCase)) == 0) _eq.Apps.Add(process);
                 Changed();
-                RefreshApps();
+                ShowApps();
             }));
         }
         AppsNone.Visibility = open.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -287,7 +302,7 @@ public partial class EqualizerWindow : Window
         var dialog = new Microsoft.Win32.SaveFileDialog { FileName = file + Equalizer.SoundExtension, Filter = FileFilter };
         if (dialog.ShowDialog(this) != true) return;
         try { Equalizer.ExportSound(SavedEq.From(_eq, name), dialog.FileName); }
-        catch { SavedFull.Text = T("eqImportBad"); }
+        catch { SavedFull.Text = T("eqExportBad"); }
     }
 
     // sounds from files: each one is saved (the same name replaces it) and the last one is used

@@ -63,6 +63,7 @@ public partial class EqualizerWindow : Window
         BassLabel.Text = T("eqBassBoost");
         ReverbLabel.Text = T("eqReverb");
         EnhancerLabel.Text = T("eqEnhancer");
+        FadeBox.Content = T("eqTrackFade");
         WidthLabel.Text = T("eqWidth");
         BalanceLabel.Text = T("eqBalance");
         VocalsLabel.Text = T("eqVocals");
@@ -78,6 +79,8 @@ public partial class EqualizerWindow : Window
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); Equalizer.Save(_eq); };
 
         OnBox.Checked += (_, _) => { if (!_loading) { _eq.On = true; Changed(); } };
+        FadeBox.Checked += (_, _) => { if (!_loading) { _eq.TrackFade = true; Changed(false); } };
+        FadeBox.Unchecked += (_, _) => { if (!_loading) { _eq.TrackFade = false; Changed(false); } };
         OnBox.Unchecked += (_, _) => { if (!_loading) { _eq.On = false; Changed(); } };
         ResetButton.Click += (_, _) => Reset();
         InstallButton.Click += (_, _) => Install();
@@ -319,6 +322,7 @@ public partial class EqualizerWindow : Window
     {
         _loading = true;
         OnBox.IsChecked = _eq.On;
+        FadeBox.IsChecked = _eq.TrackFade;
         PreampSlider.Value = _eq.Preamp;
         BassSlider.Value = _eq.Bass;
         ReverbSlider.Value = _eq.Reverb;

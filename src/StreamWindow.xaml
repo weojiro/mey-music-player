@@ -1,0 +1,54 @@
+<Window x:Class="TaskbarPlayerProto.StreamWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TaskbarPlayerProto"
+        Background="#101010"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        Height="420"
+        MinHeight="280"
+        MinWidth="480"
+        Title="MMP"
+        UseLayoutRounding="True"
+        Width="760"
+        WindowStartupLocation="CenterScreen">
+
+    <!-- styles: Theme.xaml (the mode chips look like the Options ones) -->
+    <Window.Resources>
+        <ResourceDictionary Source="Theme.xaml"/>
+    </Window.Resources>
+
+    <!-- a window to share on Discord: the cover blurred behind, the song, and bars or a wave that move with the sound -->
+    <Grid ClipToBounds="True" FlowDirection="LeftToRight">
+        <!-- a tiny copy of the cover stretched smooth: looks blurred and costs nothing (a blur effect would be worked
+             out again on every frame the bars move) -->
+        <Image RenderOptions.BitmapScalingMode="HighQuality" Stretch="UniformToFill" x:Name="Backdrop"/>
+        <Rectangle Fill="#A8101010"/>
+
+        <local:Visualizer VerticalAlignment="Bottom" x:Name="Viz"/>
+
+        <Grid Margin="32,30,32,0" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Background="#2A2A2A" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="10" Height="150" Width="150" x:Name="CoverBox"/>
+            <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center">
+                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" x:Name="SongText"/>
+                <TextBlock FontSize="16" Foreground="#D8D8D8" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" x:Name="ArtistText"/>
+                <Grid Margin="0,22,0,0" HorizontalAlignment="Left" Width="360">
+                    <Border Background="#40FFFFFF" CornerRadius="2" Height="4" x:Name="Track"/>
+                    <Border Background="White" CornerRadius="2" Height="4" HorizontalAlignment="Left" Width="0" x:Name="Progress"/>
+                </Grid>
+                <TextBlock FontSize="12" Foreground="#C8C8C8" Margin="0,8,0,0" x:Name="TimeText"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- only while the mouse is over the window: the people watching don't see them -->
+        <StackPanel HorizontalAlignment="Right" Margin="0,0,14,12" Opacity="0" Orientation="Horizontal" VerticalAlignment="Bottom" x:Name="Modes">
+            <Button Style="{StaticResource Chip}" Margin="0,0,6,0" x:Name="BarsButton"/>
+            <Button Style="{StaticResource Chip}" x:Name="WaveButton"/>
+        </StackPanel>
+
+        <TextBlock FontSize="12" Foreground="#F28B82" HorizontalAlignment="Left" Margin="16,0,0,14" TextWrapping="Wrap" MaxWidth="420" VerticalAlignment="Bottom" Visibility="Collapsed" x:Name="NeedCable"/>
+    </Grid>
+</Window>

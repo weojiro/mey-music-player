@@ -100,6 +100,14 @@ Discord, oyunlar ve diğer her şey olduğu gibi kalır. Bunun için MMP, VB-Aud
 aynen kalır. Ekolayzer MMP açıkken çalışır; MMP kapanınca ya da ekolayzer kapalıyken uygulamalar eskisi gibi çalar.
 v1.3'ün kullandığı Equalizer APO'ya artık gerek yok.
 
+*Şarkı geçişi* açıkken geçilen şarkının sesi kısılır, yenisi yavaşça açılır; araba teybi gibi.
+
+### Yayın penceresi
+
+Tray menüsü → *Yayın penceresi*: kapağıyla şarkı ve sese göre oynayan sütunlar ya da ses dalgası. Discord yayınında
+tüm ekran yerine bu pencereyi paylaş: yayına MMP'nin sesi, ekolayzerle birlikte gider. VB-CABLE gerekir (Ekolayzer
+penceresinden kurulur).
+
 ### Hızlı kontroller
 
 | Nerede | Ne yapar |

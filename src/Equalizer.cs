@@ -19,6 +19,7 @@ sealed class EqSettings
     public int Balance { get; set; }            // -100 (left) .. 100 (right)
     public int Vocals { get; set; }             // reduce vocals, 0..100 %
     public int Reverb { get; set; }             // 0..100 %
+    public bool TrackFade { get; set; } = true; // songs fade in after a skip, like a car stereo
     public int Enhancer { get; set; }           // brighter, clearer highs (like a car stereo's sound retriever), 0..100 %
     public string Preset { get; set; } = "flat";    // a preset's key, "saved:<name>" or "custom"
     public List<string> Apps { get; set; } = new() { "spotify" };      // process names that go through it

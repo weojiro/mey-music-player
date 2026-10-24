@@ -98,6 +98,14 @@ can download its official driver pack (about 1.3 MB, checked before it runs) and
 permission; your default sound devices stay as they are. The equalizer works while MMP is running; when MMP closes or
 the equalizer is off, the apps play as before. Equalizer APO, used by v1.3, isn't needed any more.
 
+With *Fade between songs* on, a skipped song goes quiet and the next one comes up slowly, like a car stereo.
+
+### Stream window
+
+Tray menu → *Stream window*: the song with its cover, and bars or a wave that move with the sound. Share this
+window in a Discord stream instead of the whole screen: the stream carries MMP's sound, with the equalizer. Needs
+VB-CABLE (installed from the Equalizer window).
+
 ### Quick controls
 
 | Where | What it does |

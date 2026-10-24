@@ -18,6 +18,15 @@ sealed class EqDsp
     double[]? _fitFor, _fitted;     // the last fit: dragging a slider doesn't fit the bands again
     readonly object _setLock = new();
 
+    // the song change, like a car stereo: the sound goes down, the next song comes up slowly. Fade() may be called
+    // from any thread; Process() picks it up.
+    sealed record FadeTo(float Target, int Ms, int HoldMs);
+    volatile FadeTo? _fade;
+    float _gain = 1, _target = 1, _step;
+    int _hold;
+
+    public void Fade(float target, int ms, int holdMs = 0) => _fade = new FadeTo(target, ms, holdMs);
+
     sealed class Coeffs
     {
         public bool On;
@@ -164,7 +173,30 @@ sealed class EqDsp
         }
         if (c.Wet > 0) _reverb.Process(buf, frames, c.Dry, c.Wet);
         else _reverb.Clear();
+        ApplyFade(buf, frames);
         Clip(buf, frames);
+    }
+
+    void ApplyFade(float[] buf, int frames)
+    {
+        if (_fade is { } f)
+        {
+            _fade = null;
+            if (f.HoldMs > 0) _gain = 0;        // straight to silence, then up
+            _target = f.Target;
+            _hold = f.HoldMs * _rate / 1000;
+            _step = 1f / Math.Max(1, f.Ms * _rate / 1000);
+        }
+        if (_gain == 1 && _target == 1) return;
+        for (int i = 0; i < frames; i++)
+        {
+            if (_hold > 0) _hold--;
+            else if (_gain < _target) _gain = Math.Min(_target, _gain + _step);
+            else if (_gain > _target) _gain = Math.Max(_target, _gain - _step);
+            float g = _gain * _gain;            // slow at first, like turning a knob
+            buf[2 * i] *= _hold > 0 ? 0 : g;
+            buf[2 * i + 1] *= _hold > 0 ? 0 : g;
+        }
     }
 
     double Excite(Coeffs c, double x, int ch)

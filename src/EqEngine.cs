@@ -36,6 +36,22 @@ static class EqEngine
     static readonly Dictionary<int, (string Name, string File)> _processes = new();     // pid -> name and program file
     static string? _outputId;
     static long _lastSound;
+    static int _skipId;
+
+    // the stream window is open: the chosen apps go through MMP even with the equalizer off (unchanged), so a
+    // Discord stream of MMP's window carries the sound
+    static volatile bool _streaming;
+    public static bool Streaming
+    {
+        get => _streaming;
+        set { _streaming = value; Wake.Set(); }
+    }
+
+    // what was just played, for the stream window's bars and wave: the last samples (mono) and when they came
+    static readonly float[] _scope = new float[8192];
+    static int _scopePos;
+    static long _scopeAt;
+    public static int ScopeRate { get; private set; } = 48000;
     static volatile bool _heard;
 
     public static void Start(EqSettings settings)
@@ -122,7 +138,7 @@ static class EqEngine
         var output = en.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) ? en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) : null;
         if (output != null && cable != null && output.ID == cable.ID) output = null;
         if (_outputId != null && output?.ID != _outputId) DropSources();       // another device: maybe another rate
-        bool on = s.On && cable != null && output != null && s.Apps.Count > 0 && AppRouting.Available;
+        bool on = (s.On || Streaming) && cable != null && output != null && s.Apps.Count > 0 && AppRouting.Available;
         var apps = new HashSet<string>(s.Apps, StringComparer.OrdinalIgnoreCase);
 
         // every app that has sound on any device
@@ -205,6 +221,38 @@ static class EqEngine
         if (any && !quiet && output != null && _output == null) StartOutput(output);
     }
 
+    // MMP's own skip buttons: the song goes quiet first (a quarter of a second), then skips. If no new song comes,
+    // the sound comes back by itself.
+    public static async Task BeforeSkip()
+    {
+        var s = _settings;
+        var mixer = _mixer;
+        if (!s.On || !s.TrackFade || mixer == null) return;
+        int id = ++_skipId;
+        mixer.Dsp.Fade(0, 250);
+        await Task.Delay(260);
+        _ = Task.Delay(2500).ContinueWith(_ => { if (_skipId == id) _mixer?.Dsp.Fade(1, 600); });
+    }
+
+    // a new song started (however it was skipped): a moment of silence, then it comes up over a second and a half
+    public static void SongChanged()
+    {
+        var s = _settings;
+        var mixer = _mixer;
+        if (!s.On || !s.TrackFade || mixer == null) return;
+        _skipId++;
+        mixer.Dsp.Fade(1, 1500, 250);
+    }
+
+    // the last dest.Length samples; false when nothing has played for a moment
+    public static bool ReadScope(float[] dest)
+    {
+        if (Environment.TickCount64 - Volatile.Read(ref _scopeAt) > 250) return false;
+        int pos = Volatile.Read(ref _scopePos);
+        for (int i = 0; i < dest.Length; i++) dest[i] = _scope[(pos - dest.Length + i) & (_scope.Length - 1)];
+        return true;
+    }
+
     static void Unroute(int pid, string file)
     {
         string before = _routes.TryGetValue(file, out var b) ? b : "";
@@ -226,6 +274,7 @@ static class EqEngine
         {
             var format = device.AudioClient.MixFormat;
             _mixer = new Mixer(format.SampleRate, format.Channels);
+            ScopeRate = format.SampleRate;
             _mixer.Dsp.Set(_settings);
             _output = new WasapiOut(device, AudioClientShareMode.Shared, true, 10);
             _output.Init(_mixer);
@@ -372,6 +421,10 @@ static class EqEngine
             Array.Clear(_mix, 0, frames * 2);
             foreach (var s in _snapshot) s.AddTo(_mix, frames * 2);
             Dsp.Process(_mix, frames);
+            int pos = _scopePos;
+            for (int f = 0; f < frames; f++) _scope[pos++ & (_scope.Length - 1)] = (_mix[2 * f] + _mix[2 * f + 1]) / 2;
+            Volatile.Write(ref _scopePos, pos & (_scope.Length - 1));
+            Volatile.Write(ref _scopeAt, Environment.TickCount64);
             var output = MemoryMarshal.Cast<byte, float>(buffer.AsSpan(offset, frames * 4 * _channels));
             for (int f = 0; f < frames; f++)
             {

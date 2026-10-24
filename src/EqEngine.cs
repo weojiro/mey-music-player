@@ -98,7 +98,10 @@ static class EqEngine
         catch { return null; }
     }
 
-    public static bool CableInstalled => CableId() != null;
+    // Listing the sound devices takes a few hundred milliseconds: windows asking every few seconds would freeze for
+    // that long (and stutter the stream window). The scan, once a second on its own thread, keeps the answer.
+    static volatile bool _cableSeen;
+    public static bool CableInstalled => _scanThread != null ? _cableSeen : CableId() != null;
 
     // ---------- the worker ----------
 
@@ -135,6 +138,7 @@ static class EqEngine
         using var en = new MMDeviceEnumerator();
         var devices = en.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
         var cable = devices.FirstOrDefault(d => d.FriendlyName.Contains(CableName) && d.FriendlyName.StartsWith("CABLE Input"));
+        _cableSeen = cable != null;
         var output = en.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) ? en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) : null;
         if (output != null && cable != null && output.ID == cable.ID) output = null;
         if (_outputId != null && output?.ID != _outputId) DropSources();       // another device: maybe another rate

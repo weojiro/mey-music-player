@@ -4,12 +4,12 @@
         xmlns:local="clr-namespace:TaskbarPlayerProto"
         Background="#101010"
         FontFamily="Segoe UI Variable Text, Segoe UI"
-        Height="420"
-        MinHeight="280"
+        Height="661"
+        MinHeight="300"
         MinWidth="480"
         Title="MMP"
         UseLayoutRounding="True"
-        Width="760"
+        Width="1120"
         WindowStartupLocation="CenterScreen">
 
     <!-- styles: Theme.xaml (the mode chips look like the Options ones) -->
@@ -24,24 +24,30 @@
         <Image RenderOptions.BitmapScalingMode="HighQuality" Stretch="UniformToFill" x:Name="Backdrop"/>
         <Rectangle Fill="#A8101010"/>
 
-        <local:Visualizer VerticalAlignment="Bottom" x:Name="Viz"/>
+        <!-- everything is laid out on a 1280x720 stage and scaled with the window: big and sharp on a stream, the
+             same picture at any size -->
+        <Viewbox Stretch="Uniform">
+            <Grid Height="720" Width="1280">
+                <local:Visualizer Height="400" VerticalAlignment="Bottom" x:Name="Viz"/>
 
-        <Grid Margin="32,30,32,0" VerticalAlignment="Top">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-            <Border Background="#2A2A2A" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="10" Height="150" Width="150" x:Name="CoverBox"/>
-            <StackPanel Grid.Column="1" Margin="24,0,0,0" VerticalAlignment="Center">
-                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" x:Name="SongText"/>
-                <TextBlock FontSize="16" Foreground="#D8D8D8" Margin="0,4,0,0" TextTrimming="CharacterEllipsis" x:Name="ArtistText"/>
-                <Grid Margin="0,22,0,0" HorizontalAlignment="Left" Width="360">
-                    <Border Background="#40FFFFFF" CornerRadius="2" Height="4" x:Name="Track"/>
-                    <Border Background="White" CornerRadius="2" Height="4" HorizontalAlignment="Left" Width="0" x:Name="Progress"/>
+                <Grid Margin="64,60,64,0" VerticalAlignment="Top">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Background="#2A2A2A" BorderBrush="#30FFFFFF" BorderThickness="1.5" CornerRadius="18" Height="270" Width="270" x:Name="CoverBox"/>
+                    <StackPanel Grid.Column="1" Margin="44,0,0,0" VerticalAlignment="Center">
+                        <TextBlock FontSize="48" FontWeight="SemiBold" Foreground="White" TextTrimming="CharacterEllipsis" x:Name="SongText"/>
+                        <TextBlock FontSize="28" Foreground="#D8D8D8" Margin="0,6,0,0" TextTrimming="CharacterEllipsis" x:Name="ArtistText"/>
+                        <Grid HorizontalAlignment="Left" Margin="0,40,0,0" Width="620">
+                            <Border Background="#40FFFFFF" CornerRadius="4" Height="7" x:Name="Track"/>
+                            <Border Background="White" CornerRadius="4" Height="7" HorizontalAlignment="Left" Width="0" x:Name="Progress"/>
+                        </Grid>
+                        <TextBlock FontSize="21" Foreground="#C8C8C8" Margin="0,14,0,0" x:Name="TimeText"/>
+                    </StackPanel>
                 </Grid>
-                <TextBlock FontSize="12" Foreground="#C8C8C8" Margin="0,8,0,0" x:Name="TimeText"/>
-            </StackPanel>
-        </Grid>
+            </Grid>
+        </Viewbox>
 
         <!-- only while the mouse is over the window: the people watching don't see them -->
         <StackPanel HorizontalAlignment="Right" Margin="0,0,14,12" Opacity="0" Orientation="Horizontal" VerticalAlignment="Bottom" x:Name="Modes">

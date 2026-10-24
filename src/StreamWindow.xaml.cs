@@ -17,8 +17,6 @@ public partial class StreamWindow : Window
     readonly MainWindow _main;
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     BitmapSource? _cover;
-    long _cableCheckedAt = -10000;
-    bool _cable = true;
 
     public StreamWindow(MainWindow main)
     {
@@ -34,7 +32,6 @@ public partial class StreamWindow : Window
         WaveButton.Click += (_, _) => SetWave(true);
         MouseEnter += (_, _) => Modes.Opacity = 1;
         MouseLeave += (_, _) => Modes.Opacity = 0;
-        SizeChanged += (_, _) => Viz.Height = ActualHeight * 0.55;
         SourceInitialized += (_, _) => OptionsWindow.DarkTitleBar(this);
         _timer.Tick += (_, _) => RefreshSong();
         CompositionTarget.Rendering += OnFrame;
@@ -95,15 +92,9 @@ public partial class StreamWindow : Window
                 : new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
         }
         double part = length.TotalSeconds > 1 ? Math.Clamp(position.TotalSeconds / length.TotalSeconds, 0, 1) : 0;
-        Progress.Width = Track.ActualWidth * part;
+        Progress.Width = 620 * part;
         TimeText.Text = length.TotalSeconds > 1 ? $"{Clock(position)} / {Clock(length)}" : "";
-        // looking for the cable lists the sound devices: not on every tick
-        if (Environment.TickCount64 - _cableCheckedAt > 5000)
-        {
-            _cableCheckedAt = Environment.TickCount64;
-            _cable = EqEngine.CableInstalled;
-        }
-        NeedCable.Visibility = _cable ? Visibility.Collapsed : Visibility.Visible;
+        NeedCable.Visibility = EqEngine.CableInstalled ? Visibility.Collapsed : Visibility.Visible;
     }
 
     static string Clock(TimeSpan t) => t.TotalHours >= 1 ? t.ToString(@"h\:mm\:ss") : t.ToString(@"m\:ss");
@@ -115,7 +106,7 @@ sealed class Visualizer : FrameworkElement
     const int Size = 2048, Bands = 48;
     const double MinHz = 40, MaxHz = 16000;
     static readonly Brush BarBrush = Freeze(new SolidColorBrush(Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF)));
-    static readonly Pen WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xD8, 0xFF, 0xFF, 0xFF)), 2.5) { LineJoin = PenLineJoin.Round });
+    static readonly Pen WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xD8, 0xFF, 0xFF, 0xFF)), 4.5) { LineJoin = PenLineJoin.Round });
 
     readonly float[] _samples = new float[Size];
     readonly double[] _levels = new double[Bands];

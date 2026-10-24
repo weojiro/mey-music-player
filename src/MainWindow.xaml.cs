@@ -251,6 +251,13 @@ public partial class MainWindow : Window
             KeepOnTop();
             if (_above && !_free) Update();
             if (TitlePopup.IsOpen && GameNeedsFocus()) TitlePopup.IsOpen = false;      // a card left open when a game starts
+            bool game = IsFullScreenAppActive();
+            if (game != _gameInFront)
+            {
+                _gameInFront = game;
+                _lyricShown = (-2, 0);
+                UpdateLyricsUi();
+            }
         };
         _cursorTimer.Tick += (_, _) => UpdateClickThrough();
         Deactivated += (_, _) => { if (_mouseOut && _playerFocused) EndMouseOut(); };     // the game or another app was clicked
@@ -1890,6 +1897,14 @@ public partial class MainWindow : Window
 
     void UpdateProgressUi()
     {
+        // under the lyrics the time and the bar can't be seen: each redraw of the window over a full-screen game makes
+        // Windows switch between the game and the desktop, which recordings show as a black frame
+        if (!_lyricsInFront) UpdateSeekUi();
+        UpdateLyricsUi();       // seeking moves the lyrics too
+    }
+
+    void UpdateSeekUi()
+    {
         var dur = _tlEnd - _tlStart;
         var pos = CurrentPosition();
 
@@ -1906,7 +1921,6 @@ public partial class MainWindow : Window
         SeekThumb.Margin = new Thickness(x, 0, 0, 0);
         SeekThumb.Visibility = has ? Visibility.Visible : Visibility.Collapsed;
         SeekFill.Width = has ? Math.Max(0, x + ThumbD / 2.0) : 0;
-        UpdateLyricsUi();       // seeking moves the lyrics too
     }
 
     void ScrubTo(double mouseX)
@@ -3283,6 +3297,8 @@ public partial class MainWindow : Window
     bool IsSpotify => string.Equals(ProcessKey(_source), "Spotify", StringComparison.OrdinalIgnoreCase);
 
     bool LyricsActive => _lyricsOn && _lyrics != null && IsSpotify;
+    bool _lyricsInFront;        // the lyrics cover the controls
+    bool _gameInFront;          // a full-screen app (a game) is in front
 
     // Finds synced lyrics for the Spotify song: disk cache first, then LRCLIB. Nothing is asked while lyrics are off
     // (the debug window still looks them up).
@@ -3338,6 +3354,8 @@ public partial class MainWindow : Window
     {
         bool active = LyricsActive;
         bool lyrics = active && (!PlayerPanel.IsMouseOver || _clickThrough) && !_cursorMode;
+        _lyricsInFront = lyrics;
+        if (!lyrics) UpdateSeekUi();        // left as it was while the lyrics covered it
         if (active) LyricsLayer.Visibility = Visibility.Visible;
         var toLyrics = new DoubleAnimation(lyrics ? 1 : 0, TimeSpan.FromMilliseconds(150));
         toLyrics.Completed += (_, _) => { if (!LyricsActive) LyricsLayer.Visibility = Visibility.Collapsed; };
@@ -3351,6 +3369,17 @@ public partial class MainWindow : Window
     {
         _lyricsTimer.Stop();
         if (!LyricsActive || _lyrics == null) return;
+        // over a full-screen game every change of the window makes Windows switch between the game and the desktop,
+        // which recordings show as a black frame: the song's name stands still instead, the lyrics go on after the game
+        if (_gameInFront)
+        {
+            if (_lyricShown != (-3, 0))
+            {
+                ShowLyric(string.IsNullOrWhiteSpace(_title) ? "♪" : _title, animate: false);
+                _lyricShown = (-3, 0);
+            }
+            return;
+        }
         var pos = CurrentPosition();
         int i = Lyrics.LineAt(_lyrics, pos);
         string text = i >= 0 ? _lyrics[i].Text : "";

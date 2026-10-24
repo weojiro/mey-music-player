@@ -1721,6 +1721,8 @@ public partial class MainWindow : Window
     void UpdateStickerAnim() => _stickerAnim.Run(_shown && _t > 0);
 
     // bgSolid / accentSolid: 1 = solid, less = see-through (the design's transparency)
+    Color _cursorColor = DefaultAccent;
+
     void ApplyPalette(Color bg, Color accent, double bgSolid = 1, double accentSolid = 1)
     {
         static SolidColorBrush Frozen(Color c)
@@ -1747,6 +1749,9 @@ public partial class MainWindow : Window
         VolumeGlyph.Foreground = _accentBrush;
         SeekFill.Background = _accentBrush;
         SeekThumb.Fill = _accentBrush;
+        // the drawn cursor: the buttons' colour, see-through
+        _cursorColor = accent;
+        PlayerCursor.Fill = Frozen(Color.FromArgb(0xBF, accent.R, accent.G, accent.B));
         SeekTrack.Background = Frozen(A(accent, 0x44, accentSolid));
         TimeText.Foreground = Frozen(A(accent, 0xCC, accentSolid));
         LyricA.Foreground = LyricB.Foreground = _accentBrush;
@@ -3088,7 +3093,11 @@ public partial class MainWindow : Window
         if (msg is WM_MOUSEMOVE or WM_LBUTTONDOWN or WM_LBUTTONUP or WM_MBUTTONDOWN or WM_MOUSEWHEEL)
         {
             short delta = (short)((d.mouseData >> 16) & 0xFFFF);
-            Dispatcher.BeginInvoke(new Action(() => VirtualMouse(msg, delta)));     // out of the hook quickly
+            Dispatcher.BeginInvoke(new Action(() =>         // out of the hook quickly
+            {
+                if (msg is WM_LBUTTONDOWN or WM_MBUTTONDOWN or WM_MOUSEWHEEL) CursorRipple();
+                VirtualMouse(msg, delta);
+            }));
         }
         return (IntPtr)1;       // the game (and every other app) gets nothing while the cursor is in the player
     }
@@ -3178,8 +3187,33 @@ public partial class MainWindow : Window
         }
         _vx = Math.Clamp(_vx, r.Left, Math.Max(r.Left, r.Right - 1));
         _vy = Math.Clamp(_vy, r.Top, Math.Max(r.Top, r.Bottom - 1));
-        Canvas.SetLeft(PlayerCursor, (_vx - _winX) / f);
-        Canvas.SetTop(PlayerCursor, (_vy - _gapY) / f);
+        Canvas.SetLeft(PlayerCursor, (_vx - _winX) / f - CursorDot / 2);
+        Canvas.SetTop(PlayerCursor, (_vy - _gapY) / f - CursorDot / 2);
+    }
+
+    const double CursorDot = 11;
+
+    // a ring spreading out from the drawn cursor and fading: a click or a wheel step was taken
+    void CursorRipple()
+    {
+        if (PlayerCursor.Visibility != Visibility.Visible) return;
+        var c = _cursorColor;
+        var ring = new System.Windows.Shapes.Ellipse
+        {
+            Width = CursorDot, Height = CursorDot,
+            Stroke = new SolidColorBrush(Color.FromArgb(0xC0, c.R, c.G, c.B)), StrokeThickness = 0.5,
+            RenderTransformOrigin = new Point(0.5, 0.5), RenderTransform = new ScaleTransform(),
+        };
+        Canvas.SetLeft(ring, Canvas.GetLeft(PlayerCursor));
+        Canvas.SetTop(ring, Canvas.GetTop(PlayerCursor));
+        CursorLayer.Children.Insert(0, ring);           // under the dot
+        var length = TimeSpan.FromMilliseconds(380);
+        var grow = new DoubleAnimation(1, 2.2, length) { EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+        var fade = new DoubleAnimation(1, 0, length);
+        fade.Completed += (_, _) => CursorLayer.Children.Remove(ring);
+        ((ScaleTransform)ring.RenderTransform).BeginAnimation(ScaleTransform.ScaleXProperty, grow);
+        ((ScaleTransform)ring.RenderTransform).BeginAnimation(ScaleTransform.ScaleYProperty, grow);
+        ring.BeginAnimation(OpacityProperty, fade);
     }
 
     // While a game hides the cursor (driving, aiming), clicks and the mouse go through the player to the game.

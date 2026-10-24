@@ -99,8 +99,9 @@
         </Border>
 
         <!-- The cursor drawn in the player while Ctrl + Alt + X gives it the mouse in a game that changed the resolution -->
-        <Canvas IsHitTestVisible="False" Panel.ZIndex="10">
-            <Path Data="M0,0 L0,14 L3.4,10.9 L5.8,16 L8,15 L5.6,10 L10,10 Z" Fill="White" Stroke="Black" StrokeLineJoin="Round" StrokeThickness="0.9" Visibility="Collapsed" x:Name="PlayerCursor"/>
+        <!-- a see-through dot in the buttons' colour; clicks and the wheel send a ring out from it -->
+        <Canvas IsHitTestVisible="False" Panel.ZIndex="10" x:Name="CursorLayer">
+            <Ellipse Fill="#BFFFFFFF" Height="11" Visibility="Collapsed" Width="11" x:Name="PlayerCursor"/>
         </Canvas>
 
         <!-- Title card: the song name, centered on the cover after the mouse rests on it for 1 s -->

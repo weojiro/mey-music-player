@@ -2993,7 +2993,9 @@ public partial class MainWindow : Window
         if (_cursorMode) { SetCursorMode(false); return; }
         if (_mouseOut) { SetMouseOut(false); return; }
         if (!_onTop) return;
-        if (GameNeedsFocus()) SetCursorMode(true);
+        // any full-screen game keeps the focus and the player gets the drawn cursor; taking the focus would make a
+        // borderless game drop behind the desktop for a moment
+        if (GameNeedsFocus() || IsFullScreenAppActive()) SetCursorMode(true);
         else SetMouseOut(true);
     }
 
@@ -3196,7 +3198,10 @@ public partial class MainWindow : Window
         if (_clickThrough || !overPlayer)
             _cursorHidden = (ci.flags & (CURSOR_SHOWING | CURSOR_SUPPRESSED)) == 0
                 || (ci.flags & CURSOR_SHOWING) != 0 && ci.hCursor == IntPtr.Zero;
-        SetClickThrough(_cursorHidden && !Cover.IsMouseCaptured && !_scrubbing);
+        // over a full-screen game the mouse belongs to the game even when it shows a cursor: the player only takes it
+        // after Ctrl + Alt + X (a cursor passing over it would also redraw it, a black frame in recordings)
+        bool game = _gameInFront && !_mouseOut;
+        SetClickThrough((_cursorHidden || game) && !Cover.IsMouseCaptured && !_scrubbing);
     }
 
     void SetClickThrough(bool through)

@@ -246,7 +246,12 @@ public partial class MainWindow : Window
         LoadSettings();
         _placementOwner = _designs.Active;          // settings.ini holds the placement of the player in use
         ApplySideLayout();
-        _zTimer.Tick += (_, _) => { KeepOnTop(); if (_above && !_free) Update(); };
+        _zTimer.Tick += (_, _) =>
+        {
+            KeepOnTop();
+            if (_above && !_free) Update();
+            if (TitlePopup.IsOpen && GameNeedsFocus()) TitlePopup.IsOpen = false;      // a card left open when a game starts
+        };
         _cursorTimer.Tick += (_, _) => UpdateClickThrough();
         Deactivated += (_, _) => { if (_mouseOut && _playerFocused) EndMouseOut(); };     // the game or another app was clicked
         DpiChanged += (_, _) => Dispatcher.BeginInvoke(new Action(Update));                    // free mode: moved to a screen with another scale
@@ -266,7 +271,9 @@ public partial class MainWindow : Window
         _hoverTimer.Tick += (_, _) =>
         {
             _hoverTimer.Stop();
-            if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title)) ShowTitleCard();
+            // not over a full-screen game: the game's own (hidden) mouse resting on the cover would open it, and a card
+            // over such a game makes Windows switch between the game and the desktop, which recordings show as flicker
+            if (Cover.IsMouseOver && !string.IsNullOrWhiteSpace(_title) && !GameNeedsFocus()) ShowTitleCard();
         };
 
         Cover.MouseEnter += (_, _) =>

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Net.Http;
 using System.Numerics;
 using System.Windows;
 using System.Windows.Media;
@@ -15,6 +17,15 @@ public partial class StreamWindow : Window
     static readonly SolidColorBrush ChipText = new(Color.FromRgb(0xE3, 0xE3, 0xE3));
     SolidColorBrush _chipOn = new(Color.FromRgb(0xE3, 0xE3, 0xE3));
     Color? _color;
+    string? _bigUrl;
+    static readonly HttpClient Http = MakeHttp();
+
+    static HttpClient MakeHttp()
+    {
+        var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("MMP (https://github.com/weojiro/mey-music-player)");
+        return http;
+    }
 
     readonly MainWindow _main;
     readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(250) };
@@ -88,11 +99,20 @@ public partial class StreamWindow : Window
         if (!ReferenceEquals(cover, _cover))
         {
             _cover = cover;
+            _bigUrl = null;
             Backdrop.Source = cover == null ? null : Tiny(cover);
             CoverBox.Background = cover == null
                 ? new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A))
                 : new ImageBrush(cover) { Stretch = Stretch.UniformToFill };
         }
+        // Windows gives the cover small (300 px from Spotify): blurry this big. The same cover found on the web for the
+        // Discord card comes in a large size too
+        if (cover != null && _main.CoverUrlNow is { } url && url != _bigUrl)
+        {
+            _bigUrl = url;
+            LoadBig(url);
+        }
+
         // chameleon: the bars, the wave, the progress bar and the chosen button take the cover's colour, like the player
         var color = Bright(_main.Chameleon.Accent);
         if (color != _color)
@@ -107,6 +127,25 @@ public partial class StreamWindow : Window
         Progress.Width = 620 * part;
         TimeText.Text = length.TotalSeconds > 1 ? $"{Clock(position)} / {Clock(length)}" : "";
         NeedCable.Visibility = EqEngine.CableInstalled ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    async void LoadBig(string url)
+    {
+        string big = url.Replace("600x600bb", "1200x1200bb");      // Apple Music's covers come in any size
+        try
+        {
+            byte[] data = await Http.GetByteArrayAsync(big);
+            if (_bigUrl != url) return;         // another song meanwhile
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.DecodePixelWidth = 900;
+            image.StreamSource = new MemoryStream(data);
+            image.EndInit();
+            image.Freeze();
+            CoverBox.Background = new ImageBrush(image) { Stretch = Stretch.UniformToFill };
+        }
+        catch { }       // the small one stays
     }
 
     // a dark cover colour would vanish on the dark window: lifted toward white until it shows

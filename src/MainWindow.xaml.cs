@@ -460,6 +460,9 @@ public partial class MainWindow : Window
         catch { }
     }
 
+    // the web address of this song's cover (found for the Discord card), null while unknown
+    internal string? CoverUrlNow => _coverSong == SongKey() ? _coverUrl : null;
+
     // the stream window's song: names, cover, where it is
     internal (string Title, string Artist, BitmapSource? Cover, TimeSpan Position, TimeSpan Length) NowPlaying() =>
         (_title, _artist, _thumb, CurrentPosition(), _tlEnd - _tlStart);
@@ -1561,7 +1564,9 @@ public partial class MainWindow : Window
     // picture), when Discord is turned on and when a website is recognised
     void FindDiscordCover()
     {
-        if (_discord == null || !_discordOn || !_playing || MusicNow() is not MusicApp app) return;
+        // for the Discord card, and for the stream window's big cover
+        bool wanted = _discord != null && _discordOn || _stream != null;
+        if (!wanted || !_playing || MusicNow() is not MusicApp app) return;
         string song = SongKey();
         var print = _thumb == null ? null : DiscordCover.PrintOf(_thumb);
         string lookup = song + "\n" + (print == null ? "" : DiscordCover.Hash(print));

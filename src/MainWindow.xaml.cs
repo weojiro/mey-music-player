@@ -3402,6 +3402,20 @@ public partial class MainWindow : Window
     bool _lyricsInFront;        // the lyrics cover the controls
     bool _gameInFront;          // a full-screen app (a game) is in front
 
+    // HKLM\SOFTWARE\Microsoft\Windows\Dwm OverlayTestMode = 5 turns the overlay planes off (from the next start of
+    // Windows); then recordings of a game stay clean while the lyrics move over it
+    static readonly bool MpoOff = ReadMpoOff();
+
+    static bool ReadMpoOff()
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\Dwm");
+            return key?.GetValue("OverlayTestMode") is int v && v == 5;
+        }
+        catch { return false; }
+    }
+
     // Finds synced lyrics for the Spotify song: disk cache first, then LRCLIB. Nothing is asked while lyrics are off
     // (the debug window still looks them up).
     async void LoadLyrics()
@@ -3472,8 +3486,9 @@ public partial class MainWindow : Window
         _lyricsTimer.Stop();
         if (!LyricsActive || _lyrics == null) return;
         // over a full-screen game every change of the window makes Windows switch between the game and the desktop,
-        // which recordings show as a black frame: the song's name stands still instead, the lyrics go on after the game
-        if (_gameInFront)
+        // which recordings show as a black frame: the song's name stands still instead, the lyrics go on after the game.
+        // With Windows' overlay planes (MPO) turned off the game is always drawn with the desktop and nothing switches.
+        if (_gameInFront && !MpoOff)
         {
             if (_lyricShown != (-3, 0))
             {

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -2998,8 +2999,9 @@ public partial class MainWindow : Window
         if (_cursorMode) { SetCursorMode(false); return; }
         if (_mouseOut) { SetMouseOut(false); return; }
         if (!_onTop) return;
-        // any full-screen game keeps the focus and the player gets the drawn cursor; taking the focus would make a
-        // borderless game drop behind the desktop for a moment
+        // any full-screen game keeps the focus and the player gets the drawn cursor: taking the focus would make a
+        // borderless game drop behind the desktop for a moment, and some (ETS2) minimise. A game reading the mouse
+        // itself (DirectInput, raw input) still sees the moves, which nothing short of a driver can keep from it.
         if (GameNeedsFocus() || IsFullScreenAppActive()) SetCursorMode(true);
         else SetMouseOut(true);
     }
@@ -3042,9 +3044,7 @@ public partial class MainWindow : Window
         {
             if (_hidden) SetHidden(false);
             if (!_shown) return;
-            _cursorProc ??= CursorProc;
-            _cursorHook = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(null), 0);
-            if (_cursorHook == IntPtr.Zero) return;
+            if (!StartCursorHook()) return;
             _cursorMode = true;
             _vDown = _cursorAnchored = false;
             _vPress = null;
@@ -3062,8 +3062,7 @@ public partial class MainWindow : Window
         {
             _cursorMode = false;
             _cursorIdleTimer.Stop();
-            if (_cursorHook != IntPtr.Zero) UnhookWindowsHookEx(_cursorHook);
-            _cursorHook = IntPtr.Zero;
+            StopCursorHook();
             if (_vPress == Cover && _dragMoved) DropCover();           // a drag that was going on ends where it is
             if (_scrubbing && _vPress == SeekHit) { _scrubbing = false; CommitSeek(_pendingSeek); }
             _vDown = false;
@@ -3075,31 +3074,95 @@ public partial class MainWindow : Window
         }
     }
 
+    // The hook runs on a thread of its own that does nothing else: Windows lets a mouse step through to the game when
+    // a hook answers late, and drops the hook altogether after a few, so it must never wait for the player's drawing
+    Thread? _hookThread;
+    uint _hookThreadId;
+    volatile bool _hooking;
+    int _stepX, _stepY, _stepQueued;
+
+    bool StartCursorHook()
+    {
+        var ready = new ManualResetEventSlim();
+        bool ok = false;
+        _cursorProc ??= CursorProc;
+        _hookThread = new Thread(() =>
+        {
+            _hookThreadId = GetCurrentThreadId();
+            _cursorHook = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(null), 0);
+            ok = _cursorHook != IntPtr.Zero;
+            _hooking = ok;
+            ready.Set();
+            if (!ok) return;
+            // the newest hook is asked first: a game that reads the mouse through a hook of its own (DirectInput)
+            // and sets it again later would see the moves before this one drops them, so this one is set again too
+            SetTimer(IntPtr.Zero, IntPtr.Zero, 300, IntPtr.Zero);
+            while (GetMessage(out var m, IntPtr.Zero, 0, 0) > 0)      // hooks are called through this thread's messages
+            {
+                if (m.message != WM_TIMER) continue;
+                IntPtr fresh = SetWindowsHookEx(WH_MOUSE_LL, _cursorProc, GetModuleHandle(null), 0);
+                if (fresh == IntPtr.Zero) continue;
+                IntPtr old = _cursorHook;
+                _cursorHook = fresh;
+                UnhookWindowsHookEx(old);
+            }
+            UnhookWindowsHookEx(_cursorHook);
+        }) { IsBackground = true, Name = "cursor hook", Priority = ThreadPriority.Highest };
+        _hookThread.Start();
+        ready.Wait(2000);
+        return ok;
+    }
+
+    void StopCursorHook()
+    {
+        if (_hookThread == null) return;
+        _hooking = false;
+        PostThreadMessage(_hookThreadId, WM_QUIT, IntPtr.Zero, IntPtr.Zero);
+        _hookThread.Join(500);
+        _hookThread = null;
+        _cursorHook = IntPtr.Zero;
+    }
+
+    // on the hook's thread
     IntPtr CursorProc(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode < 0 || !_cursorMode) return CallNextHookEx(_cursorHook, nCode, wParam, lParam);
+        if (nCode < 0 || !_hooking) return CallNextHookEx(_cursorHook, nCode, wParam, lParam);
         var d = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
         int msg = wParam.ToInt32();
-        _lastCursorInput = Environment.TickCount64;
+        Interlocked.Exchange(ref _lastCursorInput, Environment.TickCount64);
         if (msg == WM_MOUSEMOVE)
         {
-            // the real cursor stays where it is (the move is dropped); the step it would have made moves the drawn one
+            // the real cursor stays where it is (the move is dropped); the step it would have made moves the drawn
+            // one. Steps add up until the player takes them, one drawing for many steps.
             GetCursorPos(out POINT cur);
-            _vx += d.pt.X - cur.X;
-            _vy += d.pt.Y - cur.Y;
-            _cursorAnchored = true;
-            MoveDrawnCursor();
+            Interlocked.Add(ref _stepX, d.pt.X - cur.X);
+            Interlocked.Add(ref _stepY, d.pt.Y - cur.Y);
+            if (Interlocked.Exchange(ref _stepQueued, 1) == 0)
+                Dispatcher.BeginInvoke(new Action(TakeCursorSteps));
         }
-        if (msg is WM_MOUSEMOVE or WM_LBUTTONDOWN or WM_LBUTTONUP or WM_MBUTTONDOWN or WM_MOUSEWHEEL)
+        else if (msg is WM_LBUTTONDOWN or WM_LBUTTONUP or WM_MBUTTONDOWN or WM_MOUSEWHEEL)
         {
             short delta = (short)((d.mouseData >> 16) & 0xFFFF);
-            Dispatcher.BeginInvoke(new Action(() =>         // out of the hook quickly
+            Dispatcher.BeginInvoke(new Action(() =>
             {
+                TakeCursorSteps();          // a click lands where the cursor is by now
                 if (msg is WM_LBUTTONDOWN or WM_MBUTTONDOWN or WM_MOUSEWHEEL) CursorRipple();
                 VirtualMouse(msg, delta);
             }));
         }
         return (IntPtr)1;       // the game (and every other app) gets nothing while the cursor is in the player
+    }
+
+    void TakeCursorSteps()
+    {
+        Interlocked.Exchange(ref _stepQueued, 0);
+        int dx = Interlocked.Exchange(ref _stepX, 0), dy = Interlocked.Exchange(ref _stepY, 0);
+        if (!_cursorMode || dx == 0 && dy == 0) return;
+        _vx += dx;
+        _vy += dy;
+        _cursorAnchored = true;
+        MoveDrawnCursor();
+        VirtualMouse(WM_MOUSEMOVE, 0);
     }
 
     // What the player would do with a real mouse at the drawn cursor. WPF itself drops mouse messages while the real

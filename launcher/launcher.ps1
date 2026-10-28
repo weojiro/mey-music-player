@@ -53,7 +53,7 @@ $Build = 0
 try { $Build = [int](Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuildNumber } catch { }
 
 function W($text, $color = 'Gray') { Write-Host $text -ForegroundColor $color }
-function Step($n, $text) { W ''; W ("  [{0}/3] {1}" -f $n, $text) 'Cyan' }
+function Step($n, $text) { W ''; W ("  [{0}/4] {1}" -f $n, $text) 'Cyan' }
 function Ok($text) { W ("        [ OK ] {0}" -f $text) 'Green' }
 
 # ASCII progress bar: [##########--------------------]  33%
@@ -148,6 +148,24 @@ function Install-App($downloaded) {
     $shortcut.Save()
 }
 
+# Windows' multiplane overlay (MPO) off: over a full-screen game the player and its lyrics are drawn together with
+# the game, so recordings (NVIDIA with desktop capture) show what the screen shows instead of black frames.
+# HKLM needs the administrator: Windows asks once. Takes effect after a restart; undo by deleting the value.
+$DwmKey = 'HKLM:\SOFTWARE\Microsoft\Windows\Dwm'
+function Set-GameOverlay {
+    try { if ((Get-ItemProperty $DwmKey -Name OverlayTestMode -ErrorAction Stop).OverlayTestMode -eq 5) { Ok 'Already set'; return } } catch { }
+    W '        Turning off Windows multiplane overlay (MPO) so the player and its lyrics show over' 'Gray'
+    W '        full-screen games and in recordings. Windows asks for permission.' 'Gray'
+    try {
+        $p = Start-Process reg.exe -Verb RunAs -Wait -PassThru -WindowStyle Hidden `
+            -ArgumentList 'add "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /t REG_DWORD /d 5 /f'
+        if ($p.ExitCode -ne 0) { throw "reg.exe $($p.ExitCode)" }
+        Ok 'Done - it takes effect after you restart the computer'
+        W '        (to undo: reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /f)' 'DarkGray'
+    }
+    catch { W '        [SKIP] Not changed (permission refused). MMP works the same, recordings of games may flicker.' 'Yellow' }
+}
+
 try {
     W ''
     W '  mey music player - installer' 'White'
@@ -161,7 +179,10 @@ try {
     Ok "Installed to $InstallDir"
     Ok 'Desktop shortcut created'
 
-    Step 3 'Starting'
+    Step 3 'Setting up full-screen games'
+    Set-GameOverlay
+
+    Step 4 'Starting'
     Start-Process -FilePath $BatPath -ArgumentList '/run' -WindowStyle Minimized
     Ok 'mey music player is running'
 

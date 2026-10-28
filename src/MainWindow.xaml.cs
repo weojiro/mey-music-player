@@ -566,7 +566,18 @@ public partial class MainWindow : Window
         if (Environment.GetCommandLineArgs().Contains("--options")) ShowOptions();     // for development and tests
     }
 
+    // asked several times in a row on each tick: the answer is kept for a few milliseconds
+    long _fullAt = -1000;       // not long.MinValue: "now minus it" would overflow and the answer never be asked again
+    bool _fullLast;
     bool IsFullScreenAppActive()
+    {
+        long now = Environment.TickCount64;
+        if (now - _fullAt < 30) return _fullLast;
+        _fullAt = now;
+        return _fullLast = FullScreenAppNow();
+    }
+
+    bool FullScreenAppNow()
     {
         try
         {
@@ -775,6 +786,8 @@ public partial class MainWindow : Window
         return (int)Math.Round(DesignW * f);
     }
 
+    double _clipW = -1;
+
     // Puts the window on the screen with the cover at (coverX, coverY), open by _t
     void Place(int coverX, int coverY, int size, int fullW)
     {
@@ -785,7 +798,7 @@ public partial class MainWindow : Window
         {
             width = size + (int)Math.Round((fullW - size) * _t);
             winX = coverX;
-            PlayerPanel.Clip = null;
+            if (PlayerPanel.Clip != null) { PlayerPanel.Clip = null; _clipW = -1; }
         }
         else
         {
@@ -793,12 +806,18 @@ public partial class MainWindow : Window
             winX = coverX + size - fullW;
             double panelW = 338.0;
             double visibleW = panelW * _t;
-            PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
+            if (visibleW != _clipW)
+            {
+                _clipW = visibleW;
+                PlayerPanel.Clip = new RectangleGeometry(new Rect(panelW - visibleW, 0, visibleW, 40));
+            }
         }
         _winW = size + (int)Math.Round((fullW - size) * _t);    // what is drawn, for both sides
         _winX = winX;
         if (_cursorMode) MoveDrawnCursor();         // the player moved or opened under the drawn cursor
 
+        // told again 4 times a second even when nothing moved: a game in full screen sits above the other topmost
+        // windows until the player asks to be on top again (MTA at 1080p)
         SetWindowPos(_hwnd, HWND_TOPMOST, winX, coverY, width, size,
             SWP_NOACTIVATE | SWP_SHOWWINDOW);
         RepositionTitleCard();

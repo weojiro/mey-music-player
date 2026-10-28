@@ -130,6 +130,12 @@ Tray menüsündeki *Konum*, kapağı sağa, ortaya, orta üste ya da sola koyar.
 2. Klasöre çıkar ve **MMP Launcher.bat**'a çift tıkla. Başka bir şey kurman gerekmez.
 3. "Installation complete!" yazınca uygulamayı masaüstündeki **mey music player** kısayoluyla aç.
 
+Launcher ayrıca Windows'un çok katmanlı kaplama (MPO) özelliğini kapatır; böylece oynatıcı ve sözler kenarlıksız tam
+ekran oyunların üstünde görünür, kayıtlarda da (NVIDIA Anlık Tekrar gibi) siyah kare olmadan çıkar. Windows bir kez
+izin ister ve ayar bilgisayar yeniden başlayınca devreye girer. Geri almak için yönetici olarak açtığın bir terminalde
+şunu çalıştırıp yeniden başlat:
+`reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /f`
+
 MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin). Açılışta ve günde bir kez
 GitHub'da yeni sürüm var mı diye bakar ve güncellemeden önce sana sorar. Yeni sürüm sadece bu repo'nun
 release'lerinden gelir ve MMP kurmadan önce SHA-256'sını kontrol eder. Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.

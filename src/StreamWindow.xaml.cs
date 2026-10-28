@@ -97,8 +97,9 @@ public partial class StreamWindow : Window
     void RefreshSong()
     {
         var (title, artist, cover, position, length) = _main.NowPlaying();
-        SongText.Text = title;
-        ArtistText.Text = artist;
+        // 4 times a second: only what changed is set again (each change measures the window anew)
+        if (SongText.Text != title) SongText.Text = title;
+        if (ArtistText.Text != artist) ArtistText.Text = artist;
         // Windows hands the same song's cover over again on every change of its details: only a new song drops the big
         // cover, otherwise it would flicker back to the small one and download again
         string song = title + "\n" + artist;
@@ -132,9 +133,12 @@ public partial class StreamWindow : Window
             ShowMode();
         }
         double part = length.TotalSeconds > 1 ? Math.Clamp(position.TotalSeconds / length.TotalSeconds, 0, 1) : 0;
-        Progress.Width = 620 * part;
-        TimeText.Text = length.TotalSeconds > 1 ? $"{Clock(position)} / {Clock(length)}" : "";
-        NeedCable.Visibility = EqEngine.CableInstalled ? Visibility.Collapsed : Visibility.Visible;
+        double width = Math.Round(620 * part * 2) / 2;
+        if (Progress.Width != width) Progress.Width = width;
+        string time = length.TotalSeconds > 1 ? $"{Clock(position)} / {Clock(length)}" : "";
+        if (TimeText.Text != time) TimeText.Text = time;
+        var need = EqEngine.CableInstalled ? Visibility.Collapsed : Visibility.Visible;
+        if (NeedCable.Visibility != need) NeedCable.Visibility = need;
     }
 
     async void LoadBig(string url)
@@ -182,6 +186,7 @@ sealed class Visualizer : FrameworkElement
     {
         BarBrush = Freeze(new SolidColorBrush(Color.FromArgb(0xC0, c.R, c.G, c.B)));
         WavePen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(0xF0, c.R, c.G, c.B)), 4.5) { LineJoin = PenLineJoin.Round });
+        _still = false;
     }
 
     readonly float[] _samples = new float[Size];
@@ -190,34 +195,61 @@ sealed class Visualizer : FrameworkElement
     readonly double[] _window = Enumerable.Range(0, Size).Select(i => 0.5 - 0.5 * Math.Cos(2 * Math.PI * i / (Size - 1))).ToArray();
     double _waveGain;
     readonly double[] _wave = new double[40], _target = new double[40];
-    public bool Wave { get; set; }
+    readonly Point[] _pts = new Point[40];
+    bool _waveMode;
+    public bool Wave
+    {
+        get => _waveMode;
+        set { _waveMode = value; _still = false; }     // the other drawing shows even with no sound
+    }
 
     static T Freeze<T>(T f) where T : Freezable { f.Freeze(); return f; }
 
-    // once per screen frame
+    // once per screen frame; with no sound and everything settled at the bottom nothing is drawn again
+    bool _still;
     public void Step()
     {
-        if (!EqEngine.ReadScope(_samples)) Array.Clear(_samples);
+        bool sound = EqEngine.ReadScope(_samples);
+        if (!sound) Array.Clear(_samples);
         if (!Wave) Analyse();
+        bool settled = !sound && (Wave ? _wave.All(v => Math.Abs(v) < 1e-4) : _levels.All(v => v < 1e-4));
+        if (settled && _still) return;
+        _still = settled;
         InvalidateVisual();
+    }
+
+    // bands evenly spread over the octaves, like hearing: their FFT bins and loudness tilt, worked out once per rate
+    int _bandsRate;
+    readonly int[] _from = new int[Bands], _to = new int[Bands];
+    readonly double[] _tilt = new double[Bands];
+
+    void BandsFor(int rate)
+    {
+        if (rate == _bandsRate) return;
+        _bandsRate = rate;
+        double hzPerBin = rate / (double)Size;
+        for (int b = 0; b < Bands; b++)
+        {
+            double lo = MinHz * Math.Pow(MaxHz / MinHz, b / (double)Bands), hi = MinHz * Math.Pow(MaxHz / MinHz, (b + 1) / (double)Bands);
+            _from[b] = Math.Max(1, (int)(lo / hzPerBin));
+            _to[b] = Math.Min(Size / 2, Math.Max(_from[b] + 1, (int)(hi / hzPerBin)));
+            // music has less energy the higher it goes (about 3 dB less per octave): made up for, so the bars on the
+            // right move too
+            _tilt[b] = 3 * Math.Log2(Math.Sqrt(lo * hi) / 1000);
+        }
     }
 
     void Analyse()
     {
         for (int i = 0; i < Size; i++) _fft[i] = new Complex(_samples[i] * _window[i], 0);
         Fft(_fft);
-        double hzPerBin = EqEngine.ScopeRate / (double)Size;
+        BandsFor(EqEngine.ScopeRate);
         for (int b = 0; b < Bands; b++)
         {
-            // bands evenly spread over the octaves, like hearing
-            double lo = MinHz * Math.Pow(MaxHz / MinHz, b / (double)Bands), hi = MinHz * Math.Pow(MaxHz / MinHz, (b + 1) / (double)Bands);
-            int from = Math.Max(1, (int)(lo / hzPerBin)), to = Math.Max(from + 1, (int)(hi / hzPerBin));
+            int from = _from[b], to = _to[b];
             double sum = 0;
-            for (int k = from; k < to && k < Size / 2; k++) sum += _fft[k].Magnitude;
-            double db = 20 * Math.Log10(sum / (to - from) / Size * 4 + 1e-9);
-            // music has less energy the higher it goes (about 3 dB less per octave): made up for, so the bars on the
-            // right move too
-            db += 3 * Math.Log2(Math.Sqrt(lo * hi) / 1000);
+            for (int k = from; k < to; k++) sum += _fft[k].Magnitude;
+            double db = 20 * Math.Log10(sum / Math.Max(1, to - from) / Size * 4 + 1e-9) + _tilt[b];
             double level = Math.Clamp((db + 62) / 56, 0, 1);
             // up at once, down slowly
             // up and down both glide: a bar that jumps up and drops leaves a trail on the screen and on a stream
@@ -294,7 +326,7 @@ sealed class Visualizer : FrameworkElement
         }
 
         double mid = h * 0.55, amp = h * 0.38;
-        var pts = new Point[n];
+        var pts = _pts;
         for (int p = 0; p < n; p++) pts[p] = new Point(w * p / (n - 1), mid - Math.Clamp(_wave[p], -1, 1) * amp);
         var geo = new StreamGeometry();
         using (var g = geo.Open())

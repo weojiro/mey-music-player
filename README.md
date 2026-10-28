@@ -128,6 +128,11 @@ taskbar (also with the icons in the middle); over a full-screen game it goes dow
 2. Extract it and double-click **MMP Launcher.bat**. Nothing else needs to be installed.
 3. When it says "Installation complete!", start the app with the **mey music player** shortcut on your desktop.
 
+The launcher also turns off Windows' multiplane overlay (MPO), so the player and its lyrics show over borderless
+full-screen games and in recordings (like NVIDIA Instant Replay) without black frames. Windows asks for permission
+once, and it takes effect after a restart. To undo it, run this in a terminal opened as administrator and restart:
+`reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /f`
+
 MMP starts with Windows from then on (you can turn that off in the tray menu). It checks GitHub for a new version
 when it starts and once a day, and asks you before updating. The new version comes only from this repository's
 releases, and MMP checks its SHA-256 before installing it. Works on Windows 10 (1809 or newer, 64-bit) and Windows 11.

@@ -153,20 +153,30 @@ static class EqEngine
     }
 
     // every few milliseconds: what the apps played since
+    // Windows rounds a short sleep up to its clock tick (15.6 ms) unless asked for a finer one: the output would ask
+    // for sound that hasn't been fetched yet. 1 ms only while the pump runs.
     static void PumpLoop()
     {
-        while (_running)
+        timeBeginPeriod(1);
+        try
         {
-            bool sound = false;
-            foreach (var src in _snapshot) sound |= src.Pull();
-            if (sound)
+            while (_running)
             {
-                _lastSound = Environment.TickCount64;
-                if (!_heard) { _heard = true; Wake.Set(); }     // playing again after a pause: the output starts
+                bool sound = false;
+                foreach (var src in _snapshot) sound |= src.Pull();
+                if (sound)
+                {
+                    _lastSound = Environment.TickCount64;
+                    if (!_heard) { _heard = true; Wake.Set(); }     // playing again after a pause: the output starts
+                }
+                Thread.Sleep(PumpMs);
             }
-            Thread.Sleep(PumpMs);
         }
+        finally { timeEndPeriod(1); }
     }
+
+    [DllImport("winmm.dll")] static extern uint timeBeginPeriod(uint ms);
+    [DllImport("winmm.dll")] static extern uint timeEndPeriod(uint ms);
 
     // once a second: which apps are playing, where they are sent, and the output device
     static void Scan()
@@ -375,14 +385,20 @@ static class EqEngine
 
     // ---------- one app's sound ----------
 
+    // The app's sound comes on the cable's clock and goes out on the speakers' one, which never run quite alike: a
+    // few milliseconds wait here, and the sound is played a hair faster or slower (at most 0.4 %, too little to
+    // hear) to keep it there. Cutting or padding instead is a click each time.
     sealed class Source : IDisposable
     {
-        const int MaxMs = 40, KeepMs = 15;     // more than 40 ms waiting: the oldest goes, so the delay stays small
+        const int TargetMs = 20, MaxMs = 150;  // more than 150 ms waiting (after a stall): back to the target at once
         readonly AudioClient _client;
         readonly AudioCaptureClient _capture;
         readonly float[] _ring;
-        readonly int _max, _keep;
+        readonly int _max, _keep, _target;
         int _read, _count;
+        double _frac;           // where between two frames the playing is
+        double _avg = -1;       // how much waits, on average (it jumps with every packet; the speed follows the average)
+        bool _primed;           // the wait is filled: plays (after running dry it fills up again before playing)
         float[] _packet = new float[4096];
         readonly object _lock = new();
 
@@ -397,7 +413,8 @@ static class EqEngine
             _capture = _client.AudioCaptureClient;
             _ring = new float[rate * 2];        // a second
             _max = rate * 2 * MaxMs / 1000;
-            _keep = rate * 2 * KeepMs / 1000;
+            _keep = rate * 2 * TargetMs / 1000;
+            _target = rate * TargetMs / 1000;
             _client.Start();
         }
 
@@ -432,15 +449,41 @@ static class EqEngine
             return sound;
         }
 
-        // adds up to `samples` into mix; missing ones stay as they are (silence)
+        // adds up to `samples` (stereo) into mix; missing ones stay as they are (silence)
         public void AddTo(float[] mix, int samples)
         {
             lock (_lock)
             {
-                int n = Math.Min(samples, _count);
-                for (int i = 0; i < n; i++) mix[i] += _ring[(_read + i) % _ring.Length];
-                _read = (_read + n) % _ring.Length;
-                _count -= n;
+                int frames = samples / 2, have = _count / 2, len = _ring.Length;
+                if (!_primed)
+                {
+                    if (have < _target) return;
+                    _primed = true;
+                }
+                // fuller than the target: a little faster, emptier: a little slower
+                _avg = _avg < 0 ? have : _avg + (have - _avg) * 0.01;
+                double speed = 1 + Math.Clamp((_avg - _target) / _target, -1, 1) * 0.004;
+                // frame k of the waiting sound; playing sits between frames 1 and 2 (0 and 3 shape the curve)
+                float At(int k, int c) => _ring[(_read + 2 * k + c) % len];
+                int f = 0;
+                for (; f < frames; f++)
+                {
+                    int i = (int)_frac;
+                    if (i + 3 >= have) { _primed = false; break; }        // ran dry: wait for it to fill again
+                    float t = (float)(_frac - i);
+                    for (int c = 0; c < 2; c++)
+                    {
+                        // smooth (cubic) between the frames: keeps the highs that a straight line would dull
+                        float y0 = At(i, c), y1 = At(i + 1, c), y2 = At(i + 2, c), y3 = At(i + 3, c);
+                        float a = 0.5f * (y2 - y0), b = y0 - 2.5f * y1 + 2f * y2 - 0.5f * y3, d = 0.5f * (y3 - y0) + 1.5f * (y1 - y2);
+                        mix[2 * f + c] += ((d * t + b) * t + a) * t + y1;
+                    }
+                    _frac += speed;
+                }
+                int used = (int)_frac;
+                _frac -= used;
+                _read = (_read + 2 * used) % len;
+                _count -= 2 * used;
             }
         }
 

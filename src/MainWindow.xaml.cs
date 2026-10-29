@@ -1224,8 +1224,9 @@ public partial class MainWindow : Window
             try
             {
                 _mgr = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-                _mgr.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(new Action(OnSessionChanged));
-                OnSessionChanged();
+                _mgr.CurrentSessionChanged += (_, _) => Dispatcher.BeginInvoke(new Action(() => OnSessionChanged()));
+                _mgr.SessionsChanged += (_, _) => Dispatcher.BeginInvoke(new Action(() => OnSessionChanged()));
+                OnSessionChanged(true);
                 return;
             }
             catch (Exception ex)
@@ -1238,15 +1239,45 @@ public partial class MainWindow : Window
         }
     }
 
-    void OnSessionChanged()
+    // Windows' current session can stay on a paused app (a browser tab) while another one plays, until the user
+    // presses a media key: follow the playing session ourselves, and keep the last one while nothing plays
+    readonly HashSet<GlobalSystemMediaTransportControlsSession> _watched = new();
+
+    static bool IsPlaying(GlobalSystemMediaTransportControlsSession? s)
     {
+        try { return s?.GetPlaybackInfo()?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing; }
+        catch { return false; }
+    }
+
+    GlobalSystemMediaTransportControlsSession? PickSession()
+    {
+        if (_mgr == null) return null;
+        var current = _mgr.GetCurrentSession();
+        IReadOnlyList<GlobalSystemMediaTransportControlsSession> all;
+        try { all = _mgr.GetSessions(); } catch { return current; }
+        foreach (var s in all)
+            if (_watched.Add(s))
+                s.PlaybackInfoChanged += (_, _) => Dispatcher.BeginInvoke(new Action(() => OnSessionChanged()));
+        var kept = all.FirstOrDefault(s => s == _session)
+            ?? all.FirstOrDefault(s => _session != null && s.SourceAppUserModelId == _session.SourceAppUserModelId);
+        if (IsPlaying(current)) return current;
+        if (IsPlaying(kept)) return kept;
+        foreach (var s in all)
+            if (IsPlaying(s)) return s;
+        return kept ?? current;
+    }
+
+    void OnSessionChanged(bool force = false)
+    {
+        var next = PickSession();
+        if (!force && next == _session) return;
         if (_session != null)
         {
             _session.MediaPropertiesChanged -= OnMediaProps;
             _session.PlaybackInfoChanged -= OnPlaybackChanged;
             _session.TimelinePropertiesChanged -= OnTimelineChanged;
         }
-        _session = _mgr?.GetCurrentSession();
+        _session = next;
         if (_session != null)
         {
             _session.MediaPropertiesChanged += OnMediaProps;

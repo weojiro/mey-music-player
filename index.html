@@ -359,7 +359,7 @@ footer a:hover { color: var(--fg); }
         <article class="tile wide">
           <div class="shot"><img src="img/player.png?v=2" width="452" height="48" alt="The open player with its controls next to the cover"></div>
           <h3 data-i18n="f1.t">Every control, one click away</h3>
-          <p data-i18n="f1.p">The cover sits between your taskbar icons. Click it and the player slides out next to it, with the volume of the app that is playing.</p>
+          <p data-i18n="f1.p">The cover sits between your taskbar icons. Click it and the player slides out next to it.</p>
         </article>
         <article class="tile narrow">
           <div class="shot"><img src="img/title-card.png" width="220" height="116" alt="The song's name above the cover"></div>
@@ -413,7 +413,7 @@ footer a:hover { color: var(--fg); }
         </article>
         <article class="tile full">
           <h3 data-i18n="f11.t">Stream window</h3>
-          <p data-i18n="f11.p">The song with its cover, and bars or a wave that move with the music, in the cover's colours. Share this window in a Discord stream instead of the whole screen; your friends hear the sound with your equalizer.</p>
+          <p data-i18n="f11.p">The song with its cover, and bars or a wave that move with the music, in the cover's colours. Share this window in a Discord stream instead of the whole screen; your friends hear the sound with your equalizer. Needs VB-CABLE, installed from the Equalizer window.</p>
         </article>
       </div>
     </div>
@@ -503,7 +503,8 @@ footer a:hover { color: var(--fg); }
         <details><summary data-i18n="q3">The volume doesn't move the slider inside Spotify.</summary><p data-i18n="a3">MMP changes the app's volume in the Windows volume mixer, which sounds the same. In a browser all tabs share one volume, and Firefox's volume can't be changed from MMP.</p></details>
         <details><summary data-i18n="q4">My taskbar is on the side or on another screen.</summary><p data-i18n="a4">On the taskbar MMP sits on the main screen, at the bottom or the top. Turn on Free move in Options to put it anywhere, on any screen.</p></details>
         <details><summary data-i18n="q6">Is it safe?</summary><p data-i18n="a6">The code is all on GitHub. Every release is built from it by GitHub Actions and comes with its SHA-256. MMP updates only from those releases, checks the SHA-256 first and asks you before it updates.</p></details>
-        <details><summary data-i18n="q5">How do I remove it?</summary><p data-i18n-html="a5">Turn off Start with Windows and choose Close in the tray menu, then delete the <code class="path">%LOCALAPPDATA%\MMP</code> folder and the desktop shortcut.</p></details>
+        <details><summary data-i18n="q7">Something doesn't work.</summary><p data-i18n-html="a7">MMP writes unexpected errors to <code class="path">%LOCALAPPDATA%\MMP\error.log</code>. It stays on your PC; attach it when you report a problem on GitHub.</p></details>
+        <details><summary data-i18n="q5">How do I remove it?</summary><p data-i18n-html="a5">Turn off Start with Windows and choose Close in the tray menu, then delete the <code class="path">%LOCALAPPDATA%\MMP</code> folder and the desktop shortcut. If you installed VB-CABLE, remove it in Windows Settings → Apps.</p></details>
       </div>
     </div>
   </section>
@@ -629,7 +630,7 @@ footer a:hover { color: var(--fg); }
     "works.title": "Çalıştığı yerler", "works.more": "ve Windows medya kontrollerini kullanan her uygulama",
     "feat.eyebrow": "neler yapar", "feat.title": "Bir ikon boyutunda koca bir oynatıcı.",
     "feat.lead": "Önceki, çal / duraklat, sonraki, ilerleme çubuğu, çalan uygulamanın sesi, karıştır ve tekrarla. Açmak için kapağa tıkla, istediğin yere koymak için görev çubuğunda sürükle.",
-    "f1.t": "Her kontrol bir tık uzakta", "f1.p": "Kapak görev çubuğundaki ikonların arasında durur. Tıklayınca oynatıcı yanında açılır, çalan uygulamanın sesi de orada.",
+    "f1.t": "Her kontrol bir tık uzakta", "f1.p": "Kapak görev çubuğundaki ikonların arasında durur. Tıklayınca oynatıcı yanında açılır.",
     "f2.t": "Şarkının adı bir bakışta", "f2.p": "Fareyi bir saniye kapağın üstünde tut.",
     "f3.t": "Kapaktan gelen renkler", "f3.p": "Her şarkı oynatıcıyı kendi renklerine boyar. Adı Bukalemun.",
     "f4.t": "Spotify'daki gibi şarkı sözleri", "f4.p": "Açık oynatıcı o an söylenen satırı gösterir; tray menüsündeki Şarkı sözleri'nden kapatabilirsin. Butonlar için fareyi üstüne getir.",
@@ -640,7 +641,7 @@ footer a:hover { color: var(--fg); }
     "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, ekolayzer, yayın penceresi, oynatıcıyı gizle, şarkı sözleri, Discord, başlangıç, görev çubuğundaki konum ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Tam ekran oyunun üstünde tıklamalar oyuna gider; Ctrl + Alt + X oynatıcıda bir imleç çizer, şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
     "f9.t": "Discord profilinde", "f9.p": "Arkadaşların ne dinlediğini görür: şarkının adı, sanatçısı, albümü, ilerleme çubuğu ve kapak. Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud ve daha fazlasıyla çalışır. Videolar gizli kalır.",
     "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar, yankı, netlik ve diğer efektler, araba teybi gibi şarkı geçişi. Seslerini kaydet ya da dosya olarak paylaş. Sadece seçtiğin uygulamaları değiştirir (Spotify, tarayıcılar, müzik çalarlar); Discord ve oyunlar olduğu gibi kalır. Ücretsiz VB-CABLE ile çalışır, MMP onu bir kez kurar.",
-    "f11.t": "Yayın penceresi", "f11.p": "Kapağıyla şarkı ve müziğe göre oynayan sütunlar ya da ses dalgası, kapağın renklerinde. Discord yayınında tüm ekran yerine bu pencereyi paylaş; arkadaşların sesi ekolayzerinle duyar.",
+    "f11.t": "Yayın penceresi", "f11.p": "Kapağıyla şarkı ve müziğe göre oynayan sütunlar ya da ses dalgası, kapağın renklerinde. Discord yayınında tüm ekran yerine bu pencereyi paylaş; arkadaşların sesi ekolayzerinle duyar. VB-CABLE gerekir, Ekolayzer penceresinden kurulur.",
     "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dört tane daha.",
     "d.lead": "Tray menüsünden Ayarlar'ı aç. Değiştirdiğin her şey görev çubuğunda hemen görünür ve kendiliğinden kaydedilir.",
     "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak. Saydamlık kaydırıcısıyla saydam yap.",
@@ -664,7 +665,7 @@ footer a:hover { color: var(--fg); }
     "q2": "Hangi uygulamalarla çalışır?", "a2": "Windows medya kontrollerinde görünen her şeyle: Spotify, YouTube ya da SoundCloud açık tarayıcılar (Chrome, Edge, Brave, Opera, Firefox) ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify için.",
     "q3": "Ses ayarı Spotify'ın içindeki çubuğu oynatmıyor.", "a3": "MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda tüm sekmeler tek ses paylaşır, Firefox'un sesi ise MMP'den değiştirilemez.",
     "q4": "Görev çubuğum yanda ya da başka bir ekranda.", "a4": "Görev çubuğunda MMP ana ekranda, altta ya da üstte durur. Ayarlar'dan Serbest hareketi açarsan istediğin yere, istediğin ekrana koyabilirsin.",
-    "q6": "Güvenli mi?", "a6": "Kodun hepsi GitHub'da. Her sürüm GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir. MMP sadece bu sürümlerden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.", "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil.",
+    "q6": "Güvenli mi?", "a6": "Kodun hepsi GitHub'da. Her sürüm GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir. MMP sadece bu sürümlerden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.", "q7": "Bir şey çalışmıyor.", "a7": "MMP beklenmedik hataları <code class=\"path\">%LOCALAPPDATA%\\MMP\\error.log</code> dosyasına yazar. Dosya bilgisayarında kalır; GitHub'da sorun bildirirken ekle.", "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil. VB-CABLE kurduysan Windows Ayarlar → Uygulamalar'dan kaldır.",
     "end.title": "Müziğin daha iyi<br><span class=\"accent\">bir yeri hak ediyor.</span>",
     "foot.mit": "MIT lisansı", "foot.issue": "Sorun bildir"
   };

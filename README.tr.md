@@ -102,7 +102,6 @@ Discord, oyunlar ve diğer her şey olduğu gibi kalır. Bunun için MMP, VB-Aud
 [VB-CABLE](https://vb-audio.com/Cable/)'ı kullanır (bağış usulü): Ekolayzer penceresi resmi sürücü paketini indirip
 (yaklaşık 1,3 MB, çalıştırmadan önce kontrol edilir) bir kez kurabilir. Windows izin ister; varsayılan ses cihazların
 aynen kalır. Ekolayzer MMP açıkken çalışır; MMP kapanınca ya da ekolayzer kapalıyken uygulamalar eskisi gibi çalar.
-v1.3'ün kullandığı Equalizer APO'ya artık gerek yok.
 
 *Şarkı geçişi* açıkken geçilen şarkının sesi kısılır, yenisi yavaşça açılır; araba teybi gibi.
 
@@ -192,7 +191,8 @@ MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya
 <summary><b>Nasıl kaldırırım?</b></summary>
 
 Tray menüsünde *Windows ile başlat*'ı kapat ve *Kapat*'ı seç, sonra `%LOCALAPPDATA%\MMP` klasörünü
-(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil.
+(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil. VB-CABLE kurduysan Windows
+Ayarlar → Uygulamalar'dan kaldır. MPO'yu geri açmak için [Kurulum](#kurulum)'daki komutu çalıştır.
 </details>
 
 ## Diller
@@ -208,7 +208,7 @@ Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
 
 MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir şey göndermez:
 
-- **GitHub** (`api.github.com`, `github.com`): açılışta yeni sürüm var mı diye bakar, güncellemeyi seçersen indirir.
+- **GitHub** (`api.github.com`, `github.com`): açılışta ve sonra günde bir kez yeni sürüm var mı diye bakar, güncellemeyi seçersen indirir.
 - **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı, albümü ve süresi. Sadece Spotify'da ve
   şarkı sözleri açıkken (tray menüsü → *Şarkı sözleri*).
 - **Discord**: MMP'nin Discord profilinde gösterdikleri bilgisayarındaki Discord uygulamasına gider, o da

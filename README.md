@@ -101,7 +101,7 @@ Discord, games and everything else sound as they are. For this MMP uses
 [VB-CABLE](https://vb-audio.com/Cable/), a free virtual audio cable by VB-Audio (donationware): the Equalizer window
 can download its official driver pack (about 1.3 MB, checked before it runs) and install it once. Windows asks for
 permission; your default sound devices stay as they are. The equalizer works while MMP is running; when MMP closes or
-the equalizer is off, the apps play as before. Equalizer APO, used by v1.3, isn't needed any more.
+the equalizer is off, the apps play as before.
 
 With *Fade between songs* on, a skipped song goes quiet and the next one comes up slowly, like a car stereo.
 
@@ -191,7 +191,8 @@ MMP writes unexpected errors to `%LOCALAPPDATA%\MMP\error.log`. It stays on your
 <summary><b>How do I remove it?</b></summary>
 
 Turn off *Start with Windows* and choose *Close* in the tray menu, then delete the `%LOCALAPPDATA%\MMP`
-folder (the app, its settings and your saved players) and the shortcut on your desktop.
+folder (the app, its settings and your saved players) and the shortcut on your desktop. If you installed VB-CABLE,
+remove it in Windows Settings → Apps. To turn MPO back on, run the command under [Install](#install).
 </details>
 
 ## Languages
@@ -216,7 +217,7 @@ docs/       the pictures in this README
 
 MMP has no account, no tracking and no analytics. It only connects to these, and sends nothing else:
 
-- **GitHub** (`api.github.com`, `github.com`): checks for a new version at startup and downloads it when you choose
+- **GitHub** (`api.github.com`, `github.com`): checks for a new version at startup and once a day, and downloads it when you choose
   to update.
 - **LRCLIB** (`lrclib.net`): the song's title, artist, album and length, to find lyrics. Only for Spotify, and only while
   lyrics are on (tray menu → *Lyrics*).

@@ -152,6 +152,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .tile { background: var(--menu); border-radius: var(--r); padding: 26px; display: grid; gap: 18px; align-content: start; min-width: 0; grid-column: span 3; border: 1px solid #252527; }
 .tile.wide { grid-column: span 4; }
 .tile.narrow { grid-column: span 2; }
+.tile.full { grid-column: 1 / -1; }
 .tile h3 { font-size: 23px; font-weight: 700; }
 .tile p { color: var(--dim); font-size: 15.5px; }
 .shot { background: var(--bar); border-radius: 10px; padding: 22px 16px; display: grid; place-items: center; min-height: 120px; overflow: hidden; }
@@ -290,7 +291,7 @@ footer a:hover { color: var(--fg); }
         <h1 data-i18n-html="hero.title">Your own player, right on <span class="accent">your&nbsp;taskbar.</span></h1>
         <p class="lead" data-i18n="hero.lead">The cover of whatever is playing sits on your Windows taskbar. Click it for the controls and Spotify lyrics. Paint it in your own colours and GIFs, and keep it on screen even over your games.</p>
         <div class="cta">
-          <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.3.1</small></a>
+          <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.6.1</small></a>
           <a class="btn btn-ghost" href="https://github.com/weojiro/mey-music-player"><svg><use href="#i-gh"/></svg><span data-i18n="cta.github">View on GitHub</span></a>
         </div>
         <span class="meta" data-i18n="hero.meta">MMP.zip · free · MIT</span>
@@ -356,7 +357,7 @@ footer a:hover { color: var(--fg); }
       </div>
       <div class="grid">
         <article class="tile wide">
-          <div class="shot"><img src="img/player.png" width="452" height="48" alt="The open player with its controls next to the cover"></div>
+          <div class="shot"><img src="img/player.png?v=2" width="452" height="48" alt="The open player with its controls next to the cover"></div>
           <h3 data-i18n="f1.t">Every control, one click away</h3>
           <p data-i18n="f1.p">The cover sits between your taskbar icons. Click it and the player slides out next to it, with the volume of the app that is playing.</p>
         </article>
@@ -371,7 +372,7 @@ footer a:hover { color: var(--fg); }
           <p data-i18n="f3.p">Every song paints the player in its own colours. We call it Chameleon.</p>
         </article>
         <article class="tile">
-          <div class="shot"><img src="img/lyrics.gif" width="420" height="44" alt="Lyrics changing line by line in the player"></div>
+          <div class="shot"><img src="img/lyrics.gif?v=2" width="420" height="44" alt="Lyrics changing line by line in the player"></div>
           <h3 data-i18n="f4.t">Lyrics, like in Spotify</h3>
           <p data-i18n="f4.p">The open player shows the line being sung; turn it off under Lyrics in the tray menu. Move the mouse over it to get the buttons back.</p>
         </article>
@@ -384,30 +385,35 @@ footer a:hover { color: var(--fg); }
             <li><kbd data-i18n="k4.k">Wheel on the speaker</kbd><span data-i18n="k4.v">volume (hover for the %); a click mutes</span></li>
             <li><kbd data-i18n="k5.k">Tray icon</kbd><span data-i18n="k5.v">click to play / pause, wheel for volume</span></li>
             <li><kbd>Ctrl + Alt</kbd><span data-i18n="k6.v">hide / show the player</span></li>
-            <li><kbd>Ctrl + Alt + X</kbd><span data-i18n="k7.v">mouse out of a full-screen game</span></li>
+            <li><kbd>Ctrl + Alt + X</kbd><span data-i18n="k7.v">use the player in a full-screen game</span></li>
           </ul>
         </article>
         <article class="tile narrow">
-          <div class="shot"><img src="img/tray-menu.png?v=2" width="232" height="396" alt="The tray menu"></div>
+          <div class="shot"><img src="img/tray-menu.png?v=3" width="200" height="420" alt="The tray menu"></div>
           <h3 data-i18n="f6.t">A tidy tray menu</h3>
-          <p data-i18n="f6.p">Options, hide player, lyrics, equalizer, Discord, startup, side of the taskbar and 11 languages.</p>
+          <p data-i18n="f6.p">Options, equalizer, stream window, hide player, lyrics, Discord, startup, position on the taskbar and 11 languages.</p>
         </article>
         <article class="tile">
           <h3 data-i18n="f7.t">Anywhere, even over games</h3>
-          <p data-i18n="f7.p">Turn on Free move to drag the cover anywhere on the screen, and Show over games to keep it over full-screen games. While a game hides the cursor, clicks go to the game. Ctrl + Alt + X takes the mouse out of the game to skip a song. With Free move on, the player can also be up to 300 % bigger.</p>
+          <p data-i18n="f7.p">Turn on Free move to drag the cover anywhere on the screen, and Show over games to keep it over full-screen games. Over a full-screen game, clicks go to the game; Ctrl + Alt + X draws a cursor on the player so you can skip a song. With Free move on, the player can also be up to 300 % bigger.</p>
         </article>
         <article class="tile">
           <h3 data-i18n="f8.t">Every player, its own place</h3>
           <p data-i18n="f8.p">Each saved player remembers its side, its spot, Free move, its size and Show over games, and comes back just as you left it.</p>
         </article>
         <article class="tile">
-          <div class="shot" style="gap:12px"><img src="img/discord-card.png" width="431" height="148" style="height:auto" alt="The Discord profile card: listening to mey music player, with the cover, title, artist, album and progress bar"><img src="img/discord-member.png" width="127" height="64" alt="The member list showing the artist under the name"></div>
+          <div class="shot" style="gap:12px"><img src="img/discord-profile.png" width="303" height="276" style="height:auto" alt="The Discord profile: listening to mey music player, with the cover, title, artist, album and progress bar"><img src="img/discord-member.png" width="127" height="64" alt="The member list showing the artist under the name"></div>
           <h3 data-i18n="f9.t">On your Discord profile</h3>
           <p data-i18n="f9.p">Your friends see what you're listening to: the title, artist and album, a progress bar and the cover. Works with Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud and more. Videos stay private.</p>
         </article>
         <article class="tile">
+          <div class="shot"><img src="img/eq.png" width="890" height="1022" style="height:auto" alt="The Equalizer window: apps, presets, saved sounds, the 20-band graph and the effects"></div>
           <h3 data-i18n="f10.t">A 20-band equalizer</h3>
-          <p data-i18n="f10.p">20 bands like AIMP, ±15 dB, a preamp, presets and effects: bass boost, stereo width, balance, reduce vocals. Heard at once, in every app. Works through the free Equalizer APO, which MMP can download and start for you.</p>
+          <p data-i18n="f10.p">20 bands like AIMP, ±15 dB, a preamp, presets, reverb, enhancer and more effects, and a car stereo fade between songs. Save your sounds or share them as files. It changes only the apps you pick (Spotify, browsers, music players); Discord and games sound as they are. Works through the free VB-CABLE, which MMP installs once.</p>
+        </article>
+        <article class="tile full">
+          <h3 data-i18n="f11.t">Stream window</h3>
+          <p data-i18n="f11.p">The song with its cover, and bars or a wave that move with the music, in the cover's colours. Share this window in a Discord stream instead of the whole screen; your friends hear the sound with your equalizer.</p>
         </article>
       </div>
     </div>
@@ -462,7 +468,7 @@ footer a:hover { color: var(--fg); }
         <div><code>github.com</code><span data-i18n="p.gh">Checks for a new version when it starts and once a day.</span></div>
         <div><code>lrclib.net</code><span data-i18n="p.lrc">Only with Lyrics on: the title, artist, album and length of the Spotify song, to find its lyrics.</span></div>
         <div><code>deezer.com · apple.com · soundcloud.com</code><span data-i18n="p.cover">Only with Show on Discord on: the title and artist of the song, to find its cover for Discord.</span></div>
-        <div><code>sourceforge.net</code><span data-i18n="p.eq">Only when you click Download and install in the Equalizer window: Equalizer APO's setup.</span></div>
+        <div><code>vb-audio.com</code><span data-i18n="p.eq">Only when you click Install VB-CABLE in the Equalizer window: VB-CABLE's driver pack.</span></div>
         <div><code data-i18n="p.else.k">anything else</code><span data-i18n="p.else">Nothing. Even the error log stays on your PC.</span></div>
       </div>
     </div>
@@ -477,7 +483,7 @@ footer a:hover { color: var(--fg); }
       </div>
       <ol class="install" style="padding:0;margin:0">
         <li><h3 data-i18n="i1.t">Download</h3><p data-i18n-html="i1.p">Get <b>MMP.zip</b> from the latest release on GitHub.</p></li>
-        <li><h3 data-i18n="i2.t">Run the launcher</h3><p data-i18n-html="i2.p">Extract it and double-click <b>MMP Launcher.bat</b>. Nothing else needs to be installed.</p></li>
+        <li><h3 data-i18n="i2.t">Run the launcher</h3><p data-i18n-html="i2.p">Extract it and double-click <b>MMP Launcher.bat</b>. Nothing else needs to be installed. It also turns off Windows' MPO, so the player shows over borderless full-screen games (Windows asks once; restart after).</p></li>
         <li><h3 data-i18n="i3.t">Start it</h3><p data-i18n-html="i3.p">Use the <b>mey music player</b> shortcut on your desktop. From then on it starts with Windows, and asks you before it updates.</p></li>
       </ol>
       <p class="req" data-i18n="i.req">Windows 10 (1809 or newer, 64-bit) and Windows 11.</p>
@@ -506,7 +512,7 @@ footer a:hover { color: var(--fg); }
     <div class="wrap end">
       <h2 data-i18n-html="end.title">Your music deserves<br><span class="accent">a better seat.</span></h2>
       <div class="cta">
-        <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.3.1</small></a>
+        <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.6.1</small></a>
         <a class="btn btn-ghost" href="https://github.com/weojiro/mey-music-player"><svg><use href="#i-gh"/></svg><span data-i18n="cta.star">Star on GitHub</span></a>
       </div>
     </div>
@@ -630,10 +636,11 @@ footer a:hover { color: var(--fg); }
     "f5.t": "Hızlı kontroller",
     "k1.k": "Kapakta tekerlek", "k1.v": "sonraki / önceki şarkı", "k2.k": "Kapağa orta tık", "k2.v": "çal / duraklat",
     "k3.k": "İlerleme çubuğunda tekerlek", "k3.v": "5 saniye ileri ya da geri", "k4.k": "Ses ikonunda tekerlek", "k4.v": "ses (üstüne gelince % görünür); tıklayınca sessiz",
-    "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses", "k6.v": "oynatıcıyı gizle / göster", "k7.v": "fareyi tam ekran oyundan al",
-    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, oynatıcıyı gizle, şarkı sözleri, ekolayzer, Discord, başlangıç, görev çubuğunun tarafı ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Oyun imleci gizlerken tıklamalar oyuna gider. Ctrl + Alt + X ile fareyi oyundan alıp şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
+    "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses", "k6.v": "oynatıcıyı gizle / göster", "k7.v": "tam ekran oyunda oynatıcıyı kullan",
+    "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, ekolayzer, yayın penceresi, oynatıcıyı gizle, şarkı sözleri, Discord, başlangıç, görev çubuğundaki konum ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Tam ekran oyunun üstünde tıklamalar oyuna gider; Ctrl + Alt + X oynatıcıda bir imleç çizer, şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
     "f9.t": "Discord profilinde", "f9.p": "Arkadaşların ne dinlediğini görür: şarkının adı, sanatçısı, albümü, ilerleme çubuğu ve kapak. Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud ve daha fazlasıyla çalışır. Videolar gizli kalır.",
-    "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar ve efektler: bas güçlendirme, stereo genişlik, denge, vokali azalt. Anında, her uygulamada duyulur. Ücretsiz Equalizer APO ile çalışır; MMP onu senin için indirip başlatabilir.",
+    "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar, yankı, netlik ve diğer efektler, araba teybi gibi şarkı geçişi. Seslerini kaydet ya da dosya olarak paylaş. Sadece seçtiğin uygulamaları değiştirir (Spotify, tarayıcılar, müzik çalarlar); Discord ve oyunlar olduğu gibi kalır. Ücretsiz VB-CABLE ile çalışır, MMP onu bir kez kurar.",
+    "f11.t": "Yayın penceresi", "f11.p": "Kapağıyla şarkı ve müziğe göre oynayan sütunlar ya da ses dalgası, kapağın renklerinde. Discord yayınında tüm ekran yerine bu pencereyi paylaş; arkadaşların sesi ekolayzerinle duyar.",
     "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dört tane daha.",
     "d.lead": "Tray menüsünden Ayarlar'ı aç. Değiştirdiğin her şey görev çubuğunda hemen görünür ve kendiliğinden kaydedilir.",
     "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak. Saydamlık kaydırıcısıyla saydam yap.",
@@ -645,11 +652,11 @@ footer a:hover { color: var(--fg); }
     "p.lead": "MMP ücretsiz ve MIT lisansıyla açık kaynak. İnternete gönderdiği her şey bu kadar:",
     "p.gh": "Açılışta ve günde bir kez yeni sürüm var mı diye bakar.", "p.lrc": "Sadece şarkı sözleri açıkken: sözleri bulmak için Spotify şarkısının adı, sanatçısı, albümü ve süresi.",
     "p.cover": "Sadece Discord'da göster açıkken: Discord'daki kapağı bulmak için şarkının adı ve sanatçısı.",
-    "p.eq": "Sadece Ekolayzer penceresinde İndir ve kur'a tıklayınca: Equalizer APO'nun kurulumu.",
+    "p.eq": "Sadece Ekolayzer penceresinde VB-CABLE'ı kur'a tıklayınca: VB-CABLE'ın sürücü paketi.",
     "p.else.k": "başka bir şey", "p.else": "Hiçbir şey. Hata günlüğü bile bilgisayarında kalır.",
     "i.eyebrow": "kurulum", "i.title": "Üç adım, bir dakika kadar.",
     "i1.t": "İndir", "i1.p": "GitHub'daki son sürümden <b>MMP.zip</b>'i al.",
-    "i2.t": "Launcher'ı çalıştır", "i2.p": "Klasöre çıkar ve <b>MMP Launcher.bat</b>'a çift tıkla. Başka bir şey kurman gerekmez.",
+    "i2.t": "Launcher'ı çalıştır", "i2.p": "Klasöre çıkar ve <b>MMP Launcher.bat</b>'a çift tıkla. Başka bir şey kurman gerekmez. Windows'un MPO özelliğini de kapatır; oynatıcı kenarlıksız tam ekran oyunların üstünde görünür (Windows bir kez sorar, sonra yeniden başlat).",
     "i3.t": "Başlat", "i3.p": "Masaüstündeki <b>mey music player</b> kısayolunu kullan. Artık Windows ile açılır ve güncellemeden önce sana sorar.",
     "i.req": "Windows 10 (1809 veya daha yeni, 64-bit) ve Windows 11.",
     "q.eyebrow": "sorular", "q.title": "Bilmekte fayda var",

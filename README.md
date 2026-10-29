@@ -55,6 +55,8 @@ Open **Options** in the tray menu to make the player your own:
 - drag them up or down in the image list to choose which one is in front. They always stay behind the buttons;
 - save up to 5 players and switch between them. Everything is saved on its own.
 
+<img src="docs/options.png" alt="The Options window: saved players, a big preview, colours, transparency, images and placement" width="626">
+
 ### Anywhere on the screen, even over games
 
 Also in **Options**, under *Placement*:
@@ -68,24 +70,27 @@ Also in **Options**, under *Placement*:
 - **Mouse out of the game**: press **Ctrl + Alt + X** in a full-screen game to get the mouse out of it, to skip a
   song or use anything else. Press it again or click the game to go back. Works when *Show over games* is on.
 
-Click a shortcut in Options to change it. While a game hides the cursor (driving, aiming), clicks go straight to
-the game, not to the player. When the cursor is back (the game's menu), you can use and move the player as usual.
+Click a shortcut in Options to change it. Over a full-screen game, clicks go to the game, not to the player: press
+**Ctrl + Alt + X** and a cursor drawn on the player (a see-through dot in your buttons' colour) lets you use it. Over a
+full-screen game the song's name stays in place of the lyrics, unless MPO is off (see [Install](#install)).
 
 Every saved player keeps its own place: the side, the cover's spot, *Free move*, its size and *Show over games*.
 Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
-<p><img src="docs/discord-card.png" alt="The Discord profile card: listening to mey music player, with the cover, title, artist, album and progress bar" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
+<p><img src="docs/discord-profile.png" alt="The Discord profile: listening to mey music player, with the cover, title, artist, album and progress bar" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
 
 With *Show on Discord* on (tray menu), your Discord profile shows that you're listening to mey music player: the
-song's title, artist and album, a progress bar and the cover with the app's logo in the corner. In the member list, the artist shows under your name. A paused song stays
+song's title, artist and album, a progress bar and the cover with the logo of the app that plays it in the corner. In the member list, the artist shows under your name. A paused song stays
 on the card as "Paused". That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
 and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
 on SoundCloud. When the cover can't be found, the app's logo shows. Videos and other websites stay private: they show
 up as "Something is playing".
 
 ### Equalizer
+
+<img src="docs/eq.png" alt="The Equalizer window: apps, presets, saved sounds, the 20-band graph and the effects" width="445">
 
 Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
 reverb, enhancer, stereo width, balance, reduce vocals). Save up to 5 of your own sounds, and export or import them

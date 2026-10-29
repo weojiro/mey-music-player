@@ -55,6 +55,8 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
 - 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
 
+<img src="docs/options.png" alt="Ayarlar penceresi: kayıtlı oynatıcılar, büyük önizleme, renkler, saydamlık, resimler ve yerleşim" width="626">
+
 ### Ekranın her yerinde, oyunların üstünde bile
 
 Yine **Ayarlar**'da, *Yerleşim* altında:
@@ -68,25 +70,27 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 - **Fareyi oyundan al**: tam ekran oyunda **Ctrl + Alt + X**'e basınca fare oyundan çıkar; şarkı geçebilir ya da
   başka bir şey kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. *Oyunların üstünde göster* açıkken çalışır.
 
-Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Oyun imleci gizlerken (araba sürerken, nişan alırken)
-tıklamalar oynatıcıya değil doğrudan oyuna gider. İmleç geri gelince (oyunun menüsünde) oynatıcıyı her zamanki
-gibi kullanıp taşıyabilirsin.
+Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Tam ekran oyunun üstünde tıklamalar oynatıcıya değil oyuna
+gider: **Ctrl + Alt + X**'e bas, oynatıcıda çizilen imleçle (buton renginde, yarı şeffaf bir nokta) onu kullan. Tam
+ekran oyunun üstünde sözlerin yerinde şarkının adı durur; MPO kapalıysa sözler akar ([Kurulum](#kurulum)'a bak).
 
 Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serbest hareket*, boyutu ve *Oyunların
 üstünde göster*. Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
 
 ### Discord profilinde
 
-<p><img src="docs/discord-card.png" alt="Discord profil kartı: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
+<p><img src="docs/discord-profile.png" alt="Discord profili: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
 
 *Discord'da göster* açıkken (tray menüsü) Discord profilinde mey music player dinlediğin görünür: şarkının adı,
-sanatçısı ve albümü, ilerleme çubuğu ve köşesinde uygulama logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
+sanatçısı ve albümü, ilerleme çubuğu ve köşesinde çalan uygulamanın logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
 olarak kalır. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
 diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
 şarkılarda da. Kapak bulunamazsa uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
 olarak görünür.
 
 ### Ekolayzer
+
+<img src="docs/eq.png" alt="Ekolayzer penceresi: uygulamalar, hazır ayarlar, kayıtlı sesler, 20 bantlı grafik ve efektler" width="445">
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
 güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilir,

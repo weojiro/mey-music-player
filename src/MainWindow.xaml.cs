@@ -103,6 +103,8 @@ public partial class MainWindow : Window
     int _dragStartCursorX, _dragStartCoverX, _dragX, _coverSize, _spansVersion, _posVersion, _pxVal;
     (int, int, int, int) _pxKey;
     readonly DispatcherTimer _zTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    readonly DispatcherTimer _fullWatch = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    bool _fullSeen, _videoSeen;
     Window? _options;
     Window? _equalizer, _stream;
     internal bool StreamWave { get => _streamWave; set { _streamWave = value; SaveSettings(); } }
@@ -252,13 +254,23 @@ public partial class MainWindow : Window
             KeepOnTop();
             if (_above && !_free) Update();
             if (TitlePopup.IsOpen && GameNeedsFocus()) TitlePopup.IsOpen = false;      // a card left open when a game starts
-            bool game = IsFullScreenAppActive();
+            bool game = IsFullScreenAppActive() && !_fullVideo;
             if (game != _gameInFront)
             {
                 _gameInFront = game;
                 _lyricShown = (-2, 0);
                 UpdateLyricsUi();
             }
+        };
+        // hidden under a full-screen window: leaving full screen (Esc on a video) changes neither the foreground
+        // window nor the taskbar, so nothing else would bring the player back
+        _fullWatch.Tick += (_, _) =>
+        {
+            bool full = IsFullScreenAppActive();
+            if (full == _fullSeen && _fullVideo == _videoSeen) return;
+            _fullSeen = full;
+            _videoSeen = _fullVideo;
+            Update();
         };
         _cursorTimer.Tick += (_, _) => UpdateClickThrough();
         Deactivated += (_, _) => { if (_mouseOut && _playerFocused) EndMouseOut(); };     // the game or another app was clicked
@@ -574,7 +586,45 @@ public partial class MainWindow : Window
         long now = Environment.TickCount64;
         if (now - _fullAt < 30) return _fullLast;
         _fullAt = now;
-        return _fullLast = FullScreenAppNow();
+        _fullLast = FullScreenAppNow();
+        _fullVideo = _fullLast && IsVideoWindow(GetForegroundWindow());
+        return _fullLast;
+    }
+
+    // A full-screen video (a browser on any site, a video player, Discord) is not a game: "show over games" leaves it
+    bool _fullVideo;
+    bool ShowOverFullScreen() { IsFullScreenAppActive(); return _onTop && !_fullVideo; }
+
+    static readonly HashSet<string> VideoApps = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "brave", "chrome", "msedge", "firefox", "opera", "opera_gx", "vivaldi", "discord",
+        "vlc", "mpc-hc", "mpc-hc64", "mpc-be", "mpc-be64", "PotPlayer", "PotPlayerMini", "PotPlayerMini64", "mpv",
+        "Microsoft.Media.Player", "wmplayer",
+    };
+    IntPtr _videoHwnd;
+    long _videoAt = -10000;
+    bool _videoLast;
+
+    // the answer is kept for a second per window: the media sessions are not asked on every tick
+    bool IsVideoWindow(IntPtr fg)
+    {
+        long now = Environment.TickCount64;
+        if (fg == _videoHwnd && now - _videoAt < 1000) return _videoLast;
+        _videoHwnd = fg;
+        _videoAt = now;
+        string? name = ProcessNameOf(fg);
+        if (name == null) return _videoLast = false;
+        if (VideoApps.Contains(name)) return _videoLast = true;
+        // any other app playing through Windows' media controls (games don't use them)
+        try
+        {
+            if (_mgr != null)
+                foreach (var s in _mgr.GetSessions())
+                    if (s.SourceAppUserModelId.Contains(name, StringComparison.OrdinalIgnoreCase) && IsPlaying(s))
+                        return _videoLast = true;
+        }
+        catch { }
+        return _videoLast = false;
     }
 
     bool FullScreenAppNow()
@@ -652,14 +702,15 @@ public partial class MainWindow : Window
         bool fullScreen = IsFullScreenAppActive();
         // "show over games": over a full-screen game the cover stays in its place on the taskbar,
         // also when the taskbar hides itself under the game
-        bool overGame = _onTop && fullScreen && (atBottom || atTop);
+        bool overFull = ShowOverFullScreen();
+        bool overGame = overFull && fullScreen && (atBottom || atTop);
         // "Center, above" shows with the taskbar, open or not; a taskbar that hides itself while the mouse moves up onto
         // the player leaves it where it is until the mouse goes
         bool keepAbove = _above && _shown && (atBottom || atTop) && (_dragging || CursorOnPlayer());
         // the taskbar really in front: on the screen, and over a full-screen window only when it came up over it
         bool taskbarInFront = taskbarVisible && (!fullScreen || TaskbarOverForeground());
         bool sinking = _above && _shown && !taskbarVisible && !overGame && !keepAbove && !_hidden;
-        bool visible = (taskbarVisible || overGame || keepAbove || sinking) && !_hidden && (_onTop || !fullScreen);
+        bool visible = (taskbarVisible || overGame || keepAbove || sinking) && !_hidden && (overFull || !fullScreen);
 
         bool fullyOn = atBottom ? r.Bottom <= _screenH : atTop && r.Top >= 0;
         if (fullyOn) _fullHeight = r.Height;
@@ -722,7 +773,7 @@ public partial class MainWindow : Window
         _screenW = GetSystemMetrics(SM_CXSCREEN);
         _screenH = GetSystemMetrics(SM_CYSCREEN);
         int size = FreeSize();
-        bool visible = !_hidden && (_onTop || !IsFullScreenAppActive());
+        bool visible = !_hidden && (ShowOverFullScreen() || !IsFullScreenAppActive());
         // a big player never gets wider or taller than its screen
         var screen = MonitorByName(_freeMon);
         size = Math.Max(12, Math.Min(size, Math.Min((int)(screen.Width * 40 / DesignW), screen.Height)));
@@ -996,7 +1047,7 @@ public partial class MainWindow : Window
     {
         if (!_shown) return;
         bool fullScreen = IsFullScreenAppActive();
-        if (fullScreen && !_onTop)
+        if (fullScreen && !ShowOverFullScreen())
         {
             Update();
             return;
@@ -1208,6 +1259,9 @@ public partial class MainWindow : Window
 
         if (_shown && !_zTimer.IsEnabled) _zTimer.Start();
         else if (!_shown && _zTimer.IsEnabled) _zTimer.Stop();
+
+        if (!_shown && !_fullWatch.IsEnabled) _fullWatch.Start();
+        else if (_shown && _fullWatch.IsEnabled) _fullWatch.Stop();
 
         if (_shown && !_cursorTimer.IsEnabled) _cursorTimer.Start();
         else if (!_shown && _cursorTimer.IsEnabled) _cursorTimer.Stop();
@@ -3625,6 +3679,7 @@ public partial class MainWindow : Window
         _measureTimer.Stop();
         _progressTimer.Stop();
         _zTimer.Stop();
+        _fullWatch.Stop();
         _cursorTimer.Stop();
         _keyTimer.Stop();
         _discordTimer.Stop();

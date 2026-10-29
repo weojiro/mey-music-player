@@ -60,6 +60,7 @@ static class EqEngine
         Update(settings);
         if (_scanThread != null) return;
         _running = true;
+        NoPowerThrottling();
         _scanThread = new Thread(ScanLoop) { IsBackground = true, Name = "MMP equalizer scan" };
         _pumpThread = new Thread(PumpLoop) { IsBackground = true, Name = "MMP equalizer", Priority = ThreadPriority.AboveNormal };
         _scanThread.SetApartmentState(ApartmentState.MTA);
@@ -158,6 +159,7 @@ static class EqEngine
     static void PumpLoop()
     {
         timeBeginPeriod(1);
+        ProAudioThread();
         try
         {
             while (_running)
@@ -177,6 +179,32 @@ static class EqEngine
 
     [DllImport("winmm.dll")] static extern uint timeBeginPeriod(uint ms);
     [DllImport("winmm.dll")] static extern uint timeEndPeriod(uint ms);
+
+    // With the processor busy (a video render), a thread of normal priority wakes late and the sound runs dry: the
+    // sound threads join Windows' audio scheduling (MMCSS), as players and games do for theirs
+    [ThreadStatic] static bool _proAudio;
+    static void ProAudioThread()
+    {
+        if (_proAudio) return;
+        _proAudio = true;
+        try { uint task = 0; AvSetMmThreadCharacteristics("Pro Audio", ref task); } catch { }
+    }
+
+    [DllImport("avrt.dll", CharSet = CharSet.Unicode)] static extern IntPtr AvSetMmThreadCharacteristics(string task, ref uint index);
+
+    // Windows slows a background app down to save power (efficient cores, a lower clock): not the one playing the sound
+    [StructLayout(LayoutKind.Sequential)]
+    struct PowerThrottlingState { public uint Version, ControlMask, StateMask; }
+    [DllImport("kernel32.dll")] static extern bool SetProcessInformation(IntPtr process, int infoClass, ref PowerThrottlingState info, int size);
+    static void NoPowerThrottling()
+    {
+        try
+        {
+            var state = new PowerThrottlingState { Version = 1, ControlMask = 1, StateMask = 0 };     // execution speed: off
+            SetProcessInformation(Process.GetCurrentProcess().Handle, 4, ref state, Marshal.SizeOf<PowerThrottlingState>());
+        }
+        catch { }
+    }
 
     // once a second: which apps are playing, where they are sent, and the output device
     static void Scan()
@@ -391,10 +419,15 @@ static class EqEngine
     sealed class Source : IDisposable
     {
         const int TargetMs = 20, MaxMs = 150;  // more than 150 ms waiting (after a stall): back to the target at once
+        // ran dry while playing (a busy processor): 10 ms more wait each time, up to 60; back down by 10 ms after 30 s
+        // without running dry
+        const int StepMs = 10, MostMs = 60, CalmMs = 30000;
         readonly AudioClient _client;
         readonly AudioCaptureClient _capture;
         readonly float[] _ring;
-        readonly int _max, _keep, _target;
+        readonly int _max, _rate;
+        int _keep, _target;
+        long _dryAt = -100000, _raisedAt;
         int _read, _count;
         double _frac;           // where between two frames the playing is
         double _avg = -1;       // how much waits, on average (it jumps with every packet; the speed follows the average)
@@ -413,10 +446,18 @@ static class EqEngine
             _capture = _client.AudioCaptureClient;
             _ring = new float[rate * 2];        // a second
             _max = rate * 2 * MaxMs / 1000;
-            _keep = rate * 2 * TargetMs / 1000;
-            _target = rate * TargetMs / 1000;
+            _rate = rate;
+            SetTarget(TargetMs);
             _client.Start();
         }
+
+        void SetTarget(int ms)
+        {
+            _target = _rate * ms / 1000;
+            _keep = 2 * _target;
+        }
+
+        int TargetNowMs => (int)Math.Round(_target * 1000.0 / _rate);
 
         // true when something louder than silence came
         public bool Pull()
@@ -455,10 +496,18 @@ static class EqEngine
             lock (_lock)
             {
                 int frames = samples / 2, have = _count / 2, len = _ring.Length;
+                long now = Environment.TickCount64;
                 if (!_primed)
                 {
                     if (have < _target) return;
                     _primed = true;
+                    // filled again right after running dry: the sound was late, not paused
+                    if (now - _dryAt < 300 && TargetNowMs < MostMs) { SetTarget(TargetNowMs + StepMs); _raisedAt = now; }
+                }
+                else if (TargetNowMs > TargetMs && now - _dryAt > CalmMs && now - _raisedAt > CalmMs)
+                {
+                    SetTarget(TargetNowMs - StepMs);
+                    _raisedAt = now;
                 }
                 // fuller than the target: a little faster, emptier: a little slower
                 _avg = _avg < 0 ? have : _avg + (have - _avg) * 0.01;
@@ -469,7 +518,7 @@ static class EqEngine
                 for (; f < frames; f++)
                 {
                     int i = (int)_frac;
-                    if (i + 3 >= have) { _primed = false; break; }        // ran dry: wait for it to fill again
+                    if (i + 3 >= have) { _primed = false; _dryAt = now; break; }      // ran dry: wait for it to fill again
                     float t = (float)(_frac - i);
                     for (int c = 0; c < 2; c++)
                     {
@@ -511,6 +560,7 @@ static class EqEngine
 
         public int Read(byte[] buffer, int offset, int count)
         {
+            ProAudioThread();       // the output's own thread, asked from here on its first call
             int frames = count / (4 * _channels);
             if (_mix.Length < frames * 2) _mix = new float[frames * 2];
             Array.Clear(_mix, 0, frames * 2);

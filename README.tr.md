@@ -55,7 +55,7 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
 - 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
 
-<img src="docs/options.png" alt="Ayarlar penceresi: kayıtlı oynatıcılar, büyük önizleme, renkler, saydamlık, resimler ve yerleşim" width="626">
+<img src="docs/tr/options.png" alt="Ayarlar penceresi: kayıtlı oynatıcılar, büyük önizleme, renkler, saydamlık, resimler ve yerleşim" width="626">
 
 ### Ekranın her yerinde, oyunların üstünde bile
 
@@ -79,7 +79,7 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 
 ### Discord profilinde
 
-<p><img src="docs/discord-profile.png" alt="Discord profili: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
+<p><img src="docs/tr/discord-profile.png" alt="Discord profili: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
 
 *Discord'da göster* açıkken (tray menüsü) Discord profilinde mey music player dinlediğin görünür: şarkının adı,
 sanatçısı ve albümü, ilerleme çubuğu ve köşesinde çalan uygulamanın logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
@@ -90,7 +90,7 @@ olarak görünür.
 
 ### Ekolayzer
 
-<img src="docs/eq.png" alt="Ekolayzer penceresi: uygulamalar, hazır ayarlar, kayıtlı sesler, 20 bantlı grafik ve efektler" width="445">
+<img src="docs/tr/eq.png" alt="Ekolayzer penceresi: uygulamalar, hazır ayarlar, kayıtlı sesler, 20 bantlı grafik ve efektler" width="445">
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
 güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilir,

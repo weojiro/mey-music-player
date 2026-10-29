@@ -79,7 +79,7 @@ Switch to another player and it comes back just as you left it.
 
 ### On your Discord profile
 
-<p><img src="docs/discord-profile.png" alt="The Discord profile: listening to mey music player, with the cover, title, artist, album and progress bar" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
+<p><img src="docs/discord-card.png" alt="The Discord profile card: listening to mey music player, with the cover, title, artist, album and progress bar" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
 
 With *Show on Discord* on (tray menu), your Discord profile shows that you're listening to mey music player: the
 song's title, artist and album, a progress bar and the cover with the logo of the app that plays it in the corner. In the member list, the artist shows under your name. A paused song stays

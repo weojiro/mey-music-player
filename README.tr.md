@@ -16,8 +16,8 @@ Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca
 butonlar, süre ve Spotify'da şarkı sözleri oradadır. Şarkıyı Discord profilinde de gösterebilir, 20 bantlı bir ekolayzeri de var.
 
 Onu kendine göre yap: renklerini kapaktan alsın ya da kendi renklerini seç, saydam yap, PNG veya GIF ekle.
-Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ctrl + Alt + X** ile fareyi oyundan alıp
-şarkı geçebilirsin.
+Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ctrl + Alt + X** oynatıcıya bir imleç
+çizer, şarkı geçebilirsin.
 
 ## Tutorial
 
@@ -67,8 +67,8 @@ Yine **Ayarlar**'da, *Yerleşim* altında:
 - **Oyunların üstünde göster**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
 - **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas;
-- **Fareyi oyundan al**: tam ekran oyunda **Ctrl + Alt + X**'e basınca fare oyundan çıkar; şarkı geçebilir ya da
-  başka bir şey kullanabilirsin. Oyuna dönmek için tekrar bas ya da oyuna tıkla. *Oyunların üstünde göster* açıkken çalışır.
+- **Fareyi oyundan al**: oyundayken **Ctrl + Alt + X**'e bas, oynatıcıyı üstünde çizilen imleçle kullan; oyun odağı
+  kaybetmez. Oyuna dönmek için tekrar bas. *Oyunların üstünde göster* açıkken çalışır.
 
 Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Tam ekran oyunun üstünde tıklamalar oynatıcıya değil oyuna
 gider: **Ctrl + Alt + X**'e bas, oynatıcıda çizilen imleçle (buton renginde, yarı şeffaf bir nokta) onu kullan. Tam
@@ -121,7 +121,7 @@ penceresinden kurulur).
 | Ses ikonunda tekerlek | ses (fareyi üstüne getirince % görünür); tıklayınca sessiz |
 | Tray ikonu | tık çalar / duraklatır, tekerlek sesi değiştirir |
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
-| Ctrl + Alt + X | fareyi tam ekran oyundan alır (*Oyunların üstünde göster* açıkken) |
+| Ctrl + Alt + X | oyundayken oynatıcıyı kullanmak için üstüne imleç çizer (*Oyunların üstünde göster* açıkken) |
 
 Tray menüsündeki *Konum*, kapağı sağa, ortaya, orta üste ya da sola koyar. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
 çubuğunun ortasına koyar; açılan oynatıcı da ortada durur. *Orta üst*, kapağı görev çubuğunun hemen üstüne, ortaya koyar

@@ -17,7 +17,7 @@ and, for Spotify, the lyrics. It can also show the song on your Discord profile 
 
 Make it yours: let it take its colours from the cover, or pick your own colours, make it see-through and add
 PNGs or GIFs. Put it anywhere on the screen and keep it visible over full-screen games, where **Ctrl + Alt + X**
-gets the mouse out of the game to skip a song.
+draws a cursor on the player to skip a song.
 
 ## Tutorial
 
@@ -67,8 +67,8 @@ Also in **Options**, under *Placement*:
 - **Show over games**: the player stays visible over full-screen apps and games. If it doesn't show in a game,
   choose borderless or windowed full screen in the game's settings;
 - **Show / hide**: press **Ctrl + Alt** to hide or show the player;
-- **Mouse out of the game**: press **Ctrl + Alt + X** in a full-screen game to get the mouse out of it, to skip a
-  song or use anything else. Press it again or click the game to go back. Works when *Show over games* is on.
+- **Mouse out of the game**: press **Ctrl + Alt + X** in a game to use the player with a cursor drawn on it, while
+  the game keeps the focus. Press it again to go back. Works when *Show over games* is on.
 
 Click a shortcut in Options to change it. Over a full-screen game, clicks go to the game, not to the player: press
 **Ctrl + Alt + X** and a cursor drawn on the player (a see-through dot in your buttons' colour) lets you use it. Over a
@@ -121,7 +121,7 @@ VB-CABLE (installed from the Equalizer window).
 | Mouse wheel on the speaker | volume (the mouse on it shows the %); a click mutes |
 | Tray icon | a click plays / pauses, the wheel changes the volume |
 | Ctrl + Alt | hides / shows the player |
-| Ctrl + Alt + X | gets the mouse out of a full-screen game (with *Show over games*) |
+| Ctrl + Alt + X | a cursor on the player, to use it in a game (with *Show over games*) |
 
 In the tray menu, *Position* puts the cover on the right, in the center, center above or on the left. *Center* puts the cover in the middle of the taskbar when the taskbar
 icons are on the left, and the open player stays in the middle too. *Center, above* puts it in the middle just above the

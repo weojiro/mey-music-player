@@ -21,7 +21,7 @@ Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ct
 
 ## Tutorial
 
-[<img src="docs/tutorial.png" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=PsI_AHPoIt4)
+[<img src="docs/tutorial.jpg" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=d3naPiywTXk)
 
 ## Özellikler
 

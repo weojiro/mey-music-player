@@ -21,7 +21,7 @@ draws a cursor on the player to skip a song.
 
 ## Tutorial
 
-[<img src="docs/tutorial.png" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=PsI_AHPoIt4)
+[<img src="docs/tutorial.jpg" alt="Tutorial" width="640">](https://www.youtube.com/watch?v=d3naPiywTXk)
 
 ## Features
 

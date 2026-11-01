@@ -103,6 +103,10 @@ public partial class MainWindow : Window
     int _dragStartCursorX, _dragStartCoverX, _dragX, _coverSize, _spansVersion, _posVersion, _pxVal;
     (int, int, int, int) _pxKey;
     readonly DispatcherTimer _zTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    // another window came to the front: the taskbar raises itself over the player a moment later (a click on it, the
+    // Start menu closing), so the player looks every frame for half a second instead of waiting for _zTimer
+    readonly DispatcherTimer _zBurst = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    long _zBurstUntil;
     readonly DispatcherTimer _fullWatch = new() { Interval = TimeSpan.FromMilliseconds(250) };
     bool _fullSeen, _videoSeen;
     Window? _options;
@@ -261,6 +265,11 @@ public partial class MainWindow : Window
                 _lyricShown = (-2, 0);
                 UpdateLyricsUi();
             }
+        };
+        _zBurst.Tick += (_, _) =>
+        {
+            KeepOnTop();
+            if (Environment.TickCount64 > _zBurstUntil) _zBurst.Stop();
         };
         // hidden under a full-screen window: leaving full screen (Esc on a video) changes neither the foreground
         // window nor the taskbar, so nothing else would bring the player back
@@ -674,6 +683,11 @@ public partial class MainWindow : Window
         {
             SetCursorMode(false);       // another app took the screen: the mouse goes back
             Update();
+            if (_shown)
+            {
+                _zBurstUntil = Environment.TickCount64 + 500;
+                _zBurst.Start();
+            }
         }
     }
 
@@ -1113,7 +1127,29 @@ public partial class MainWindow : Window
             }
         }
         catch (Exception ex) { sb.AppendLine("scan failed: " + ex.Message); }
+        if (Environment.OSVersion.Version.Build < 22000) AddWin10Buttons(spans, trayLeft, sb);
         return (spans, sb.ToString());
+    }
+
+    // Windows 10: Start, the search box, Task View, Cortana and the like are windows of their own on the taskbar, and
+    // not all of them show up as buttons above. Each one counts as an item; the containers that hold the app icons
+    // (whose icons are found above) and anything wider than half the taskbar don't.
+    void AddWin10Buttons(List<(int L, int R)> spans, int trayLeft, StringBuilder sb)
+    {
+        if (!GetWindowRect(_taskbar, out RECT bar)) return;
+        EnumChildWindows(_taskbar, (h, _) =>
+        {
+            var cls = new StringBuilder(64);
+            GetClassName(h, cls, cls.Capacity);
+            string name = cls.ToString();
+            if (name is "ReBarWindow32" or "MSTaskSwWClass" or "MSTaskListWClass" or "TrayNotifyWnd") return true;
+            if (!IsWindowVisible(h) || !GetWindowRect(h, out RECT r)) return true;
+            bool counted = r.Width >= 4 && r.Height >= 4 && r.Width < bar.Width / 2 && r.Right <= trayLeft
+                           && r.Left >= bar.Left && r.Right <= bar.Right;
+            sb.AppendLine($"{(counted ? "*" : " ")} win10 {name,-22} L{r.Left} R{r.Right}");
+            if (counted) spans.Add((r.Left, r.Right));
+            return true;
+        }, IntPtr.Zero);
     }
 
     void ApplyScan(Task<(List<(int L, int R)> spans, string dump)> t, int trayLeft)
@@ -3774,6 +3810,7 @@ public partial class MainWindow : Window
         if (_hwnd != IntPtr.Zero) { UnregisterHotKey(_hwnd, 1); UnregisterHotKey(_hwnd, 2); }
         Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplayChanged;
         _updateTimer.Stop();
+        _zBurst.Stop();
         _hoverTimer.Stop();
         _debugTimer.Stop();
         _lyricsTimer.Stop();

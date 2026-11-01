@@ -55,6 +55,11 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     public static extern bool IsWindowVisible(IntPtr hwnd);
 
+    public delegate bool ChildEnumProc(IntPtr hwnd, IntPtr data);
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumChildWindows(IntPtr parent, ChildEnumProc proc, IntPtr data);
+
     [DllImport("user32.dll")]
     public static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint processId);
 

@@ -11,9 +11,10 @@ using System.Windows.Media.Imaging;
 namespace TaskbarPlayerProto;
 
 // The song's cover on Discord. Discord shows a picture only from a web address, and Windows hands MMP the cover as
-// a picture, so the song is looked up: on SoundCloud itself for SoundCloud, then on Deezer and Apple Music. A cover is
-// used only when it looks the same as the one the app shows: a single, its album and a remix often have different
-// covers. No match: the app's logo. Only while "Show on Discord" is on. Found addresses are kept while MMP runs.
+// a picture, so the song is looked up: on SoundCloud itself for SoundCloud, then on Deezer and Apple Music. A cover
+// that looks the same as the one the app shows comes first: a single, its album and a remix often have different
+// covers. Without one, the cover of the same song by the same artist there. Nothing at all: the app's logo. Only while
+// "Show on Discord" is on. Found addresses are kept while MMP runs.
 static class DiscordCover
 {
     const int Grid = 12;                    // fingerprint: the cover as 12 x 12 average colours
@@ -78,11 +79,27 @@ static class DiscordCover
         try
         {
             string? url = soundCloud ? await FromSoundCloud(title, artist, print).ConfigureAwait(false) : null;
-            url ??= await FromDeezer(title, artist, print).ConfigureAwait(false)
-                 ?? await FromApple(title, artist, print).ConfigureAwait(false);
+            string? named = null;
+            bool failed = false;        // one service not answering doesn't lose what the other one has
+            if (url == null)
+            {
+                try { (url, named) = await FromDeezer(title, artist, print).ConfigureAwait(false); }
+                catch { failed = true; }
+            }
+            if (url == null)
+            {
+                try
+                {
+                    var apple = await FromApple(title, artist, print).ConfigureAwait(false);
+                    url = apple.Same;
+                    named ??= apple.Named;
+                }
+                catch { failed = true; }
+            }
             // YouTube Music shows a video's picture for many songs (not the album's)
             if (url == null && youTube) url = await FromYouTube(title).ConfigureAwait(false);
-            if (url != null || !(soundCloud || youTube)) Remember(key, picture, url);
+            url ??= named;
+            if (!failed && (url != null || !(soundCloud || youTube))) Remember(key, picture, url);
             return url;
         }
         catch { return null; }
@@ -152,24 +169,28 @@ static class DiscordCover
         return sb.ToString().Trim('-');
     }
 
-    static async Task<string?> FromDeezer(string title, string artist, byte[] print)
+    static async Task<(string? Same, string? Named)> FromDeezer(string title, string artist, byte[] print)
     {
         // a plain search: the advanced one (artist:"..." track:"...") finds nothing for many songs
         string url = "https://api.deezer.com/search?limit=10&q=" + Uri.EscapeDataString(FirstArtist(artist) + " " + title);
         using var doc = JsonDocument.Parse(await Http.GetStringAsync(url).ConfigureAwait(false));
         var picks = new List<(string Small, string Big)>();
+        var named = new Named(title, artist);
         if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
             foreach (var item in data.EnumerateArray())
             {
                 if (!item.TryGetProperty("album", out var album)) continue;
                 string small = Text(album, "cover_small"), big = Text(album, "cover_xl");
                 if (small != "" && big != "" && SameSong(title, artist, Text(item, "title"), ArtistName(item)))
+                {
                     picks.Add((small, big));
+                    named.Offer(Text(item, "title"), ArtistName(item), big);
+                }
             }
-        return await FirstMatch(picks, print).ConfigureAwait(false);
+        return (await FirstMatch(picks, print).ConfigureAwait(false), named.Best);
     }
 
-    static async Task<string?> FromApple(string title, string artist, byte[] print)
+    static async Task<(string? Same, string? Named)> FromApple(string title, string artist, byte[] print)
     {
         string country = "US";
         try { country = RegionInfo.CurrentRegion.TwoLetterISORegionName; } catch { }
@@ -177,14 +198,19 @@ static class DiscordCover
             + "&term=" + Uri.EscapeDataString(FirstArtist(artist) + " " + title);
         using var doc = JsonDocument.Parse(await Http.GetStringAsync(url).ConfigureAwait(false));
         var picks = new List<(string Small, string Big)>();
+        var named = new Named(title, artist);
         if (doc.RootElement.TryGetProperty("results", out var results) && results.ValueKind == JsonValueKind.Array)
             foreach (var item in results.EnumerateArray())
             {
                 string small = Text(item, "artworkUrl100");
                 if (small.Contains("100x100bb") && SameSong(title, artist, Text(item, "trackName"), Text(item, "artistName")))
-                    picks.Add((small, small.Replace("100x100bb", "600x600bb")));
+                {
+                    string big = small.Replace("100x100bb", "600x600bb");
+                    picks.Add((small, big));
+                    named.Offer(Text(item, "trackName"), Text(item, "artistName"), big);
+                }
             }
-        return await FirstMatch(picks, print).ConfigureAwait(false);
+        return (await FirstMatch(picks, print).ConfigureAwait(false), named.Best);
     }
 
     static async Task<string?> FirstMatch(List<(string Small, string Big)> picks, byte[] print)
@@ -201,6 +227,27 @@ static class DiscordCover
             if (theirs != null && Difference(print, theirs) < SameBelow) return big;
         }
         return null;
+    }
+
+    // The cover to use when none looks like the app's: the same title (best with the same "- Remix" part too) by one of
+    // the same artists
+    sealed class Named(string title, string artist)
+    {
+        int _rank;
+        public string? Best { get; private set; }
+
+        public void Offer(string theirTitle, string theirArtist, string big)
+        {
+            if (Core(title) == "" || Core(title) != Core(theirTitle) || !SameArtist(artist, theirArtist)) return;
+            int rank = Plain(title) == Plain(theirTitle) ? 2 : 1;
+            if (rank > _rank) { _rank = rank; Best = big; }
+        }
+    }
+
+    static bool SameArtist(string mine, string theirs)
+    {
+        static IEnumerable<string> Names(string s) => s.Split(',', '&', ';').Select(Plain).Where(n => n != "");
+        return Names(mine).Intersect(Names(theirs)).Any();
     }
 
     // ---------- is it the same song (a cheap check before any picture is downloaded) ----------

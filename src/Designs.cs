@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Windows.Media;
 
 namespace TaskbarPlayerProto;
@@ -91,7 +92,7 @@ sealed class Designs
                     p.BgClear = Math.Clamp(p.BgClear, 0, MaxClear);         // a hand-edited file can't hide the buttons
                     p.ButtonsClear = Math.Clamp(p.ButtonsClear, 0, MaxButtonsClear);
                     p.CoverClear = Math.Clamp(p.CoverClear, 0, MaxClear);
-                    p.Stickers = (p.Stickers ?? new()).Where(s => s != null && File.Exists(ImagePath(s.File ?? ""))).Take(MaxStickers).ToList();
+                    p.Stickers = (p.Stickers ?? new()).Where(s => s != null && IsImageName(s.File) && File.Exists(ImagePath(s.File))).Take(MaxStickers).ToList();
                 }
                 if (d.Current == null) d.Active = null;
                 return d;
@@ -121,7 +122,12 @@ sealed class Designs
         catch { }
     }
 
-    public static string ImagePath(string file) => Path.Combine(ImagesDir, file);
+    // A name Import could have made, never a path: whatever a players file says, a picture stays inside the images
+    // folder, so nothing outside it can be read or deleted through a sticker
+    public static bool IsImageName(string? file) =>
+        file != null && Regex.IsMatch(file, @"\A[A-Za-z0-9_-]{8,64}\.[A-Za-z0-9]{1,5}\z");
+
+    public static string ImagePath(string file) => Path.Combine(ImagesDir, IsImageName(file) ? file : "not-a-picture");
 
     // Copies a picked picture next to the players, so the original can be moved or deleted
     public static string Import(string source)

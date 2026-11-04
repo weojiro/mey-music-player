@@ -2716,7 +2716,8 @@ public partial class MainWindow : Window
             yes.IsEnabled = no.IsEnabled = false;
             try
             {
-                using var p = Process.Start(new ProcessStartInfo("reg.exe",
+                // the full path: a reg.exe beside MMP.exe must not get the administrator's rights
+                using var p = Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "reg.exe"),
                     @"add ""HKLM\SOFTWARE\Microsoft\Windows\Dwm"" /v OverlayTestMode /t REG_DWORD /d 5 /f")
                     { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden });
                 if (p == null) throw new InvalidOperationException("reg.exe didn't start");

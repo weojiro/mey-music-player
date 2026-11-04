@@ -157,7 +157,8 @@ function Set-GameOverlay {
     W '        Turning off Windows multiplane overlay (MPO) so the player and its lyrics show over' 'Gray'
     W '        full-screen games and in recordings. Windows asks for permission.' 'Gray'
     try {
-        $p = Start-Process reg.exe -Verb RunAs -Wait -PassThru -WindowStyle Hidden `
+        # the full path: a reg.exe beside the launcher must not get the administrator's rights
+        $p = Start-Process (Join-Path ([Environment]::SystemDirectory) 'reg.exe') -Verb RunAs -Wait -PassThru -WindowStyle Hidden `
             -ArgumentList 'add "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /t REG_DWORD /d 5 /f'
         if ($p.ExitCode -ne 0) { throw "reg.exe $($p.ExitCode)" }
         Ok 'Done - it takes effect after you restart the computer'

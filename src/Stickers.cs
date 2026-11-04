@@ -30,6 +30,9 @@ sealed class StickerFrames
 static class Stickers
 {
     const int MaxGifFrames = 300;
+    // a small file can claim a huge picture and fill the memory when decoded: such a file doesn't load at all.
+    // 50 MB: pictures added when that was the limit
+    const long MaxFile = 50 * 1024 * 1024, MaxPixels = 64_000_000, MaxGifPixels = 16_000_000;
 
     // Decodes on a background thread. maxSide caps the longer side in pixels, budget caps the pixels of all
     // frames together, so even a big GIF stays small in memory.
@@ -51,7 +54,10 @@ static class Stickers
 
     static StickerFrames? Load(string path, int maxSide, long budget)
     {
+        if (new FileInfo(path).Length > MaxFile) return null;
         var bytes = new MemoryStream(File.ReadAllBytes(path));
+        if (!SizesOk(bytes)) return null;
+        bytes.Position = 0;
         var dec = BitmapDecoder.Create(bytes, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile,
             BitmapCacheOption.OnLoad);
         if (dec.Frames.Count == 0) return null;
@@ -123,6 +129,20 @@ static class Stickers
         result.Frames = frames;
         result.Ends = ends;
         return result;
+    }
+
+    // The sizes in the file's headers, read before anything is decoded (no cache: no pixels are read here)
+    static bool SizesOk(Stream file)
+    {
+        var dec = BitmapDecoder.Create(file, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile,
+            BitmapCacheOption.None);
+        bool gif = dec is GifBitmapDecoder && dec.Frames.Count > 1;
+        long most = gif ? MaxGifPixels : MaxPixels;
+        if (gif && (long)Query(dec.Metadata as BitmapMetadata, "/logscrdesc/Width", 0) * Query(dec.Metadata as BitmapMetadata, "/logscrdesc/Height", 0) > most)
+            return false;
+        foreach (var f in dec.Frames.Take(gif ? MaxGifFrames : 1))
+            if ((long)f.PixelWidth * f.PixelHeight > most) return false;
+        return true;
     }
 
     static int Query(BitmapMetadata? m, string query, int fallback)

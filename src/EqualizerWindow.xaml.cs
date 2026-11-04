@@ -105,13 +105,6 @@ public partial class EqualizerWindow : Window
         BalanceSlider.MouseRightButtonUp += (_, _) => BalanceSlider.Value = 0;
         VocalsSlider.MouseRightButtonUp += (_, _) => VocalsSlider.Value = 0;
         // the mouse wheel: up or down a step
-        Wheel(PreampSlider, 0.5);
-        Wheel(BassSlider, 0.5);
-        Wheel(ReverbSlider, 2);
-        Wheel(EnhancerSlider, 2);
-        Wheel(WidthSlider, 5);
-        Wheel(BalanceSlider, 5);
-        Wheel(VocalsSlider, 2);
 
         MaxHeight = SystemParameters.WorkArea.Height;
         SourceInitialized += (_, _) => OptionsWindow.DarkTitleBar(this);
@@ -130,12 +123,6 @@ public partial class EqualizerWindow : Window
     }
 
     string T(string key) => _main.Text(key);
-
-    static void Wheel(Slider slider, double step) => slider.PreviewMouseWheel += (_, e) =>
-    {
-        slider.Value = Math.Clamp(slider.Value + (e.Delta > 0 ? step : -step), slider.Minimum, slider.Maximum);
-        e.Handled = true;       // the page doesn't scroll under it
-    };
 
     static string Db(double v) => (v > 0 ? "+" : "") + v.ToString("0.#", CultureInfo.CurrentCulture);
 

@@ -206,13 +206,24 @@ static class EqEngine
         catch { }
     }
 
+    // a device's name takes a while to read and never changes: read once for each device
+    static readonly Dictionary<string, bool> _isCable = new();
+
+    static bool IsCable(MMDevice d)
+    {
+        string id = d.ID;
+        if (!_isCable.TryGetValue(id, out bool cable))
+            _isCable[id] = cable = d.FriendlyName.Contains(CableName) && d.FriendlyName.StartsWith("CABLE Input");
+        return cable;
+    }
+
     // once a second: which apps are playing, where they are sent, and the output device
     static void Scan()
     {
         var s = _settings;
         using var en = new MMDeviceEnumerator();
         var devices = en.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
-        var cable = devices.FirstOrDefault(d => d.FriendlyName.Contains(CableName) && d.FriendlyName.StartsWith("CABLE Input"));
+        var cable = devices.FirstOrDefault(IsCable);
         _cableSeen = cable != null;
         _cableId = cable?.ID;
         var output = en.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) ? en.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia) : null;
@@ -230,7 +241,8 @@ static class EqEngine
                 var sessions = d.AudioSessionManager.Sessions;
                 for (int i = 0; i < sessions.Count; i++)
                 {
-                    int pid = (int)sessions[i].GetProcessID;
+                    using var session = sessions[i];
+                    int pid = (int)session.GetProcessID;
                     if (pid == 0 || pid == Environment.ProcessId || playing.ContainsKey(pid)) continue;
                     if (_processes.TryGetValue(pid, out var known)) { playing[pid] = known; continue; }
                     try
@@ -298,7 +310,11 @@ static class EqEngine
         bool quiet = Environment.TickCount64 - _lastSound > 15000;      // a paused app: let the computer sleep
         if (quiet) _heard = false;
         if (!any || quiet || output == null || output.ID != _outputId) StopOutput();
-        if (any && !quiet && output != null && _output == null) StartOutput(output);
+        bool outputKept = any && !quiet && output != null && _output == null;      // the sound output holds on to it
+        if (outputKept) StartOutput(output!);
+        // what this scan opened: it would stay open until the next garbage collection
+        if (!outputKept) output?.Dispose();
+        foreach (var d in devices) d.Dispose();
     }
 
     // MMP's own skip buttons: the song goes quiet first (a quarter of a second), then skips. If no new song comes,

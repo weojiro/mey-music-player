@@ -488,7 +488,7 @@ public partial class MainWindow : Window
         try
         {
             var props = await s.TryGetMediaPropertiesAsync();
-            string song = (props.Title ?? "") + "\n" + (props.Artist ?? "");
+            string song = (props?.Title ?? "") + "\n" + (props?.Artist ?? "");
             if (song.Trim().Length == 0 || s != _session) return;
             if (_fadeSong.Length > 0 && song != _fadeSong) EqEngine.SongChanged();
             _fadeSong = song;
@@ -1391,11 +1391,14 @@ public partial class MainWindow : Window
         try
         {
             var info = s.GetPlaybackInfo();
-            _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
-            SetMediaType(info);
+            if (info != null)       // Windows gives nothing for an app that is closing
+            {
+                _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+                SetMediaType(info);
+            }
             ApplyTimeline(s.GetTimelineProperties());       // Discord's progress bar
             var props = await s.TryGetMediaPropertiesAsync();
-            if (s != _session || seq != _hiddenSeq || _shown) return;
+            if (props == null || s != _session || seq != _hiddenSeq || _shown) return;
             _title = props.Title ?? "";
             _artist = props.Artist ?? "";
             _album = props.AlbumTitle ?? "";
@@ -1454,7 +1457,7 @@ public partial class MainWindow : Window
             ApplyPlayback(s.GetPlaybackInfo());
             ApplyTimeline(s.GetTimelineProperties());
             var props = await s.TryGetMediaPropertiesAsync();
-            if (s != _session || seq != _refreshSeq) return;
+            if (props == null || s != _session || seq != _refreshSeq) return;
             _title = props.Title ?? "";
             if (TitlePopup.IsOpen)          // song changed under the open card (e.g. wheel on the cover)
             {
@@ -1998,9 +2001,10 @@ public partial class MainWindow : Window
         _isVideo = info.PlaybackType == Windows.Media.MediaPlaybackType.Video;
     }
 
-    void ApplyPlayback(GlobalSystemMediaTransportControlsSessionPlaybackInfo info)
+    void ApplyPlayback(GlobalSystemMediaTransportControlsSessionPlaybackInfo? info)
     {
-        var c = info.Controls;
+        var c = info?.Controls;     // Windows gives nothing for an app that is closing
+        if (info == null || c == null) return;
         _playing = info.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
         SetMediaType(info);
         _shuffleOn = info.IsShuffleActive == true;
@@ -2017,8 +2021,9 @@ public partial class MainWindow : Window
         UpdateTimers();
     }
 
-    void ApplyTimeline(GlobalSystemMediaTransportControlsSessionTimelineProperties tl)
+    void ApplyTimeline(GlobalSystemMediaTransportControlsSessionTimelineProperties? tl)
     {
+        if (tl == null) return;
         _tlStart = tl.StartTime;
         _tlEnd = tl.EndTime;
         if (_scrubbing || DateTime.UtcNow < _seekHoldUntil)

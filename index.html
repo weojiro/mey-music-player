@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>mey music player – a music player you design, for the Windows taskbar</title>
-<meta name="description" content="mey music player (MMP) is a free, open-source music player for the Windows taskbar: the cover of what's playing, the controls, Spotify lyrics, players you design yourself, a 20-band equalizer and the song on your Discord profile, visible even over games. Works with Spotify, YouTube and SoundCloud.">
+<meta name="description" content="mey music player (MMP) is a free, open-source music player for the Windows taskbar: the cover of what's playing, the controls, Spotify lyrics, players you design yourself, a 20-band equalizer, galleries of players and sounds, and the song on your Discord profile, visible even over games. Works with Spotify, YouTube and SoundCloud.">
 <meta name="keywords" content="mey music player, MMP, music player, windows music player, taskbar music player, spotify mini player, now playing, windows 11, windows 10">
 <link rel="canonical" href="https://weojiro.github.io/mey-music-player/">
 <meta name="theme-color" content="#0e0e0f">
@@ -193,7 +193,7 @@ section { padding-block: clamp(64px, 9vw, 112px); }
 .net { background: var(--menu); border-radius: var(--r); border: 1px solid #252527; overflow: hidden; }
 .net div { display: grid; grid-template-columns: 140px 1fr; gap: 16px; padding: 18px 22px; border-bottom: 1px solid var(--line); font-size: 15px; }
 .net div:last-child { border: 0; }
-.net code { font: 500 13px var(--mono); color: var(--fg); }
+.net code { font: 500 13px var(--mono); color: var(--fg); overflow-wrap: anywhere; }
 .net span { color: var(--dim); }
 
 /* install */
@@ -291,7 +291,7 @@ footer a:hover { color: var(--fg); }
         <h1 data-i18n-html="hero.title">Your own player, right on <span class="accent">your&nbsp;taskbar.</span></h1>
         <p class="lead" data-i18n="hero.lead">The cover of whatever is playing sits on your Windows taskbar. Click it for the controls and Spotify lyrics. Paint it in your own colours and GIFs, and keep it on screen even over your games.</p>
         <div class="cta">
-          <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.6.1</small></a>
+          <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.7.0</small></a>
           <a class="btn btn-ghost" href="https://github.com/weojiro/mey-music-player"><svg><use href="#i-gh"/></svg><span data-i18n="cta.github">View on GitHub</span></a>
         </div>
         <span class="meta" data-i18n="hero.meta">MMP.zip · free · MIT</span>
@@ -409,11 +409,15 @@ footer a:hover { color: var(--fg); }
         <article class="tile">
           <div class="shot"><img src="img/eq.png?v=2" width="890" height="1022" style="height:auto" alt="The Equalizer window: apps, presets, saved sounds, the 20-band graph and the effects"></div>
           <h3 data-i18n="f10.t">A 20-band equalizer</h3>
-          <p data-i18n="f10.p">20 bands like AIMP, ±15 dB, a preamp, presets, reverb, enhancer and more effects, and a car stereo fade between songs. Save your sounds or share them as files. It changes only the apps you pick (Spotify, browsers, music players); Discord and games sound as they are. Works through the free VB-CABLE, which MMP installs once.</p>
+          <p data-i18n="f10.p">20 bands like AIMP, ±15 dB, a preamp, presets, reverb, enhancer and more effects, and a car stereo fade between songs. Save up to 10 sounds and share them in the Sound Gallery. It changes only the apps you pick (Spotify, browsers, music players); Discord and games sound as they are. Works through the free VB-CABLE, which MMP installs once.</p>
         </article>
         <article class="tile full">
           <h3 data-i18n="f11.t">Stream window</h3>
           <p data-i18n="f11.p">The song with its cover, and bars or a wave that move with the music, in the cover's colours. Share this window in a Discord stream instead of the whole screen; your friends hear the sound with your equalizer. Needs VB-CABLE, installed from the Equalizer window.</p>
+        </article>
+        <article class="tile full">
+          <h3 data-i18n="f12.t">Player and sound galleries</h3>
+          <p data-i18n="f12.p">Player Gallery in Options and Sound Gallery in the Equalizer: see what others made, like it and save it with one click. Sort by most liked, most downloaded or newest, show your own designs or what you liked, and filter players by colour. Publish your own for everyone or privately; a private one can only be reached with its code (M-MP- for players, M-EQ- for sounds). A saved player's look is locked, but its place and size are yours. The first time, you choose a user name: one account for each PC, the name can't be changed later, and a lost account can't be recovered. Report what breaks the rules with the red flag.</p>
         </article>
       </div>
     </div>
@@ -426,7 +430,7 @@ footer a:hover { color: var(--fg); }
         <div>
           <div class="sec-head" style="margin-bottom:0">
             <span class="eyebrow" data-i18n="d.eyebrow">design your player</span>
-            <h2 data-i18n="d.title">Make it yours. Then make four more.</h2>
+            <h2 data-i18n="d.title">Make it yours. Then make nine more.</h2>
             <p data-i18n="d.lead">Open Options from the tray menu. Everything you change shows up on the taskbar at once and is saved on its own.</p>
           </div>
           <ol class="steps">
@@ -451,7 +455,7 @@ footer a:hover { color: var(--fg); }
           <span class="chip add" aria-hidden="true">+ New player</span>
         </div>
         <div class="pv"><img id="pvImg" src="img/player-flame.webp" width="1146" height="120" alt="A player with an animated flame along its bottom edge"></div>
-        <div class="pv-note"><span data-i18n="pv.1">up to 5 players</span><span data-i18n="pv.2">up to 10 images each</span><span data-i18n="pv.3">PNG · JPG · GIF up to 25 MB</span><span data-i18n="pv.4">GIFs play only while the player is open</span></div>
+        <div class="pv-note"><span data-i18n="pv.1">up to 10 players</span><span data-i18n="pv.2">up to 10 images each</span><span data-i18n="pv.3">PNG · JPG · GIF up to 25 MB</span><span data-i18n="pv.4">GIFs play only while the player is open</span></div>
       </div>
     </div>
   </section>
@@ -461,7 +465,7 @@ footer a:hover { color: var(--fg); }
     <div class="wrap privacy">
       <div class="sec-head" style="margin-bottom:0">
         <span class="eyebrow" data-i18n="p.eyebrow">privacy</span>
-        <p class="big" data-i18n-html="p.big">No account.<br>No ads.<br><span class="accent">No tracking.</span></p>
+        <p class="big" data-i18n-html="p.big">No account needed.<br>No ads.<br><span class="accent">No tracking.</span></p>
         <p data-i18n="p.lead">MMP is free and open source under the MIT license. Here is everything it ever sends over the internet:</p>
       </div>
       <div class="net">
@@ -469,6 +473,7 @@ footer a:hover { color: var(--fg); }
         <div><code>lrclib.net</code><span data-i18n="p.lrc">Only with Lyrics on: the title, artist, album and length of the Spotify song, to find its lyrics.</span></div>
         <div><code>deezer.com · apple.com · soundcloud.com</code><span data-i18n="p.cover">Only with Show on Discord on: the title and artist of the song, to find its cover for Discord.</span></div>
         <div><code>vb-audio.com</code><span data-i18n="p.eq">Only when you click Install VB-CABLE in the Equalizer window: VB-CABLE's driver pack.</span></div>
+        <div><code>mmp-gallery.mmp-gallery-server.workers.dev</code><span data-i18n="p.gallery">Only if you create a gallery account; without one, MMP never connects to it. It keeps your user name, a one-way code for your PC, and what you publish, save, like or report. With an account MMP also checks in when it starts and once a day, with the ids of what you saved, to remove what was taken down. Your internet address is used only as a one-way code for daily limits. Your account's key stays encrypted on your PC.</span></div>
         <div><code data-i18n="p.else.k">anything else</code><span data-i18n="p.else">Nothing. Even the error log stays on your PC.</span></div>
       </div>
     </div>
@@ -504,6 +509,7 @@ footer a:hover { color: var(--fg); }
         <details><summary data-i18n="q4">My taskbar is on the side or on another screen.</summary><p data-i18n="a4">On the taskbar MMP sits on the main screen, at the bottom or the top. Turn on Free move in Options to put it anywhere, on any screen.</p></details>
         <details><summary data-i18n="q6">Is it safe?</summary><p data-i18n="a6">The code is all on GitHub. Every release is built from it by GitHub Actions and comes with its SHA-256. MMP updates only from those releases, checks the SHA-256 first and asks you before it updates.</p></details>
         <details><summary data-i18n="q7">Something doesn't work.</summary><p data-i18n-html="a7">MMP writes unexpected errors to <code class="path">%LOCALAPPDATA%\MMP\error.log</code>. It stays on your PC; attach it when you report a problem on GitHub.</p></details>
+        <details><summary data-i18n="q8">What are the gallery rules?</summary><p data-i18n="a8">Upload only what you made or have the right to share. No obscene or violent content, hate or discrimination; sexual content involving children is strictly forbidden. No one else's personal information. No swearing, insults or racist words in names, and don't pretend to be someone else. Don't fill the gallery with the same or very similar content. Reports must be genuine. Private content must follow these rules too. Accounts that break them can be banned, and content removed for breaking them also leaves the PCs of those who saved it.</p></details>
         <details><summary data-i18n="q5">How do I remove it?</summary><p data-i18n-html="a5">Turn off Start with Windows and choose Close in the tray menu, then delete the <code class="path">%LOCALAPPDATA%\MMP</code> folder and the desktop shortcut. If you installed VB-CABLE, remove it in Windows Settings → Apps.</p></details>
       </div>
     </div>
@@ -513,7 +519,7 @@ footer a:hover { color: var(--fg); }
     <div class="wrap end">
       <h2 data-i18n-html="end.title">Your music deserves<br><span class="accent">a better seat.</span></h2>
       <div class="cta">
-        <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.6.1</small></a>
+        <a class="btn btn-main" href="https://github.com/weojiro/mey-music-player/releases/latest/download/MMP.zip"><svg><use href="#i-down"/></svg><span data-i18n="cta.download">Download for Windows</span> <small class="ver">v1.7.0</small></a>
         <a class="btn btn-ghost" href="https://github.com/weojiro/mey-music-player"><svg><use href="#i-gh"/></svg><span data-i18n="cta.star">Star on GitHub</span></a>
       </div>
     </div>
@@ -640,20 +646,21 @@ footer a:hover { color: var(--fg); }
     "k5.k": "Tray ikonu", "k5.v": "tıkla: çal / duraklat, tekerlek: ses", "k6.v": "oynatıcıyı gizle / göster", "k7.v": "oyunda kullanmak için oynatıcıda imleç",
     "f6.t": "Derli toplu tray menüsü", "f6.p": "Ayarlar, ekolayzer, yayın penceresi, oynatıcıyı gizle, şarkı sözleri, Discord, başlangıç, görev çubuğundaki konum ve 11 dil.", "f7.t": "Ekranın her yerinde, oyunların üstünde bile", "f7.p": "Serbest hareketi aç, kapağı ekranda istediğin yere sürükle; Oyunların üstünde göster'i aç, tam ekran oyunların üstünde kalsın. Tam ekran oyunun üstünde tıklamalar oyuna gider; Ctrl + Alt + X oynatıcıda bir imleç çizer, şarkı geçebilirsin. Serbest hareket açıkken oynatıcıyı %300'e kadar büyütebilirsin.", "f8.t": "Her oynatıcının kendi yeri", "f8.p": "Kaydettiğin her oynatıcı tarafını, yerini, Serbest hareketi, boyutunu ve Oyunların üstünde göster'i hatırlar; tam bıraktığın haliyle geri gelir.",
     "f9.t": "Discord profilinde", "f9.p": "Arkadaşların ne dinlediğini görür: şarkının adı, sanatçısı, albümü, ilerleme çubuğu ve kapak. Spotify, Apple Music, Deezer, TIDAL, YouTube Music, SoundCloud ve daha fazlasıyla çalışır. Videolar gizli kalır.",
-    "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar, yankı, netlik ve diğer efektler, araba teybi gibi şarkı geçişi. Seslerini kaydet ya da dosya olarak paylaş. Sadece seçtiğin uygulamaları değiştirir (Spotify, tarayıcılar, müzik çalarlar); Discord ve oyunlar olduğu gibi kalır. Ücretsiz VB-CABLE ile çalışır, MMP onu bir kez kurar.",
+    "f10.t": "20 bantlı ekolayzer", "f10.p": "AIMP gibi 20 bant, ±15 dB, ön kazanç, hazır ayarlar, yankı, netlik ve diğer efektler, araba teybi gibi şarkı geçişi. 10 sese kadar kaydet, Ses Galerisi'nde paylaş. Sadece seçtiğin uygulamaları değiştirir (Spotify, tarayıcılar, müzik çalarlar); Discord ve oyunlar olduğu gibi kalır. Ücretsiz VB-CABLE ile çalışır, MMP onu bir kez kurar.",
     "f11.t": "Yayın penceresi", "f11.p": "Kapağıyla şarkı ve müziğe göre oynayan sütunlar ya da ses dalgası, kapağın renklerinde. Discord yayınında tüm ekran yerine bu pencereyi paylaş; arkadaşların sesi ekolayzerinle duyar. VB-CABLE gerekir, Ekolayzer penceresinden kurulur.",
-    "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dört tane daha.",
+    "f12.t": "Oynatıcı ve ses galerileri", "f12.p": "Ayarlar'da Oynatıcı Galerisi, Ekolayzer'de Ses Galerisi: başkalarının yaptıklarını gör, beğen, tek tıkla kaydet. En çok beğenilen, en çok indirilen ya da en yeniye göre sırala, kendi tasarımlarını ya da beğendiklerini göster, oynatıcıları renge göre süz. Kendininkileri herkese açık ya da özel yayınla; özel olanlara sadece koduyla ulaşılır (oynatıcılarda M-MP-, seslerde M-EQ-). Kaydedilen oynatıcının görünümü kilitlidir, yeri ve boyutu senindir. İlk açılışta kullanıcı adı seçersin: her bilgisayara bir hesap, ad sonradan değişmez, kaybolan hesabın kurtarma yolu yoktur. Kurallara uymayan içeriği kırmızı bayrakla şikayet et.",
+    "d.eyebrow": "oynatıcını tasarla", "d.title": "Kendine göre yap. Sonra dokuz tane daha.",
     "d.lead": "Tray menüsünden Ayarlar'ı aç. Değiştirdiğin her şey görev çubuğunda hemen görünür ve kendiliğinden kaydedilir.",
     "s1": "<b>Bir oynatıcı aç</b> ve ona bir ad ver.", "s2": "<b>Renkleri seç:</b> arka plan ve butonlar, ya da Bukalemun'da bırak. Saydamlık kaydırıcısıyla saydam yap.",
     "s3": "<b>PNG, JPG veya GIF ekle.</b> Taşımak için sürükle, boyut için köşeden çek, üstteki noktayla döndür.",
     "s4": "<b>Üst üste diz:</b> resim listesinde sırala. Resimler hep butonların arkasında kalır.",
     "d.win": "Ayarlar", "chip.default": "Varsayılan",
-    "pv.1": "en fazla 5 oynatıcı", "pv.2": "her birinde 10 resim", "pv.3": "PNG · JPG · GIF, 25 MB'a kadar", "pv.4": "GIF'ler sadece oynatıcı açıkken oynar",
-    "p.eyebrow": "gizlilik", "p.big": "Hesap yok.<br>Reklam yok.<br><span class=\"accent\">Takip yok.</span>",
+    "pv.1": "en fazla 10 oynatıcı", "pv.2": "her birinde 10 resim", "pv.3": "PNG · JPG · GIF, 25 MB'a kadar", "pv.4": "GIF'ler sadece oynatıcı açıkken oynar",
+    "p.eyebrow": "gizlilik", "p.big": "Hesap gerekmez.<br>Reklam yok.<br><span class=\"accent\">Takip yok.</span>",
     "p.lead": "MMP ücretsiz ve MIT lisansıyla açık kaynak. İnternete gönderdiği her şey bu kadar:",
     "p.gh": "Açılışta ve günde bir kez yeni sürüm var mı diye bakar.", "p.lrc": "Sadece şarkı sözleri açıkken: sözleri bulmak için Spotify şarkısının adı, sanatçısı, albümü ve süresi.",
     "p.cover": "Sadece Discord'da göster açıkken: Discord'daki kapağı bulmak için şarkının adı ve sanatçısı.",
-    "p.eq": "Sadece Ekolayzer penceresinde VB-CABLE'ı kur'a tıklayınca: VB-CABLE'ın sürücü paketi.",
+    "p.eq": "Sadece Ekolayzer penceresinde VB-CABLE'ı kur'a tıklayınca: VB-CABLE'ın sürücü paketi.", "p.gallery": "Sadece galeri hesabı açarsan; hesap yoksa MMP ona hiç bağlanmaz. Kullanıcı adını, bilgisayarın için tek yönlü bir kodu, yayınladıklarını, kaydettiklerini, beğenilerini ve şikayetlerini saklar. Hesabın varsa MMP açılışta ve günde bir kez de sorar: kaydettiklerinin kimlikleri gider, kaldırılanlar bilgisayarından silinir. İnternet adresin sadece tek yönlü bir kod olarak, günlük sınırlar için kullanılır. Hesabının anahtarı bilgisayarında şifreli durur.",
     "p.else.k": "başka bir şey", "p.else": "Hiçbir şey. Hata günlüğü bile bilgisayarında kalır.",
     "i.eyebrow": "kurulum", "i.title": "Üç adım, bir dakika kadar.",
     "i1.t": "İndir", "i1.p": "GitHub'daki son sürümden <b>MMP.zip</b>'i al.",
@@ -665,7 +672,7 @@ footer a:hover { color: var(--fg); }
     "q2": "Hangi uygulamalarla çalışır?", "a2": "Windows medya kontrollerinde görünen her şeyle: Spotify, YouTube ya da SoundCloud açık tarayıcılar (Chrome, Edge, Brave, Opera, Firefox) ve çoğu müzik ve video oynatıcı. Şarkı sözleri sadece Spotify için.",
     "q3": "Ses ayarı Spotify'ın içindeki çubuğu oynatmıyor.", "a3": "MMP uygulamanın sesini Windows ses karıştırıcısından değiştirir, kulağa aynı gelir. Tarayıcıda tüm sekmeler tek ses paylaşır, Firefox'un sesi ise MMP'den değiştirilemez.",
     "q4": "Görev çubuğum yanda ya da başka bir ekranda.", "a4": "Görev çubuğunda MMP ana ekranda, altta ya da üstte durur. Ayarlar'dan Serbest hareketi açarsan istediğin yere, istediğin ekrana koyabilirsin.",
-    "q6": "Güvenli mi?", "a6": "Kodun hepsi GitHub'da. Her sürüm GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir. MMP sadece bu sürümlerden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.", "q7": "Bir şey çalışmıyor.", "a7": "MMP beklenmedik hataları <code class=\"path\">%LOCALAPPDATA%\\MMP\\error.log</code> dosyasına yazar. Dosya bilgisayarında kalır; GitHub'da sorun bildirirken ekle.", "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil. VB-CABLE kurduysan Windows Ayarlar → Uygulamalar'dan kaldır.",
+    "q6": "Güvenli mi?", "a6": "Kodun hepsi GitHub'da. Her sürüm GitHub Actions'ta bu koddan derlenir ve SHA-256'sıyla gelir. MMP sadece bu sürümlerden güncellenir, önce SHA-256'yı kontrol eder ve güncellemeden önce sana sorar.", "q7": "Bir şey çalışmıyor.", "a7": "MMP beklenmedik hataları <code class=\"path\">%LOCALAPPDATA%\\MMP\\error.log</code> dosyasına yazar. Dosya bilgisayarında kalır; GitHub'da sorun bildirirken ekle.", "q8": "Galeri kuralları neler?", "a8": "Sadece kendi yaptığın ya da paylaşma hakkın olan şeyleri yükle. Müstehcen ya da şiddet içeren içerik, nefret ve ayrımcılık yasak; çocukları içeren cinsel içerik kesinlikle yasak. Başkasının kişisel bilgilerini paylaşma. Adlarda küfür, hakaret ve ırkçı söz kullanma, başkası gibi davranma. Galeriyi aynı ya da çok benzer içerikle doldurma. Şikayetler gerçek olmalı. Özel içerikler de bu kurallara uymalı. Kurallara uymayan hesaplar yasaklanabilir, kural ihlali yüzünden kaldırılan içerik kaydedenlerin bilgisayarından da silinir.", "q5": "Nasıl kaldırırım?", "a5": "Tray menüsünde Windows ile başlat'ı kapat ve Kapat'ı seç, sonra <code class=\"path\">%LOCALAPPDATA%\\MMP</code> klasörünü ve masaüstündeki kısayolu sil. VB-CABLE kurduysan Windows Ayarlar → Uygulamalar'dan kaldır.",
     "end.title": "Müziğin daha iyi<br><span class=\"accent\">bir yeri hak ediyor.</span>",
     "foot.mit": "MIT lisansı", "foot.issue": "Sorun bildir"
   };

@@ -69,11 +69,10 @@ kurtarma yolu yoktur.
 
 - Kendi oynatıcılarını ve seslerini herkese açık ya da özel yayınla. Özel olanlara sadece koduyla ulaşılır. Kodlar
   oynatıcılarda `M-MP-`, seslerde `M-EQ-` ile başlar.
-- Yayınladığını güncelle: kodu, beğenileri ve indirme sayısı kalır. Kaydedenlerde kaydettikleri sürüm durur.
 - Kaydedilen oynatıcının renkleri ve resimleri yapanın olarak kalır; yeri ve boyutu senindir. Kaydedilen ses düzenlenebilir
   ama yayınlanamaz.
 - Kurallara uymayan içeriği kırmızı bayrakla şikayet et. Kural ihlali yüzünden kaldırılan içerik, kaydedenlerin
-  bilgisayarından da silinir. Yapanın kendi tasarımını silmesi ise kimsedekini almaz.
+  bilgisayarından da silinir.
 
 **Kurallar:** sadece kendi yaptığın ya da paylaşma hakkın olan şeyleri yükle. Müstehcen ya da şiddet içeren içerik, nefret
 ve ayrımcılık yasak; çocukları içeren cinsel içerik kesinlikle yasak. Başkasının kişisel bilgilerini paylaşma. Adlarda küfür,
@@ -84,31 +83,29 @@ olmalı. Özel içerikler de bu kurallara uymalı. Kurallara uymayan hesaplar ya
 
 Yine **Ayarlar**'da, *Yerleşim* altında:
 
-- **Serbest hareket**: kapağı ekranda istediğin yere sürükle. Bir oyun çözünürlüğü değiştirse de ekrandaki
-  yerini korur. Açıldığında oynatıcı hep ekranın içinde kalır;
-- **Oynatıcı boyutu**: *Serbest hareket* açıkken oynatıcıyı %300'e kadar büyüt. Görüntü bozulmaz, ekrandan taşmaz;
+- **Serbest hareket**: kapağı ekranda istediğin yere sürükle;
+- **Oynatıcı boyutu**: *Serbest hareket* açıkken oynatıcıyı %300'e kadar büyüt;
 - **Oyunların üstünde göster**: oynatıcı tam ekran uygulamaların ve oyunların üstünde görünür. Bir oyunda görünmüyorsa
   oyunun ayarlarından çerçevesiz ya da pencereli tam ekranı seç;
 - **Göster / gizle**: oynatıcıyı gizlemek ya da göstermek için **Ctrl + Alt**'a bas;
 - **Fareyi oyundan al**: oyundayken **Ctrl + Alt + X**'e bas, oynatıcıyı üstünde çizilen imleçle kullan; oyun odağı
   kaybetmez. Oyuna dönmek için tekrar bas. *Oyunların üstünde göster* açıkken çalışır.
 
-Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Tam ekran oyunun üstünde tıklamalar oynatıcıya değil oyuna
-gider: **Ctrl + Alt + X**'e bas, oynatıcıda çizilen imleçle (buton renginde, yarı şeffaf bir nokta) onu kullan. Tam
-ekran oyunun üstünde sözlerin yerinde şarkının adı durur; MPO kapalıysa sözler akar ([Kurulum](#kurulum)'a bak).
+Kısayolları değiştirmek için Ayarlar'da üstlerine tıkla. Tam ekran oyunun üstünde **Ctrl + Alt + X**'e basana kadar
+tıklamalar oyuna gider; sözlerin yerinde de şarkının adı durur, MPO kapalıysa sözler akar ([Kurulum](#kurulum)'a bak).
 
-Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serbest hareket*, boyutu ve *Oyunların
-üstünde göster*. Başka bir oynatıcıya geçince tam bıraktığın haliyle geri gelir.
+Kaydettiğin her oynatıcı kendi yerini ve boyutunu hatırlar.
 
 ### Discord profilinde
 
 <p><img src="docs/tr/discord-profile.png" alt="Discord profili: mey music player dinliyor; kapak, şarkı adı, sanatçı, albüm ve ilerleme çubuğu" width="303">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="Üye listesinde adın altında sanatçı" width="127"></p>
 
 *Discord'da göster* açıkken (tray menüsü) Discord profilinde mey music player dinlediğin görünür: şarkının adı,
-sanatçısı ve albümü, ilerleme çubuğu ve köşesinde çalan uygulamanın logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
-olarak kalır. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
-diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
-şarkılarda da. Kapak bulunamazsa büyük logo MMP'nin olur, köşede çalan uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
+sanatçısı ve albümü, ilerleme çubuğu ve köşesinde çalan uygulamanın logosu olan kapak. Kapak bulunamazsa onun yerine MMP'nin
+logosu görünür. Üye listesinde adının altında sanatçı görünür.
+
+Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve diğerleri) ve müzik
+sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
 olarak görünür.
 
 ### Ekolayzer
@@ -117,14 +114,12 @@ olarak görünür.
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
 güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 10 tanesini kaydedebilir,
-*Ses Galerisi*'nde paylaşabilirsin.
-Değişiklikler anında duyulur.
+*Ses Galerisi*'nde paylaşabilirsin. Değişiklikler anında duyulur.
 
 Sadece açtığın uygulamaları değiştirir (varsayılan Spotify; tarayıcılar ve müzik çalarlar açıkken listede görünür).
 Discord, oyunlar ve diğer her şey olduğu gibi kalır. Bunun için MMP, VB-Audio'nun ücretsiz sanal ses kablosu
-[VB-CABLE](https://vb-audio.com/Cable/)'ı kullanır (bağış usulü): Ekolayzer penceresi resmi sürücü paketini indirip
-(yaklaşık 1,3 MB, çalıştırmadan önce kontrol edilir) bir kez kurabilir. Windows izin ister; varsayılan ses cihazların
-aynen kalır. Ekolayzer MMP açıkken çalışır; MMP kapanınca ya da ekolayzer kapalıyken uygulamalar eskisi gibi çalar.
+[VB-CABLE](https://vb-audio.com/Cable/)'ı kullanır (bağış usulü); Ekolayzer penceresi onu bir kez kurar. Windows izin ister;
+varsayılan ses cihazların aynen kalır. MMP kapanınca ya da ekolayzer kapalıyken uygulamalar eskisi gibi çalar.
 
 *Şarkı geçişi* açıkken geçilen şarkının sesi kısılır, yenisi yavaşça açılır; araba teybi gibi.
 
@@ -146,9 +141,8 @@ penceresinden kurulur).
 | Ctrl + Alt | oynatıcıyı gizler / gösterir |
 | Ctrl + Alt + X | oyundayken oynatıcıyı kullanmak için üstüne imleç çizer (*Oyunların üstünde göster* açıkken) |
 
-Tray menüsündeki *Konum*, kapağı sağa, ortaya, orta üste ya da sola koyar. *Orta*, görev çubuğu simgeleri soldayken kapağı görev
-çubuğunun ortasına koyar; açılan oynatıcı da ortada durur. *Orta üst*, kapağı görev çubuğunun hemen üstüne, ortaya koyar
-(simgeler ortadayken de); tam ekran oyunda görev çubuğunun yerine iner.
+Tray menüsündeki *Konum*, kapağı sağa, ortaya, orta üste ya da sola koyar. *Orta* için görev çubuğu simgeleri solda olmalı.
+*Orta üst* görev çubuğunun hemen üstünde durur.
 
 ## Kurulum
 
@@ -162,9 +156,8 @@ izin ister ve ayar bilgisayar yeniden başlayınca devreye girer. Geri almak iç
 şunu çalıştırıp yeniden başlat:
 `reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /f`
 
-MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin). Açılışta ve günde bir kez
-GitHub'da yeni sürüm var mı diye bakar ve güncellemeden önce sana sorar. Yeni sürüm sadece bu repo'nun
-release'lerinden gelir ve MMP kurmadan önce SHA-256'sını kontrol eder. Windows 10 (1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
+MMP bundan sonra Windows ile birlikte açılır (tray menüsünden kapatabilirsin) ve güncellemeden önce sana sorar. Windows 10
+(1809 veya üstü, 64 bit) ve Windows 11'de çalışır.
 
 ## Sorular
 
@@ -214,7 +207,7 @@ MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya
 <summary><b>Nasıl kaldırırım?</b></summary>
 
 Tray menüsünde *Windows ile başlat*'ı kapat ve *Kapat*'ı seç, sonra `%LOCALAPPDATA%\MMP` klasörünü
-(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil. Galeri hesabın o klasörle birlikte kaybolur ve
+ve masaüstündeki kısayolu sil. Galeri hesabın o klasörle birlikte kaybolur ve
 bu bilgisayarda yeni hesap açılamaz. VB-CABLE kurduysan Windows
 Ayarlar → Uygulamalar'dan kaldır. MPO'yu geri açmak için [Kurulum](#kurulum)'daki komutu çalıştır.
 </details>
@@ -226,7 +219,7 @@ Tray menüsünde *Dil*'den seç.
 
 ## Geliştiriciler için
 
-Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
+Build alma [İngilizce README](README.md#for-developers)'de.
 
 ## Gizlilik
 
@@ -243,15 +236,14 @@ MMP'de takip ve analiz yok, hesap da gerekmez: hesap sadece galeri için. Sadece
   adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
 - **VB-Audio** (`download.vb-audio.com`): VB-CABLE'ın sürücü paketi, sadece Ekolayzer penceresinde *VB-CABLE'ı
   kur*'a bastığında.
-- **MMP'nin galeri sunucusu** (`mmp-gallery.mmp-gallery-server.workers.dev`, Cloudflare üzerinde): sadece galeri hesabı açarsan. Hesap yoksa MMP
-  ona hiç bağlanmaz.
-  - Kullanıcı adını, bilgisayarının Windows kimliğinden üretilen tek yönlü bir kodu (her bilgisayara bir hesap için),
-    yayınladıklarını, kaydettiklerini, beğenilerini ve şikayetlerini saklar. Kullanıcı adın yayınladıklarının yanında görünür.
+- **MMP'nin galeri sunucusu** (`mmp-gallery.mmp-gallery-server.workers.dev`, Cloudflare üzerinde): sadece galeri hesabı
+  açarsan. Hesap yoksa MMP ona hiç bağlanmaz.
+  - Kullanıcı adını, bilgisayarının Windows kimliğinden üretilen tek yönlü bir kodu, yayınladıklarını, kaydettiklerini,
+    beğenilerini ve şikayetlerini saklar. Kullanıcı adın yayınladıklarının yanında görünür. Yayınladıkların sunucunun
+    yedeğinde de tutulur.
   - İnternet adresin sadece tek yönlü bir kod olarak, günlük sınırlar için kullanılır.
-  - Hesabın varsa MMP açılışta ve günde bir kez de sunucuya sorar: hesabın ve galeriden kaydettiklerinin kimlikleri gider,
-    kaldırılanlar bilgisayarından silinir.
+  - MMP açılışta ve günde bir kez de sorar: kaydettiklerinin kimlikleri gider, kaldırılanlar bilgisayarından silinir.
   - Hesabının anahtarı bilgisayarında, Windows kullanıcına şifreli durur.
-  - Yayınladıkların sunucuda ve yedeğinde tutulur. Bir tasarımı silmek onu galeriden çıkarır.
 
 ## Lisans
 

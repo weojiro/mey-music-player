@@ -13,8 +13,8 @@
 mey music player (MMP) is a free, open-source music player for the Windows taskbar. It puts the cover of
 whatever is playing next to your taskbar icons: Spotify, YouTube in your browser, SoundCloud or any app that
 uses the Windows media controls. Click the cover and a small player slides open with the controls, the time
-and, for Spotify, the lyrics. It can also show the song on your Discord profile and has a 20-band equalizer. In its galleries you
-can get players and sounds others made, and share your own.
+and, for Spotify, the lyrics. It can also show the song on your Discord profile and has a 20-band equalizer. In its galleries
+you can get players and sounds others made, and share your own.
 
 Make it yours: let it take its colours from the cover, or pick your own colours, make it see-through and add
 PNGs or GIFs. Put it anywhere on the screen and keep it visible over full-screen games, where **Ctrl + Alt + X**
@@ -68,11 +68,10 @@ later, and a lost account can't be recovered.
 
 - Publish your own players and sounds, for everyone or privately. A private one can only be reached with its code. Codes
   start with `M-MP-` for players and `M-EQ-` for sounds.
-- Update what you published: its code, likes and downloads stay. Those who saved it keep the version they saved.
 - A saved player keeps its maker's colours and images; its place and size are yours. A saved sound can be edited, but not
   published.
 - Report what breaks the rules with the red flag. Content removed for breaking the rules also leaves the PCs of those who
-  saved it. A maker deleting their own design doesn't take it away from anyone.
+  saved it.
 
 **Rules:** upload only what you made or have the right to share. No obscene or violent content, hate or discrimination;
 sexual content involving children is strictly forbidden. No one else's personal information. No swearing, insults or racist
@@ -83,47 +82,44 @@ must be genuine. Private content must follow these rules too. Accounts that brea
 
 Also in **Options**, under *Placement*:
 
-- **Free move**: drag the cover anywhere on the screen. It keeps its place on the screen, also when a game
-  changes the resolution. When it opens, the player always stays on the screen;
-- **Player size**: with *Free move* on, make the player bigger, up to 300 %. It stays sharp and on the screen;
+- **Free move**: drag the cover anywhere on the screen;
+- **Player size**: with *Free move* on, make the player bigger, up to 300 %;
 - **Show over games**: the player stays visible over full-screen apps and games. If it doesn't show in a game,
   choose borderless or windowed full screen in the game's settings;
 - **Show / hide**: press **Ctrl + Alt** to hide or show the player;
 - **Mouse out of the game**: press **Ctrl + Alt + X** in a game to use the player with a cursor drawn on it, while
   the game keeps the focus. Press it again to go back. Works when *Show over games* is on.
 
-Click a shortcut in Options to change it. Over a full-screen game, clicks go to the game, not to the player: press
-**Ctrl + Alt + X** and a cursor drawn on the player (a see-through dot in your buttons' colour) lets you use it. Over a
-full-screen game the song's name stays in place of the lyrics, unless MPO is off (see [Install](#install)).
+Click a shortcut in Options to change it. Over a full-screen game, clicks go to the game until you press
+**Ctrl + Alt + X**, and the song's name stays in place of the lyrics unless MPO is off (see [Install](#install)).
 
-Every saved player keeps its own place: the side, the cover's spot, *Free move*, its size and *Show over games*.
-Switch to another player and it comes back just as you left it.
+Every saved player keeps its own place and size.
 
 ### On your Discord profile
 
 <p><img src="docs/discord-card.png" alt="The Discord profile card: listening to mey music player, with the cover, title, artist, album and progress bar" width="431">&nbsp;&nbsp;<img src="docs/discord-member.png" alt="The member list showing the artist under the name" width="127"></p>
 
 With *Show on Discord* on (tray menu), your Discord profile shows that you're listening to mey music player: the
-song's title, artist and album, a progress bar and the cover with the logo of the app that plays it in the corner. In the member list, the artist shows under your name. A paused song stays
-on the card as "Paused". That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
-and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
-on SoundCloud. When the cover can't be found, MMP's logo shows large, with the logo of the app that plays it in the corner. Videos and other websites stay private: they show
-up as "Something is playing".
+song's title, artist and album, a progress bar and the cover, with the logo of the app that plays it in the corner. If the
+cover can't be found, MMP's logo shows instead. In the member list, the artist shows under your name.
+
+It works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000 and others) and music
+websites (YouTube Music, SoundCloud and others). Videos and other websites stay private: they show up as "Something is
+playing".
 
 ### Equalizer
 
 <img src="docs/eq.png" alt="The Equalizer window: apps, presets, saved sounds, the 20-band graph and the effects" width="445">
 
-Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
-reverb, enhancer, stereo width, balance, reduce vocals). Save up to 10 of your own sounds, and share them in the
+Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble)
+and effects (bass boost, reverb, enhancer, stereo width, balance, reduce vocals). Save up to 10 of your own sounds, and share them in the
 *Sound Gallery*. Changes are heard at once.
 
 It only changes the apps you turn on (Spotify by default; browsers and music players show up while they are open).
 Discord, games and everything else sound as they are. For this MMP uses
-[VB-CABLE](https://vb-audio.com/Cable/), a free virtual audio cable by VB-Audio (donationware): the Equalizer window
-can download its official driver pack (about 1.3 MB, checked before it runs) and install it once. Windows asks for
-permission; your default sound devices stay as they are. The equalizer works while MMP is running; when MMP closes or
-the equalizer is off, the apps play as before.
+[VB-CABLE](https://vb-audio.com/Cable/), a free virtual audio cable by VB-Audio (donationware), which the Equalizer window
+installs once. Windows asks for permission; your default sound devices stay as they are. When MMP closes or the equalizer
+is off, the apps play as before.
 
 With *Fade between songs* on, a skipped song goes quiet and the next one comes up slowly, like a car stereo.
 
@@ -145,9 +141,8 @@ VB-CABLE (installed from the Equalizer window).
 | Ctrl + Alt | hides / shows the player |
 | Ctrl + Alt + X | a cursor on the player, to use it in a game (with *Show over games*) |
 
-In the tray menu, *Position* puts the cover on the right, in the center, center above or on the left. *Center* puts the cover in the middle of the taskbar when the taskbar
-icons are on the left, and the open player stays in the middle too. *Center, above* puts it in the middle just above the
-taskbar (also with the icons in the middle); over a full-screen game it goes down to where the taskbar is.
+In the tray menu, *Position* puts the cover on the right, in the center, center above or on the left. *Center* needs the
+taskbar icons on the left. *Center, above* sits just above the taskbar.
 
 ## Install
 
@@ -160,9 +155,8 @@ full-screen games and in recordings (like NVIDIA Instant Replay) without black f
 once, and it takes effect after a restart. To undo it, run this in a terminal opened as administrator and restart:
 `reg delete "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v OverlayTestMode /f`
 
-MMP starts with Windows from then on (you can turn that off in the tray menu). It checks GitHub for a new version
-when it starts and once a day, and asks you before updating. The new version comes only from this repository's
-releases, and MMP checks its SHA-256 before installing it. Works on Windows 10 (1809 or newer, 64-bit) and Windows 11.
+MMP starts with Windows from then on (you can turn that off in the tray menu) and asks you before updating. Works on
+Windows 10 (1809 or newer, 64-bit) and Windows 11.
 
 ## Questions
 
@@ -213,9 +207,8 @@ MMP writes unexpected errors to `%LOCALAPPDATA%\MMP\error.log`. It stays on your
 <summary><b>How do I remove it?</b></summary>
 
 Turn off *Start with Windows* and choose *Close* in the tray menu, then delete the `%LOCALAPPDATA%\MMP`
-folder (the app, its settings and your saved players) and the shortcut on your desktop. Your gallery account is lost with
-that folder, and no new one can be opened on this PC. If you installed VB-CABLE,
-remove it in Windows Settings → Apps. To turn MPO back on, run the command under [Install](#install).
+folder and the shortcut on your desktop. Your gallery account is lost with that folder, and no new one can be opened on
+this PC. If you installed VB-CABLE, remove it in Windows Settings → Apps. To turn MPO back on, run the command under [Install](#install).
 </details>
 
 ## Languages
@@ -224,14 +217,6 @@ English, Türkçe, Español, Français, Deutsch, Português (Brasil), Русск
 Pick one in the tray menu under *Language*.
 
 ## For developers
-
-```
-src/        the app (C# / WPF)
-launcher/   MMP Launcher.bat + launcher.ps1 (what users download)
-tools/      developer helpers
-docs/       the pictures in this README
-.github/    the workflow that builds the releases
-```
 
 `tools/Dev Build.bat` builds the code in `src/` on your PC and starts it (installs the .NET 10 SDK if needed).
 `tools/debug.bat` starts the installed app with a debug window.
@@ -252,15 +237,13 @@ sends nothing else:
   address). Only while *Show on Discord* is on.
 - **VB-Audio** (`download.vb-audio.com`): VB-CABLE's driver pack, only when you click *Install VB-CABLE* in the
   Equalizer window.
-- **MMP's gallery server** (`mmp-gallery.mmp-gallery-server.workers.dev`, on Cloudflare): only if you create a gallery account. Without one, MMP
-  never connects to it.
-  - It keeps your user name, a one-way code made from your PC's Windows id (for one account on each PC), what you publish,
-    what you save, your likes and your reports. Your user name shows beside what you publish.
+- **MMP's gallery server** (`mmp-gallery.mmp-gallery-server.workers.dev`, on Cloudflare): only if you create a gallery
+  account. Without one, MMP never connects to it.
+  - It keeps your user name, a one-way code made from your PC's Windows id, what you publish, what you save, your likes and
+    your reports. Your user name shows beside what you publish. What you publish is also kept in the server's backup.
   - Your internet address is used only as a one-way code for daily limits.
-  - With an account, MMP also checks in when it starts and once a day: your account and the ids of what you saved from the
-    gallery, to remove what was taken down.
+  - MMP also checks in when it starts and once a day, with the ids of what you saved, to remove what was taken down.
   - Your account's key stays on your PC, encrypted for your Windows user.
-  - What you publish is kept on the server and its backup. Deleting a design takes it out of the gallery.
 
 ## License
 

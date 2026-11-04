@@ -13,7 +13,8 @@
 mey music player (MMP) is a free, open-source music player for the Windows taskbar. It puts the cover of
 whatever is playing next to your taskbar icons: Spotify, YouTube in your browser, SoundCloud or any app that
 uses the Windows media controls. Click the cover and a small player slides open with the controls, the time
-and, for Spotify, the lyrics. It can also show the song on your Discord profile and has a 20-band equalizer.
+and, for Spotify, the lyrics. It can also show the song on your Discord profile and has a 20-band equalizer. In its galleries you
+can get players and sounds others made, and share your own.
 
 Make it yours: let it take its colours from the cover, or pick your own colours, make it see-through and add
 PNGs or GIFs. Put it anywhere on the screen and keep it visible over full-screen games, where **Ctrl + Alt + X**
@@ -53,9 +54,30 @@ Open **Options** in the tray menu to make the player your own:
   the buttons and the cover one by one;
 - add PNG, JPG or GIF images, then drag, resize and turn them on a big preview;
 - drag them up or down in the image list to choose which one is in front. They always stay behind the buttons;
-- save up to 5 players and switch between them. Everything is saved on its own.
+- save up to 10 players and switch between them. Everything is saved on its own.
 
 <img src="docs/options.png" alt="The Options window: saved players, a big preview, colours, transparency, images and placement" width="626">
+
+### Gallery
+
+Options → *Player Gallery* and Equalizer → *Sound Gallery*: see what others made, like it and save it with one click.
+Sort by most liked, most downloaded or newest, show only your own designs or what you liked, and filter players by colour.
+
+The first time you open a gallery you choose a user name. There is one account for each PC, the name can't be changed
+later, and a lost account can't be recovered.
+
+- Publish your own players and sounds, for everyone or privately. A private one can only be reached with its code. Codes
+  start with `M-MP-` for players and `M-EQ-` for sounds.
+- Update what you published: its code, likes and downloads stay. Those who saved it keep the version they saved.
+- A saved player keeps its maker's colours and images; its place and size are yours. A saved sound can be edited, but not
+  published.
+- Report what breaks the rules with the red flag. Content removed for breaking the rules also leaves the PCs of those who
+  saved it. A maker deleting their own design doesn't take it away from anyone.
+
+**Rules:** upload only what you made or have the right to share. No obscene or violent content, hate or discrimination;
+sexual content involving children is strictly forbidden. No one else's personal information. No swearing, insults or racist
+words in names, and don't pretend to be someone else. Don't fill the gallery with the same or very similar content. Reports
+must be genuine. Private content must follow these rules too. Accounts that break them can be banned.
 
 ### Anywhere on the screen, even over games
 
@@ -85,7 +107,7 @@ With *Show on Discord* on (tray menu), your Discord profile shows that you're li
 song's title, artist and album, a progress bar and the cover with the logo of the app that plays it in the corner. In the member list, the artist shows under your name. A paused song stays
 on the card as "Paused". That works for music apps (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Media Player, foobar2000
 and others) and for music websites in the browser (YouTube Music, SoundCloud and others), also for songs that are only
-on SoundCloud. When the cover can't be found, the app's logo shows. Videos and other websites stay private: they show
+on SoundCloud. When the cover can't be found, MMP's logo shows large, with the logo of the app that plays it in the corner. Videos and other websites stay private: they show
 up as "Something is playing".
 
 ### Equalizer
@@ -93,8 +115,8 @@ up as "Something is playing".
 <img src="docs/eq.png" alt="The Equalizer window: apps, presets, saved sounds, the 20-band graph and the effects" width="445">
 
 Tray menu → *Equalizer*: 20 bands (the same as AIMP, ±15 dB), a preamp, presets (Flat, Bass, Vocal, Rock, Pop, Treble) and effects (bass boost,
-reverb, enhancer, stereo width, balance, reduce vocals). Save up to 5 of your own sounds, and export or import them
-as `.mmpeq` files. Changes are heard at once.
+reverb, enhancer, stereo width, balance, reduce vocals). Save up to 10 of your own sounds, and share them in the
+*Sound Gallery*. Changes are heard at once.
 
 It only changes the apps you turn on (Spotify by default; browsers and music players show up while they are open).
 Discord, games and everything else sound as they are. For this MMP uses
@@ -191,7 +213,8 @@ MMP writes unexpected errors to `%LOCALAPPDATA%\MMP\error.log`. It stays on your
 <summary><b>How do I remove it?</b></summary>
 
 Turn off *Start with Windows* and choose *Close* in the tray menu, then delete the `%LOCALAPPDATA%\MMP`
-folder (the app, its settings and your saved players) and the shortcut on your desktop. If you installed VB-CABLE,
+folder (the app, its settings and your saved players) and the shortcut on your desktop. Your gallery account is lost with
+that folder, and no new one can be opened on this PC. If you installed VB-CABLE,
 remove it in Windows Settings → Apps. To turn MPO back on, run the command under [Install](#install).
 </details>
 
@@ -215,7 +238,8 @@ docs/       the pictures in this README
 
 ## Privacy
 
-MMP has no account, no tracking and no analytics. It only connects to these, and sends nothing else:
+MMP has no tracking and no analytics, and needs no account: one is only for the gallery. It only connects to these, and
+sends nothing else:
 
 - **GitHub** (`api.github.com`, `github.com`): checks for a new version at startup and once a day, and downloads it when you choose
   to update.
@@ -228,6 +252,15 @@ MMP has no account, no tracking and no analytics. It only connects to these, and
   address). Only while *Show on Discord* is on.
 - **VB-Audio** (`download.vb-audio.com`): VB-CABLE's driver pack, only when you click *Install VB-CABLE* in the
   Equalizer window.
+- **MMP's gallery server** (`mmp-gallery.mmp-gallery-server.workers.dev`, on Cloudflare): only if you create a gallery account. Without one, MMP
+  never connects to it.
+  - It keeps your user name, a one-way code made from your PC's Windows id (for one account on each PC), what you publish,
+    what you save, your likes and your reports. Your user name shows beside what you publish.
+  - Your internet address is used only as a one-way code for daily limits.
+  - With an account, MMP also checks in when it starts and once a day: your account and the ids of what you saved from the
+    gallery, to remove what was taken down.
+  - Your account's key stays on your PC, encrypted for your Windows user.
+  - What you publish is kept on the server and its backup. Deleting a design takes it out of the gallery.
 
 ## License
 

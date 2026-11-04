@@ -13,7 +13,8 @@
 mey music player (MMP), Windows görev çubuğu için ücretsiz ve açık kaynak bir müzik oynatıcı. O an çalan
 şeyin kapağını görev çubuğundaki ikonlarının yanına koyar: Spotify, tarayıcıdaki YouTube, SoundCloud ya da
 Windows medya kontrollerini kullanan herhangi bir uygulama. Kapağa tıklayınca küçük bir oynatıcı açılır;
-butonlar, süre ve Spotify'da şarkı sözleri oradadır. Şarkıyı Discord profilinde de gösterebilir, 20 bantlı bir ekolayzeri de var.
+butonlar, süre ve Spotify'da şarkı sözleri oradadır. Şarkıyı Discord profilinde de gösterebilir, 20 bantlı bir ekolayzeri de var. Galerilerinden
+başkalarının yaptığı oynatıcıları ve sesleri alabilir, kendininkileri paylaşabilirsin.
 
 Onu kendine göre yap: renklerini kapaktan alsın ya da kendi renklerini seç, saydam yap, PNG veya GIF ekle.
 Ekranda istediğin yere koy, tam ekran oyunların üstünde de görünsün; **Ctrl + Alt + X** oynatıcıya bir imleç
@@ -53,9 +54,31 @@ Oynatıcıyı kendine göre yapmak için tray menüsünden **Ayarlar**'ı aç:
   kapağı ayrı ayrı;
 - PNG, JPG veya GIF resimler ekle, büyük önizlemede sürükle, boyutlandır ve döndür;
 - hangisinin önde duracağını resim listesinde yukarı aşağı sürükleyerek seç. Resimler hep butonların arkasında kalır;
-- 5 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
+- 10 oynatıcıya kadar kaydet ve aralarında geçiş yap. Her şey kendiliğinden kaydedilir.
 
 <img src="docs/tr/options.png" alt="Ayarlar penceresi: kayıtlı oynatıcılar, büyük önizleme, renkler, saydamlık, resimler ve yerleşim" width="626">
+
+### Galeri
+
+Ayarlar → *Oynatıcı Galerisi* ve Ekolayzer → *Ses Galerisi*: başkalarının yaptıklarını gör, beğen, tek tıkla kaydet.
+En çok beğenilen, en çok indirilen ya da en yeniye göre sırala, sadece kendi tasarımlarını ya da beğendiklerini göster,
+oynatıcıları renge göre süz.
+
+Bir galeriyi ilk açtığında kullanıcı adı seçersin. Her bilgisayara bir hesap açılır, ad sonradan değişmez, kaybolan hesabın
+kurtarma yolu yoktur.
+
+- Kendi oynatıcılarını ve seslerini herkese açık ya da özel yayınla. Özel olanlara sadece koduyla ulaşılır. Kodlar
+  oynatıcılarda `M-MP-`, seslerde `M-EQ-` ile başlar.
+- Yayınladığını güncelle: kodu, beğenileri ve indirme sayısı kalır. Kaydedenlerde kaydettikleri sürüm durur.
+- Kaydedilen oynatıcının renkleri ve resimleri yapanın olarak kalır; yeri ve boyutu senindir. Kaydedilen ses düzenlenebilir
+  ama yayınlanamaz.
+- Kurallara uymayan içeriği kırmızı bayrakla şikayet et. Kural ihlali yüzünden kaldırılan içerik, kaydedenlerin
+  bilgisayarından da silinir. Yapanın kendi tasarımını silmesi ise kimsedekini almaz.
+
+**Kurallar:** sadece kendi yaptığın ya da paylaşma hakkın olan şeyleri yükle. Müstehcen ya da şiddet içeren içerik, nefret
+ve ayrımcılık yasak; çocukları içeren cinsel içerik kesinlikle yasak. Başkasının kişisel bilgilerini paylaşma. Adlarda küfür,
+hakaret ve ırkçı söz kullanma, başkası gibi davranma. Galeriyi aynı ya da çok benzer içerikle doldurma. Şikayetler gerçek
+olmalı. Özel içerikler de bu kurallara uymalı. Kurallara uymayan hesaplar yasaklanabilir.
 
 ### Ekranın her yerinde, oyunların üstünde bile
 
@@ -85,7 +108,7 @@ Kaydettiğin her oynatıcı kendi yerini hatırlar: taraf, kapağın yeri, *Serb
 sanatçısı ve albümü, ilerleme çubuğu ve köşesinde çalan uygulamanın logosu olan kapak. Üye listesinde adının altında sanatçı görünür. Duraklatılan şarkı kartta "Duraklatıldı"
 olarak kalır. Müzik uygulamalarında (Spotify, Apple Music, Deezer, TIDAL, Amazon Music, Medya Oynatıcı, foobar2000 ve
 diğerleri) ve tarayıcıdaki müzik sitelerinde (YouTube Music, SoundCloud ve diğerleri) çalışır; sadece SoundCloud'da olan
-şarkılarda da. Kapak bulunamazsa uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
+şarkılarda da. Kapak bulunamazsa büyük logo MMP'nin olur, köşede çalan uygulamanın logosu görünür. Videolar ve diğer siteler gizli kalır: "Bir şeyler çalıyor"
 olarak görünür.
 
 ### Ekolayzer
@@ -93,8 +116,8 @@ olarak görünür.
 <img src="docs/tr/eq.png" alt="Ekolayzer penceresi: uygulamalar, hazır ayarlar, kayıtlı sesler, 20 bantlı grafik ve efektler" width="445">
 
 Tray menüsü → *Ekolayzer*: 20 bant (AIMP ile aynı, ±15 dB), ön kazanç, hazır ayarlar (Düz, Bas, Vokal, Rock, Pop, Tiz) ve efektler (bas
-güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 5 tanesini kaydedebilir,
-`.mmpeq` dosyası olarak dışa ve içe aktarabilirsin.
+güçlendirme, yankı, netlik, stereo genişlik, denge, vokali azalt). Kendi seslerinden 10 tanesini kaydedebilir,
+*Ses Galerisi*'nde paylaşabilirsin.
 Değişiklikler anında duyulur.
 
 Sadece açtığın uygulamaları değiştirir (varsayılan Spotify; tarayıcılar ve müzik çalarlar açıkken listede görünür).
@@ -191,7 +214,8 @@ MMP beklenmedik hataları `%LOCALAPPDATA%\MMP\error.log` dosyasına yazar. Dosya
 <summary><b>Nasıl kaldırırım?</b></summary>
 
 Tray menüsünde *Windows ile başlat*'ı kapat ve *Kapat*'ı seç, sonra `%LOCALAPPDATA%\MMP` klasörünü
-(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil. VB-CABLE kurduysan Windows
+(uygulama, ayarları ve kaydettiğin oynatıcılar) ve masaüstündeki kısayolu sil. Galeri hesabın o klasörle birlikte kaybolur ve
+bu bilgisayarda yeni hesap açılamaz. VB-CABLE kurduysan Windows
 Ayarlar → Uygulamalar'dan kaldır. MPO'yu geri açmak için [Kurulum](#kurulum)'daki komutu çalıştır.
 </details>
 
@@ -206,7 +230,7 @@ Kodun yapısı ve build alma [İngilizce README](README.md#for-developers)'de.
 
 ## Gizlilik
 
-MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir şey göndermez:
+MMP'de takip ve analiz yok, hesap da gerekmez: hesap sadece galeri için. Sadece şunlara bağlanır, başka hiçbir şey göndermez:
 
 - **GitHub** (`api.github.com`, `github.com`): açılışta ve sonra günde bir kez yeni sürüm var mı diye bakar, güncellemeyi seçersen indirir.
 - **LRCLIB** (`lrclib.net`): şarkı sözlerini bulmak için şarkının adı, sanatçısı, albümü ve süresi. Sadece Spotify'da ve
@@ -219,6 +243,15 @@ MMP'de hesap, takip veya analiz yok. Sadece şunlara bağlanır, başka hiçbir 
   adresinden gösterebiliyor). Sadece *Discord'da göster* açıkken.
 - **VB-Audio** (`download.vb-audio.com`): VB-CABLE'ın sürücü paketi, sadece Ekolayzer penceresinde *VB-CABLE'ı
   kur*'a bastığında.
+- **MMP'nin galeri sunucusu** (`mmp-gallery.mmp-gallery-server.workers.dev`, Cloudflare üzerinde): sadece galeri hesabı açarsan. Hesap yoksa MMP
+  ona hiç bağlanmaz.
+  - Kullanıcı adını, bilgisayarının Windows kimliğinden üretilen tek yönlü bir kodu (her bilgisayara bir hesap için),
+    yayınladıklarını, kaydettiklerini, beğenilerini ve şikayetlerini saklar. Kullanıcı adın yayınladıklarının yanında görünür.
+  - İnternet adresin sadece tek yönlü bir kod olarak, günlük sınırlar için kullanılır.
+  - Hesabın varsa MMP açılışta ve günde bir kez de sunucuya sorar: hesabın ve galeriden kaydettiklerinin kimlikleri gider,
+    kaldırılanlar bilgisayarından silinir.
+  - Hesabının anahtarı bilgisayarında, Windows kullanıcına şifreli durur.
+  - Yayınladıkların sunucuda ve yedeğinde tutulur. Bir tasarımı silmek onu galeriden çıkarır.
 
 ## Lisans
 

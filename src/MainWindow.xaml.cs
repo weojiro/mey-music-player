@@ -1642,18 +1642,19 @@ public partial class MainWindow : Window
         if (!song)
         {
             // something private, or nothing at all: a small card that names MMP
-            return _lastActivity = new Dictionary<string, object>
+            var small = new Dictionary<string, object>
             {
                 ["type"] = 2,                                       // listening
                 ["status_display_type"] = 2,                        // the member list shows "Paused" / "Something is playing"
                 ["details"] = Fit(Tr(_playing ? "dcSome" : "dcPaused")),
-                ["state"] = Fit(_playing ? "mey music player" : Tr("dcIdle")),
                 ["assets"] = new Dictionary<string, object>
                 {
                     ["large_image"] = DiscordLogo, ["large_text"] = "mey music player · " + Tr("dcLine2"), ["large_url"] = RepoUrl
                 },
                 ["buttons"] = buttons
             };
+            if (!_playing) small["state"] = Fit(Tr("dcIdle"));      // playing: the line under it names MMP already
+            return _lastActivity = small;
         }
         // a song: laid out like a music app's own card (title, artist, album, a progress bar, the cover with the app's
         // logo in the corner); the member list shows the artist. Paused: "Paused" in place of the album, no bar
@@ -1710,7 +1711,7 @@ public partial class MainWindow : Window
         if (_app == null && !_appSure && Environment.TickCount64 - _appCheckedAt > 1500)
         {
             _appCheckedAt = Environment.TickCount64;
-            _app = _isVideo ? null : MusicSources.Identify(_source, _isMusic, _title, out _appSure);
+            _app = _isVideo ? null : MusicSources.Identify(_source, _isMusic, _title, _album, out _appSure);
         }
         return _app;
     }

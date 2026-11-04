@@ -55,7 +55,7 @@ static class MusicSources
     // The app or website of what plays now, or null when the song must stay private (a video is never asked).
     // aumid: Windows' media id; music: Windows says it is music (browsers don't always); title: the song's name.
     // sure: the answer won't change for this song (false while the browser window with the song isn't found).
-    public static MusicApp? Identify(string aumid, bool music, string title, out bool sure)
+    public static MusicApp? Identify(string aumid, bool music, string title, string album, out bool sure)
     {
         sure = true;
         if (aumid.Length == 0 || Plain(title).Length < 2) return null;
@@ -63,14 +63,14 @@ static class MusicSources
         // an app installed from a browser ("Brave._crx_..."): its window title
         int crx = aumid.IndexOf("._crx_", StringComparison.OrdinalIgnoreCase);
         if (crx > 0) return InstalledSite(title, aumid[..crx], out sure);
-        if (Browsers.Contains(key, StringComparer.OrdinalIgnoreCase)) return Site(title, key, out sure);
+        if (Browsers.Contains(key, StringComparer.OrdinalIgnoreCase)) return Site(title, album, key, out sure);
         foreach (var (id, app) in Apps)
             if (aumid.Contains(id, StringComparison.OrdinalIgnoreCase)) return app;
         // another desktop app that says it plays music: shown with its own name, the MMP logo for a picture
         string? name = AppName(key);
         if (name != null) return music ? new MusicApp(name, "") : null;
         // a media id that is no app (Firefox gives a number): treated as a browser
-        return Site(title, null, out sure);
+        return Site(title, album, null, out sure);
     }
 
     // "Microsoft.ZuneMusic_8wekyb3d8bbwe!Microsoft.ZuneMusic" -> "Microsoft.ZuneMusic", "Spotify.exe" -> "Spotify"
@@ -113,7 +113,7 @@ static class MusicSources
 
     // The music website in the browser window that shows the song's name (browser: the process name, null for any
     // browser). Only that window's tab in front shows the song in the title, so its address is the song's website.
-    static MusicApp? Site(string title, string? browser, out bool sure)
+    static MusicApp? Site(string title, string album, string? browser, out bool sure)
     {
         sure = false;
         foreach (var (hwnd, _) in SongWindows(title, browser))
@@ -122,6 +122,67 @@ static class MusicSources
             if (address == null) continue;
             sure = true;                    // a music website, or a website that stays private
             return SiteOf(address);
+        }
+        return FromTabs(title, album, browser);
+    }
+
+    // The song's tab isn't the one in front, so no window shows its name: the names of the tabs tell. Looked at off the
+    // UI thread and at most every 5 s (over a game too); the answer comes at the next asking.
+    static readonly object TabLock = new();
+    static string _tabKey = "";
+    static MusicApp? _tabApp;
+    static long _tabNext;
+    static bool _tabBusy;
+
+    static MusicApp? FromTabs(string title, string album, string? browser)
+    {
+        string key = title + "\n" + album + "\n" + browser;
+        lock (TabLock)
+        {
+            if (key != _tabKey) { _tabKey = key; _tabApp = null; _tabNext = 0; }
+            if (!_tabBusy && Environment.TickCount64 >= _tabNext)
+            {
+                _tabBusy = true;
+                _tabNext = Environment.TickCount64 + 5000;
+                Task.Run(() =>
+                {
+                    MusicApp? found = null;
+                    try { found = TabApp(title, album, browser); } catch { }
+                    lock (TabLock)
+                    {
+                        if (key == _tabKey) _tabApp = found;
+                        _tabBusy = false;
+                    }
+                });
+            }
+            return _tabApp;
+        }
+    }
+
+    // A tab named after a music website, with either the song's name in it or an album from Windows: an ordinary video
+    // has no album, so it stays private. Spotify's and SoundCloud's tabs drop their name while playing, so those go by
+    // how they write the song ("Song • Artist", "▶ Song by Artist").
+    static MusicApp? TabApp(string title, string album, string? browser)
+    {
+        string song = Plain(title);
+        bool hasAlbum = album.Trim().Length > 0;
+        foreach (var (hwnd, _) in BrowserWindows(browser))
+        {
+            var tabs = AutomationElement.FromHandle(hwnd).FindAll(TreeScope.Descendants,
+                new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.TabItem));
+            foreach (AutomationElement tab in tabs)
+            {
+                string name = tab.Current.Name;
+                // an ordinary YouTube video can have any of these names in its title
+                if (name.Contains("YouTube", StringComparison.Ordinal) && !name.Contains("YouTube Music", StringComparison.Ordinal)) continue;
+                bool hasSong = Plain(name).Contains(song);
+                if (hasSong || hasAlbum)
+                    foreach (var (mark, app) in InstalledSites)
+                        if (name.Contains(mark, StringComparison.Ordinal)) return app;
+                if (!hasSong) continue;
+                if (name.Contains(" • ", StringComparison.Ordinal)) return Spotify;
+                if (name.TrimStart().StartsWith('▶') && name.Contains(" by ", StringComparison.Ordinal)) return SoundCloud;
+            }
         }
         return null;
     }

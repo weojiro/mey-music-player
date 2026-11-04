@@ -13,7 +13,7 @@ namespace TaskbarPlayerProto;
 // The song's cover on Discord. Discord shows a picture only from a web address, and Windows hands MMP the cover as
 // a picture, so the song is looked up: on SoundCloud itself for SoundCloud, then on Deezer and Apple Music. A cover
 // that looks the same as the one the app shows comes first: a single, its album and a remix often have different
-// covers. Without one, the cover of the same song by the same artist there. Nothing at all: the app's logo. Only while
+// covers. Without one, the cover of the same song by the same artist there. Nothing at all: MMP's logo. Only while
 // "Show on Discord" is on. Found addresses are kept while MMP runs.
 static class DiscordCover
 {

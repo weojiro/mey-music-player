@@ -25,9 +25,12 @@
                     <TextBlock FontSize="20" FontWeight="SemiBold" x:Name="TitleText"/>
                     <TextBlock Foreground="{StaticResource Dim}" Margin="0,4,0,0" x:Name="AutoSaveText"/>
                 </StackPanel>
-                <Border Background="{StaticResource Card}" CornerRadius="17" HorizontalAlignment="Right" Padding="2" VerticalAlignment="Center">
-                    <StackPanel Orientation="Horizontal" x:Name="ZoomButtons"/>
-                </Border>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Margin="0,0,12,0" Style="{StaticResource GalleryCta}" VerticalAlignment="Center" x:Name="GalleryButton"/>
+                    <Border Background="{StaticResource Card}" CornerRadius="17" Padding="2" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" x:Name="ZoomButtons"/>
+                    </Border>
+                </StackPanel>
             </Grid>
 
             <TextBlock Margin="0,20,0,8" Style="{StaticResource Section}" x:Name="PlayersText"/>
@@ -81,6 +84,12 @@
                 </Grid>
             </Border>
             <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="2,8,0,0" TextWrapping="Wrap" x:Name="HintText"/>
+            <Border Background="{StaticResource Card}" CornerRadius="8" Margin="0,12,0,0" Padding="12,9" Visibility="Collapsed" x:Name="LockedBar">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock FontSize="13" Foreground="#CCCCCC" Margin="0,0,9,0" Text="&#xE72E;" VerticalAlignment="Center" x:Name="LockedIcon"/>
+                    <TextBlock Foreground="#CCCCCC" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="LockedText"/>
+                </StackPanel>
+            </Border>
 
             <!-- name of the player being edited -->
             <Grid Margin="0,18,0,0" x:Name="NameRow">

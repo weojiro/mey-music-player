@@ -24,6 +24,8 @@ sealed class EqSettings
     public string Preset { get; set; } = "flat";    // a preset's key, "saved:<name>" or "custom"
     public List<string> Apps { get; set; } = new() { "spotify" };      // process names that go through it
     public List<SavedEq> Saved { get; set; } = new();
+    public bool FromGallery { get; set; }       // the sound in use began as a download: saved from it, it can't be published
+    public bool SavedCleared { get; set; }      // sounds saved before the gallery were removed, once
 }
 
 // A sound the user saved under a name (up to Equalizer.MaxSaved)
@@ -38,11 +40,13 @@ sealed class SavedEq
     public int Vocals { get; set; }
     public int Reverb { get; set; }
     public int Enhancer { get; set; }
+    public bool FromGallery { get; set; }       // can be edited, but not published
+    public string? GalleryId { get; set; }
 
     public static SavedEq From(EqSettings s, string name) => new()
     {
         Name = name, Bands = (double[])s.Bands.Clone(), Preamp = s.Preamp, Bass = s.Bass, Width = s.Width,
-        Balance = s.Balance, Vocals = s.Vocals, Reverb = s.Reverb, Enhancer = s.Enhancer
+        Balance = s.Balance, Vocals = s.Vocals, Reverb = s.Reverb, Enhancer = s.Enhancer, FromGallery = s.FromGallery
     };
 
     public void ApplyTo(EqSettings s)
@@ -50,6 +54,7 @@ sealed class SavedEq
         s.Bands = (double[])Bands.Clone();
         s.Preamp = Preamp; s.Bass = Bass; s.Width = Width; s.Balance = Balance; s.Vocals = Vocals; s.Reverb = Reverb;
         s.Enhancer = Enhancer;
+        s.FromGallery = FromGallery;
         s.Preset = "saved:" + Name;
     }
 }
@@ -61,7 +66,7 @@ static class Equalizer
     public static readonly int[] Frequencies =
         { 31, 43, 63, 87, 125, 175, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 16000, 22000 };
     public const double MaxGain = 15;
-    public const int MaxSaved = 5;
+    public const int MaxSaved = 10;
     // the bands of v1.3.0's first build, for settings saved with it
     static readonly int[] OldFrequencies = { 31, 63, 87, 125, 175, 250, 350, 500, 700, 1000, 1400, 2000, 2800, 4000, 5600, 8000, 11200, 16000 };
 
@@ -110,10 +115,22 @@ static class Equalizer
         try
         {
             var s = JsonSerializer.Deserialize<EqSettings>(File.ReadAllText(SettingsPath));
-            if (s != null) return Clean(s);
+            if (s != null)
+            {
+                Clean(s);
+                // Once, with the gallery's arrival: saved sounds from before it go, the sound in use keeps playing
+                if (!s.SavedCleared)
+                {
+                    s.Saved.Clear();
+                    if (s.Preset.StartsWith("saved:")) s.Preset = "custom";
+                    s.SavedCleared = true;
+                    Save(s);
+                }
+                return s;
+            }
         }
         catch { }
-        return new EqSettings();
+        return new EqSettings { SavedCleared = true };      // nothing from before the gallery here
     }
 
     static double[] CleanBands(double[]? old)
@@ -145,33 +162,9 @@ static class Equalizer
         s.Reverb = Math.Clamp(s.Reverb, 0, 100);
         s.Enhancer = Math.Clamp(s.Enhancer, 0, 100);
         s.Apps ??= new();
-        s.Saved = (s.Saved ?? new()).Where(x => x.Name.Trim().Length > 0).Take(MaxSaved).ToList();
-        foreach (var x in s.Saved) x.Bands = CleanBands(x.Bands);
-        s.Preset ??= "custom";
-        return s;
-    }
-
-    // ---------- a sound in a file (export / import) ----------
-
-    public const string SoundExtension = ".mmpeq";
-
-    // readable by people too: letters like "ö" stay as they are, not ö
-    public static void ExportSound(SavedEq sound, string path) =>
-        File.WriteAllText(path, JsonSerializer.Serialize(sound, new JsonSerializerOptions
+        s.Saved = (s.Saved ?? new()).Where(x => x != null && !string.IsNullOrWhiteSpace(x.Name)).Take(MaxSaved).ToList();
+        foreach (var x in s.Saved)
         {
-            WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-        }));
-
-    // null when the file isn't a sound MMP can use
-    public static SavedEq? ImportSound(string path)
-    {
-        try
-        {
-            var x = JsonSerializer.Deserialize<SavedEq>(File.ReadAllText(path));
-            if (x?.Bands is not { Length: > 0 }) return null;
-            x.Name = (x.Name ?? "").Trim();
-            if (x.Name.Length == 0) x.Name = Path.GetFileNameWithoutExtension(path);
-            if (x.Name.Length > 24) x.Name = x.Name[..24];
             x.Bands = CleanBands(x.Bands);
             x.Preamp = Math.Clamp(x.Preamp, -MaxGain, MaxGain);
             x.Bass = Math.Clamp(x.Bass, 0, MaxGain);
@@ -180,9 +173,9 @@ static class Equalizer
             x.Vocals = Math.Clamp(x.Vocals, 0, 100);
             x.Reverb = Math.Clamp(x.Reverb, 0, 100);
             x.Enhancer = Math.Clamp(x.Enhancer, 0, 100);
-            return x;
         }
-        catch { return null; }
+        s.Preset ??= "custom";
+        return s;
     }
 
     public static void Save(EqSettings s)
@@ -190,7 +183,9 @@ static class Equalizer
         try
         {
             Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(s));
+            string tmp = SettingsPath + ".tmp";      // a crash halfway leaves the old settings whole
+            File.WriteAllText(tmp, JsonSerializer.Serialize(s));
+            File.Move(tmp, SettingsPath, true);
         }
         catch { }
     }
@@ -268,7 +263,7 @@ static class Equalizer
 
     public static void Restart()
     {
-        try { Process.Start(new ProcessStartInfo("shutdown.exe", "/r /t 0") { UseShellExecute = false, CreateNoWindow = true }); } catch { }
+        try { Process.Start(new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "shutdown.exe"), "/r /t 0") { UseShellExecute = false, CreateNoWindow = true }); } catch { }
     }
 
     // ---------- Equalizer APO (v1.3) ----------

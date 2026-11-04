@@ -131,8 +131,10 @@ static class Lyrics
             string text = raw[(last.Index + last.Length)..].Trim();
             foreach (Match m in stamps)
             {
-                double sec = double.Parse(m.Groups[2].Value.Replace(':', '.'), CultureInfo.InvariantCulture);
-                lines.Add((TimeSpan.FromMinutes(int.Parse(m.Groups[1].Value)) + TimeSpan.FromSeconds(sec), text));
+                // a broken time loses its line, not the whole song
+                if (!int.TryParse(m.Groups[1].Value, out int min) || min > 6000) continue;
+                if (!double.TryParse(m.Groups[2].Value.Replace(':', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out double sec) || sec > 6000) continue;
+                lines.Add((TimeSpan.FromMinutes(min) + TimeSpan.FromSeconds(sec), text));
             }
         }
         lines.Sort((a, b) => a.Time.CompareTo(b.Time));

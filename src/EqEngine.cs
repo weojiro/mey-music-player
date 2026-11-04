@@ -406,7 +406,9 @@ static class EqEngine
         {
             if (_routes.Count == 0) { File.Delete(RoutesPath); return; }
             Directory.CreateDirectory(Path.GetDirectoryName(RoutesPath)!);
-            File.WriteAllText(RoutesPath, JsonSerializer.Serialize(_routes));
+            string tmp = RoutesPath + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(_routes));
+            File.Move(tmp, RoutesPath, true);
         }
         catch { }
     }

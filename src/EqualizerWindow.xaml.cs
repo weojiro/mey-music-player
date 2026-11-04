@@ -55,8 +55,6 @@ public partial class EqualizerWindow : Window
         ResetButton.Content = T("reset");
         SavedText.Text = T("eqSaved");
         SaveButton.Content = T("eqSave");
-        ExportButton.Content = T("eqExport");
-        ImportButton.Content = T("eqImport");
         BandHint.Text = T("eqBandHint");
         PreampText.Text = T("eqPreamp");
         EffectsText.Text = T("eqEffects");
@@ -87,8 +85,8 @@ public partial class EqualizerWindow : Window
         RestartButton.Click += (_, _) => Equalizer.Restart();
         CableLink.Click += (_, _) => { try { Process.Start(new ProcessStartInfo(Equalizer.CableSite) { UseShellExecute = true }); } catch { } };
         SaveButton.Click += (_, _) => SaveCurrent();
-        ExportButton.Click += (_, _) => Export();
-        ImportButton.Click += (_, _) => Import();
+        GalleryButton.Content = GalleryUiParts.GridLabel(T("galTitleEq"));
+        GalleryButton.Click += (_, _) => _main.OpenGallery("eq");
         SaveName.KeyDown += (_, e) => { if (e.Key == Key.Enter) SaveCurrent(); };
 
         PreampSlider.ValueChanged += (_, _) => { if (_loading) return; _eq.Preamp = PreampSlider.Value; Edited(); };
@@ -249,12 +247,14 @@ public partial class EqualizerWindow : Window
         _eq.Balance = fresh.Balance;
         _eq.Vocals = fresh.Vocals;
         _eq.Preset = fresh.Preset;
+        _eq.FromGallery = false;
         RefreshAll();
         Changed();
     }
 
     void UsePreset(string key, double[] bands)
     {
+        _eq.FromGallery = false;
         _eq.Bands = (double[])bands.Clone();
         _eq.Preset = key;
         RefreshAll();
@@ -289,41 +289,6 @@ public partial class EqualizerWindow : Window
         if (i >= 0) _eq.Saved[i] = saved; else _eq.Saved.Add(saved);
         _eq.Preset = "saved:" + name;
         Changed();
-    }
-
-    string FileFilter => $"MMP ({"*" + Equalizer.SoundExtension})|*{Equalizer.SoundExtension}|JSON (*.json)|*.json";
-
-    // the sound as it is now, into a file to keep or to send to someone
-    void Export()
-    {
-        string name = SaveName.Text.Trim();
-        if (name.Length == 0) name = NextName();
-        string file = string.Concat(name.Split(System.IO.Path.GetInvalidFileNameChars()));
-        var dialog = new Microsoft.Win32.SaveFileDialog { FileName = file + Equalizer.SoundExtension, Filter = FileFilter };
-        if (dialog.ShowDialog(this) != true) return;
-        try { Equalizer.ExportSound(SavedEq.From(_eq, name), dialog.FileName); }
-        catch { SavedFull.Text = T("eqExportBad"); }
-    }
-
-    // sounds from files: each one is saved (the same name replaces it) and the last one is used
-    void Import()
-    {
-        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = FileFilter, Multiselect = true };
-        if (dialog.ShowDialog(this) != true) return;
-        SavedEq? last = null;
-        string problem = "";
-        foreach (string path in dialog.FileNames)
-        {
-            var sound = Equalizer.ImportSound(path);
-            if (sound == null) { problem = T("eqImportBad"); continue; }
-            int i = _eq.Saved.FindIndex(s => s.Name == sound.Name);
-            if (i >= 0) _eq.Saved[i] = sound;
-            else if (_eq.Saved.Count < Equalizer.MaxSaved) _eq.Saved.Add(sound);
-            else { problem = T("eqSavedFull"); continue; }
-            last = sound;
-        }
-        if (last != null) UseSaved(last);
-        if (problem.Length > 0) SavedFull.Text = problem;
     }
 
     void DeleteSaved(SavedEq saved)

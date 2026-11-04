@@ -82,15 +82,23 @@ static class Updater
             .Trim().Split(' ', '\t', '\r', '\n')[0].ToLowerInvariant();
 
         bool gz = info.GzUrl != "";
-        using (var response = await Http.GetAsync(gz ? info.GzUrl : info.ExeUrl, HttpCompletionOption.ResponseHeadersRead))
+        try
         {
+            using var response = await Http.GetAsync(gz ? info.GzUrl : info.ExeUrl, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             long total = response.Content.Headers.ContentLength ?? -1;
             using var download = await response.Content.ReadAsStreamAsync();
             using var counted = new CountingStream(download, done => { if (total > 0) progress.Report((double)done / total); });
             using var source = gz ? new GZipStream(counted, CompressionMode.Decompress) : (Stream)counted;
             using var target = File.Create(newPath);
-            await source.CopyToAsync(target).ConfigureAwait(false);     // unzipping stays off the UI thread
+            // a line that stops answering must not hold the update window open for ever
+            using var limit = new CancellationTokenSource(TimeSpan.FromMinutes(30));
+            await source.CopyToAsync(target, limit.Token).ConfigureAwait(false);     // unzipping stays off the UI thread
+        }
+        catch
+        {
+            try { File.Delete(newPath); } catch { }     // half a file of 180 MB stays behind otherwise
+            throw;
         }
 
         string actual;

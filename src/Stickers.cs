@@ -132,7 +132,7 @@ static class Stickers
     }
 
     // The sizes in the file's headers, read before anything is decoded (no cache: no pixels are read here)
-    static bool SizesOk(Stream file)
+    internal static bool SizesOk(Stream file)
     {
         var dec = BitmapDecoder.Create(file, BitmapCreateOptions.PreservePixelFormat | BitmapCreateOptions.IgnoreColorProfile,
             BitmapCacheOption.None);

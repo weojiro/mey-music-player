@@ -35,6 +35,11 @@ sealed class PlayerSpec
     public bool ClearApart { get; set; }        // false: one slider sets all three
 
     public PlacementSpec? Placement { get; set; }  // where this player was left; null = not used yet
+
+    // from the gallery: its look is locked, its place and size are the user's
+    public string? GalleryId { get; set; }
+    public string? GalleryCode { get; set; }
+    public string? GalleryMaker { get; set; }
 }
 
 // Where a player sits and how it behaves; every player comes back the way it was left
@@ -53,7 +58,7 @@ sealed record PlacementSpec
 // "Design your player": the saved players live in %LOCALAPPDATA%\MMP\players, which updates never touch.
 sealed class Designs
 {
-    public const int MaxPlayers = 5;
+    public const int MaxPlayers = 10;
     public const int MaxStickers = 10;
     public const long MaxFileBytes = 25 * 1024 * 1024;
     // up to 100 % see-through; even then the player keeps a trace too faint to see, so it can still be clicked
@@ -135,6 +140,17 @@ sealed class Designs
         Directory.CreateDirectory(ImagesDir);
         string name = Guid.NewGuid().ToString("N") + Path.GetExtension(source).ToLowerInvariant();
         File.Copy(source, ImagePath(name));
+        return name;
+    }
+
+    // Moves a checked download in, under a name made here; dated now, so the clean-up below counts it as new
+    public static string Adopt(string source)
+    {
+        Directory.CreateDirectory(ImagesDir);
+        string name = Guid.NewGuid().ToString("N") + Path.GetExtension(source).ToLowerInvariant();
+        string target = ImagePath(name);
+        File.Move(source, target);
+        File.SetCreationTimeUtc(target, DateTime.UtcNow);
         return name;
     }
 

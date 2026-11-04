@@ -6,7 +6,7 @@ using System.Windows.Automation;
 
 namespace TaskbarPlayerProto;
 
-// A music app or website the song can be shown from on Discord, with its logo (shown when its cover can't be found)
+// A music app or website the song can be shown from on Discord, with its logo (shown in the corner of the cover)
 sealed record MusicApp(string Name, string Logo)
 {
     // "" for an app without a logo of its own: the MMP logo is used

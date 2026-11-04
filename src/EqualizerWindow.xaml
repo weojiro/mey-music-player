@@ -24,7 +24,10 @@
                     <TextBlock FontSize="20" FontWeight="SemiBold" x:Name="TitleText"/>
                     <TextBlock Foreground="{StaticResource Dim}" Margin="0,4,0,0" x:Name="SubText"/>
                 </StackPanel>
-                <CheckBox HorizontalAlignment="Right" Style="{StaticResource Switch}" VerticalAlignment="Center" x:Name="OnBox"/>
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Margin="0,0,14,0" Style="{StaticResource GalleryCta}" VerticalAlignment="Center" x:Name="GalleryButton"/>
+                    <CheckBox Style="{StaticResource Switch}" VerticalAlignment="Center" x:Name="OnBox"/>
+                </StackPanel>
             </Grid>
 
             <!-- VB-CABLE isn't installed: what it is, and a button that downloads and installs it -->
@@ -95,8 +98,6 @@
                         <StackPanel Orientation="Horizontal">
                             <TextBox MaxLength="24" Style="{StaticResource Field}" VerticalAlignment="Center" Width="170" x:Name="SaveName"/>
                             <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="SaveButton"/>
-                            <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="ExportButton"/>
-                            <Button Margin="8,0,0,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="ImportButton"/>
                             <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="12,0,0,0" TextWrapping="Wrap" VerticalAlignment="Center" x:Name="SavedFull"/>
                         </StackPanel>
                     </StackPanel>

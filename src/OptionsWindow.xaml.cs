@@ -115,6 +115,9 @@ public partial class OptionsWindow : Window
 
         NameBox.TextChanged += (_, _) => OnNameChanged();
         DeletePlayerButton.Click += (_, _) => Confirm(T("deleteAsk"), T("deletePlayer"), DeletePlayer);
+        GalleryButton.Content = GalleryUiParts.GridLabel(T("galTitlePlayer"));
+        GalleryButton.Click += (_, _) => _main.OpenGallery("player");
+        LockedIcon.FontFamily = _icons;
         AddImageButton.Click += (_, _) => AddImage();
         RemoveButton.Click += (_, _) => RemoveSelected();
         ResetButton.Click += (_, _) => Confirm(T("resetAsk"), T("reset"), ResetPlayer);
@@ -132,6 +135,7 @@ public partial class OptionsWindow : Window
         Closed += (_, _) =>
         {
             _main.CoverChanged -= OnCoverChanged;
+            HoverCard.Hide();
             if (_saveTimer.IsEnabled) Flush();
             _pvAnim.Clear();
             _pvCache.Clear();
@@ -162,7 +166,7 @@ public partial class OptionsWindow : Window
 
     // ---------- whole page ----------
 
-    void RefreshAll()
+    internal void RefreshAll()
     {
         RefreshChips();
         RefreshNameRow();
@@ -252,9 +256,16 @@ public partial class OptionsWindow : Window
     void RefreshButtons()
     {
         var p = Current;
-        AddImageButton.IsEnabled = p == null ? _designs.Players.Count < Designs.MaxPlayers : p.Stickers.Count < Designs.MaxStickers;
-        RemoveButton.IsEnabled = SelectedSpec != null;
-        ResetButton.IsEnabled = p != null;
+        bool locked = p?.GalleryId != null;
+        AddImageButton.IsEnabled = !locked && (p == null ? _designs.Players.Count < Designs.MaxPlayers : p.Stickers.Count < Designs.MaxStickers);
+        RemoveButton.IsEnabled = !locked && SelectedSpec != null;
+        ResetButton.IsEnabled = !locked && p != null;
+        // from the gallery: the look stays the maker's; place and size are below and stay free
+        BgSwatches.IsEnabled = ButtonSwatches.IsEnabled = ClearAllBox.IsEnabled = ClearSliders.IsEnabled = LayerCard.IsEnabled = !locked;
+        PvStickers.IsHitTestVisible = !locked;
+        NameBox.IsReadOnly = locked;
+        LockedBar.Visibility = locked ? Visibility.Visible : Visibility.Collapsed;
+        LockedText.Text = T("galLocked");
     }
 
     void SetZoom(double z)
@@ -330,10 +341,27 @@ public partial class OptionsWindow : Window
 
     void RefreshChips()
     {
+        HoverCard.Hide();
         PlayerChips.Children.Clear();
         AddChip(T("default"), _designs.Active == null, () => SwitchTo(null));
         foreach (var p in _designs.Players)
-            AddChip(p.Name, p.Id == _designs.Active, () => SwitchTo(p.Id));
+        {
+            var chip = AddChip(p.Name, p.Id == _designs.Active, () => SwitchTo(p.Id));
+            if (p.GalleryMaker == null) continue;
+            var name = (TextBlock)chip.Content;
+            chip.Content = null;
+            chip.Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Children =
+                {
+                    new TextBlock { Text = "\uE72E", FontFamily = _icons, FontSize = 12, Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Center },
+                    name,
+                },
+            };
+            chip.MouseEnter += (_, _) => HoverCard.Show(chip, string.Format(T("galMadeBy"), p.GalleryMaker), Designs.ParseColor(p.Bg), Designs.ParseColor(p.Buttons));
+            chip.MouseLeave += (_, _) => HoverCard.Hide();
+        }
         var add = AddChip("+  " + T("newPlayer"), false, NewPlayer);
         add.IsEnabled = _designs.Players.Count < Designs.MaxPlayers;
     }
@@ -483,7 +511,7 @@ public partial class OptionsWindow : Window
         panel.Children.Add(swatch);
     }
 
-    static readonly Brush Rainbow = MakeRainbow();
+    internal static readonly Brush Rainbow = MakeRainbow();
 
     static Brush MakeRainbow()
     {

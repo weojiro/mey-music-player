@@ -197,4 +197,52 @@
         <Setter Property="Foreground" Value="{StaticResource Dim}"/>
         <Setter Property="Margin" Value="0,0,0,8"/>
     </Style>
+
+    <!-- the big orange gallery button -->
+    <Style TargetType="Button" x:Key="GalleryCta">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="#E4572E" CornerRadius="19" MinHeight="38" Padding="18,0" x:Name="Back">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" TargetName="Back" Value="#F0663C"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- a square tick box for the gallery's filters -->
+    <Style TargetType="CheckBox" x:Key="Square">
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <StackPanel Background="Transparent" Orientation="Horizontal">
+                        <Border BorderBrush="#888888" BorderThickness="1.5" CornerRadius="3" Height="16" Margin="0,0,8,0" VerticalAlignment="Center" Width="16" x:Name="Box">
+                            <Path Data="M2,6.5 L5,9.5 L11,2.8" HorizontalAlignment="Center" Stroke="#1D1D1F" StrokeEndLineCap="Round" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeThickness="1.9" VerticalAlignment="Center" Visibility="Collapsed" x:Name="Mark"/>
+                        </Border>
+                        <ContentPresenter VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Background" TargetName="Box" Value="#E6E6E6"/>
+                            <Setter Property="BorderBrush" TargetName="Box" Value="#E6E6E6"/>
+                            <Setter Property="Visibility" TargetName="Mark" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 </ResourceDictionary>

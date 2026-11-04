@@ -1,0 +1,71 @@
+<Window x:Class="TaskbarPlayerProto.PublishWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Background="#1F1F1F"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        FontFamily="Segoe UI Variable Text, Segoe UI"
+        FontSize="13"
+        Foreground="#FFFFFF"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        SizeToContent="Height"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        Width="460"
+        WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <ResourceDictionary Source="Theme.xaml"/>
+    </Window.Resources>
+
+    <StackPanel Margin="26,20,26,22">
+        <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource Dim}" Margin="0,0,0,6" x:Name="NameLabel"/>
+        <TextBox MaxLength="40" Style="{StaticResource Field}" x:Name="NameBox"/>
+
+        <Border Background="#2A2A2A" BorderThickness="1" Cursor="Hand" CornerRadius="9" Margin="0,12,0,0" Padding="11" x:Name="PublicOption">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="26"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Ellipse Height="16" HorizontalAlignment="Left" Margin="0,2,0,0" VerticalAlignment="Top" Width="16" x:Name="PublicDot"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" x:Name="PublicTitle"/>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" TextWrapping="Wrap" x:Name="PublicHint"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        <Border Background="#2A2A2A" BorderThickness="1" Cursor="Hand" CornerRadius="9" Margin="0,10,0,0" Padding="11" x:Name="PrivateOption">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="26"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Ellipse Height="16" HorizontalAlignment="Left" Margin="0,2,0,0" VerticalAlignment="Top" Width="16" x:Name="PrivateDot"/>
+                <StackPanel Grid.Column="1">
+                    <TextBlock FontWeight="SemiBold" x:Name="PrivateTitle"/>
+                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" TextWrapping="Wrap" x:Name="PrivateHint"/>
+                    <!-- after publishing: the code to give -->
+                    <Border Background="#202020" CornerRadius="7" Margin="0,9,0,0" Padding="11,8" Visibility="Collapsed" x:Name="CodeRow">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock FontFamily="Consolas" FontSize="16" VerticalAlignment="Center" x:Name="CodeText"/>
+                            <Button Grid.Column="1" Style="{StaticResource Btn}" x:Name="CopyButton"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TextBlock Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="MessageText"/>
+
+        <StackPanel HorizontalAlignment="Right" Margin="0,14,0,0" Orientation="Horizontal">
+            <Button Margin="0,0,8,0" Style="{StaticResource Btn}" VerticalAlignment="Center" x:Name="CancelButton"/>
+            <Button Background="#E4572E" FontWeight="SemiBold" Foreground="White" Style="{StaticResource Btn}" x:Name="PublishButton"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

@@ -1660,11 +1660,14 @@ public partial class MainWindow : Window
         // logo in the corner); the member list shows the artist. Paused: "Paused" in place of the album, no bar
         string? cover = _coverSong == SongKey() ? _coverUrl : null;
         string large = cover ?? DiscordLogo;
-        var assets = new Dictionary<string, object>
-        {
-            ["large_image"] = large,
-            ["large_text"] = Fit(!_playing ? Tr("dcPaused") : _album.Trim().Length > 0 ? _album : _title)
-        };
+        var assets = new Dictionary<string, object> { ["large_image"] = large };
+        // the album's line. A single's album has the song's own name, which is on the card already; an album named
+        // after one of its songs is shown once Deezer or Apple Music tell it apart (hidden until then, or if not found)
+        bool sameName = MusicSources.Plain(_album) == MusicSources.Plain(_title);
+        if (!_playing) assets["large_text"] = Fit(Tr("dcPaused"));
+        else if (_album.Trim().Length > 0 && (!sameName || DiscordCover.IsSingle(_title, _artist, _album,
+                     () => Dispatcher.BeginInvoke(new Action(() => _discord?.Set(DiscordActivity())))) == false))
+            assets["large_text"] = Fit(_album);
         if (app!.LogoUrl != null) { assets["small_image"] = app.LogoUrl; assets["small_text"] = app.Name; }
         else if (large != DiscordLogo) { assets["small_image"] = DiscordLogo; assets["small_text"] = "mey music player"; assets["small_url"] = RepoUrl; }
         var activity = new Dictionary<string, object>

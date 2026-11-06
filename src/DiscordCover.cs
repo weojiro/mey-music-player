@@ -213,6 +213,73 @@ static class DiscordCover
         return (await FirstMatch(picks, print).ConfigureAwait(false), named.Best);
     }
 
+    // ---------- a single or an album with the song's own name ----------
+
+    // song -> a single (true), an album (false), not known (null: the album's line stays hidden)
+    static readonly Dictionary<string, bool?> Singles = new();
+
+    // Asked only when the album has the song's name. Null until known; answered() is called (off the UI thread)
+    // once Deezer or Apple Music told. Not found or no connection: null, kept while MMP runs.
+    public static bool? IsSingle(string title, string artist, string album, Action answered)
+    {
+        string key = Plain(title) + "|" + Plain(artist) + "|" + Plain(album);
+        lock (Found)
+        {
+            if (Singles.TryGetValue(key, out var known)) return known;
+            if (Singles.Count > MaxCached) Singles.Clear();
+            Singles[key] = null;
+        }
+        _ = Task.Run(async () =>
+        {
+            bool? single = null;
+            try { single = await SingleOnDeezer(title, artist, album).ConfigureAwait(false); } catch { }
+            if (single == null)
+                try { single = await SingleOnApple(title, artist, album).ConfigureAwait(false); } catch { }
+            lock (Found) Singles[key] = single;
+            if (single != null) answered();
+        });
+        return null;
+    }
+
+    // Deezer says it of the album: "single", "ep", "album"
+    static async Task<bool?> SingleOnDeezer(string title, string artist, string album)
+    {
+        string url = "https://api.deezer.com/search?limit=10&q=" + Uri.EscapeDataString(FirstArtist(artist) + " " + title);
+        using var doc = JsonDocument.Parse(await Http.GetStringAsync(url).ConfigureAwait(false));
+        if (!doc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array) return null;
+        foreach (var item in data.EnumerateArray())
+        {
+            if (!SameSong(title, artist, Text(item, "title"), ArtistName(item))) continue;
+            if (!item.TryGetProperty("album", out var found) || Plain(Text(found, "title")) != Plain(album)) continue;
+            if (!found.TryGetProperty("id", out var id) || !id.TryGetInt64(out long albumId)) continue;
+            using var info = JsonDocument.Parse(await Http.GetStringAsync("https://api.deezer.com/album/" + albumId).ConfigureAwait(false));
+            string kind = Text(info.RootElement, "record_type");
+            if (kind.Length > 0) return kind == "single";
+        }
+        return null;
+    }
+
+    // Apple Music names a single "Song - Single", and counts the album's songs
+    static async Task<bool?> SingleOnApple(string title, string artist, string album)
+    {
+        string country = "US";
+        try { country = RegionInfo.CurrentRegion.TwoLetterISORegionName; } catch { }
+        string url = "https://itunes.apple.com/search?media=music&entity=song&limit=15&country=" + Uri.EscapeDataString(country)
+            + "&term=" + Uri.EscapeDataString(FirstArtist(artist) + " " + title);
+        using var doc = JsonDocument.Parse(await Http.GetStringAsync(url).ConfigureAwait(false));
+        if (!doc.RootElement.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array) return null;
+        foreach (var item in results.EnumerateArray())
+        {
+            if (!SameSong(title, artist, Text(item, "trackName"), Text(item, "artistName"))) continue;
+            string collection = Text(item, "collectionName");
+            bool marked = collection.EndsWith(" - Single", StringComparison.Ordinal);
+            if (Plain(marked ? collection[..^9] : collection) != Plain(album)) continue;
+            int count = item.TryGetProperty("trackCount", out var n) && n.TryGetInt32(out int c) ? c : 0;
+            return marked || count == 1;
+        }
+        return null;
+    }
+
     static async Task<string?> FirstMatch(List<(string Small, string Big)> picks, byte[] print)
     {
         var seen = new HashSet<string>();

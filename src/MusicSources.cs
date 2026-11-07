@@ -20,6 +20,8 @@ static class MusicSources
 {
     public static readonly MusicApp SoundCloud = new("SoundCloud", "soundcloud.png");
     public static readonly MusicApp YouTubeMusic = new("YouTube Music", "youtube-music.png");
+    // a video on youtube.com: never shown by name, only as "Watching something" with YouTube's logo
+    public static readonly MusicApp YouTube = new("YouTube", "youtube-logo.png");
     static readonly MusicApp Spotify = new("Spotify", "spotify.png"), AppleMusic = new("Apple Music", "apple-music.png"),
         Deezer = new("Deezer", "deezer.png"), Tidal = new("TIDAL", "tidal.png"), AmazonMusic = new("Amazon Music", "amazon-music.png");
 
@@ -37,6 +39,7 @@ static class MusicSources
     {
         ("music.youtube.com", YouTubeMusic), ("soundcloud.com", SoundCloud), ("open.spotify.com", Spotify),
         ("deezer.com", Deezer), ("music.apple.com", AppleMusic), ("listen.tidal.com", Tidal), ("music.amazon.", AmazonMusic),
+        ("youtube.com", YouTube),           // after music.youtube.com
     };
 
     // websites installed as an app from the browser (no address bar): by the name in the window title
@@ -174,8 +177,12 @@ static class MusicSources
             {
                 string name = tab.Current.Name;
                 // an ordinary YouTube video can have any of these names in its title
-                if (name.Contains("YouTube", StringComparison.Ordinal) && !name.Contains("YouTube Music", StringComparison.Ordinal)) continue;
                 bool hasSong = Plain(name).Contains(song);
+                if (name.Contains("YouTube", StringComparison.Ordinal) && !name.Contains("YouTube Music", StringComparison.Ordinal))
+                {
+                    if (hasSong && name.Contains(" - YouTube", StringComparison.Ordinal)) return YouTube;   // the video's own tab
+                    continue;
+                }
                 if (hasSong || hasAlbum)
                     foreach (var (mark, app) in InstalledSites)
                         if (name.Contains(mark, StringComparison.Ordinal)) return app;

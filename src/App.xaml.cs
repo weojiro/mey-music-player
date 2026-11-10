@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
@@ -11,7 +12,13 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         // unexpected errors are written to error.log; a UI error does not take the player off the taskbar
-        DispatcherUnhandledException += (_, a) => { ErrorLog.Write("ui", a.Exception); a.Handled = true; };
+        DispatcherUnhandledException += (_, a) =>
+        {
+            ErrorLog.Write("ui", a.Exception);
+            a.Handled = true;
+            // Windows' drawing broke (the graphics driver reset, dwm restarted): this copy can't draw again, a new one can
+            if (a.Exception is System.Runtime.InteropServices.COMException { HResult: unchecked((int)0x88980406) }) RestartAfterRenderFailure();
+        };
         AppDomain.CurrentDomain.UnhandledException += (_, a) =>
         {
             if (a.ExceptionObject is Exception ex) ErrorLog.Write("crash", ex);
@@ -54,6 +61,20 @@ public partial class App : Application
         });
 
         base.OnStartup(e);
+    }
+
+    // Starts a new copy and closes this one, like the tray's Restart. Not in the first minute, so a drawing that keeps
+    // failing doesn't restart MMP over and over.
+    bool _restarting;
+
+    void RestartAfterRenderFailure()
+    {
+        if (_restarting || DateTime.Now - Process.GetCurrentProcess().StartTime < TimeSpan.FromMinutes(1)) return;
+        _restarting = true;
+        // only one copy may run: --after-update makes the new copy wait until this one has exited
+        try { Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? "", "--after-update") { UseShellExecute = true }); }
+        catch { _restarting = false; return; }
+        Shutdown();
     }
 
     // The exe that the last update moved aside. Right after an update the old copy may still be closing: try again.

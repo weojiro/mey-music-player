@@ -154,13 +154,13 @@ sealed class Designs
         return name;
     }
 
-    // Deletes pictures that no player uses any more
-    public void CleanImages()
+    // Deletes pictures that no player uses any more (keep: also used, e.g. by the undo history)
+    public void CleanImages(IEnumerable<string>? keep = null)
     {
         try
         {
             if (_keepImages || !Directory.Exists(ImagesDir)) return;
-            var used = Players.SelectMany(p => p.Stickers).Select(s => s.File).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var used = Players.SelectMany(p => p.Stickers).Select(s => s.File).Concat(keep ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var f in Directory.GetFiles(ImagesDir))
                 // a picture copied a moment ago may still be loading before it joins a player
                 if (!used.Contains(Path.GetFileName(f)) && DateTime.UtcNow - File.GetCreationTimeUtc(f) > TimeSpan.FromMinutes(1))

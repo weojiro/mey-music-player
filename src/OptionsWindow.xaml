@@ -97,10 +97,15 @@
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Style="{StaticResource Section}" VerticalAlignment="Center" Margin="0" x:Name="NameText"/>
                 <TextBox Grid.Column="1" MaxLength="32" MaxWidth="320" HorizontalAlignment="Left" MinWidth="240" Style="{StaticResource Field}" x:Name="NameBox"/>
-                <Button Foreground="#F28B82" Grid.Column="2" Style="{StaticResource Btn}" x:Name="DeletePlayerButton"/>
+                <StackPanel Grid.Column="2" Margin="0,0,8,0" Orientation="Horizontal">
+                    <Button Content="&#xE72B;" Margin="0,0,6,0" Padding="10,0" Style="{StaticResource Btn}" x:Name="UndoButton"/>
+                    <Button Content="&#xE72A;" Padding="10,0" Style="{StaticResource Btn}" x:Name="RedoButton"/>
+                </StackPanel>
+                <Button Foreground="#F28B82" Grid.Column="3" Style="{StaticResource Btn}" x:Name="DeletePlayerButton"/>
             </Grid>
 
             <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>

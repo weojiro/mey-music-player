@@ -115,6 +115,9 @@ public partial class OptionsWindow : Window
 
         NameBox.TextChanged += (_, _) => OnNameChanged();
         DeletePlayerButton.Click += (_, _) => Confirm(T("deleteAsk"), T("deletePlayer"), DeletePlayer);
+        UndoButton.FontFamily = RedoButton.FontFamily = _icons;
+        UndoButton.Click += (_, _) => Step(back: true);
+        RedoButton.Click += (_, _) => Step(back: false);
         GalleryButton.Content = GalleryUiParts.GridLabel(T("galTitlePlayer"));
         GalleryButton.Click += (_, _) => _main.OpenGallery("player");
         LockedIcon.FontFamily = _icons;
@@ -137,12 +140,15 @@ public partial class OptionsWindow : Window
             _main.CoverChanged -= OnCoverChanged;
             HoverCard.Hide();
             if (_saveTimer.IsEnabled) Flush();
+            _history.Clear();
+            _designs.CleanImages();     // the pictures only the history kept
             _pvAnim.Clear();
             _pvCache.Clear();
         };
 
         SetupPlacement();
         SetupClear();
+        Remember();
         RefreshAll();
     }
 
@@ -174,6 +180,7 @@ public partial class OptionsWindow : Window
         RefreshColors();
         RefreshClear();
         RefreshButtons();
+        RefreshUndo();
         RebuildPreviewStickers();
     }
 
@@ -310,9 +317,71 @@ public partial class OptionsWindow : Window
     void Flush()
     {
         _saveTimer.Stop();
+        Remember();
         _designs.Save();
-        _designs.CleanImages();
+        _designs.CleanImages(_history.Values.SelectMany(h => h.Back.Concat(h.Forward)).SelectMany(l => l.Stickers).Select(s => s.File));
         _main.DesignChanged();
+        RefreshUndo();
+    }
+
+    // ---------- undo / redo ----------
+
+    // A player's look (not its name or place). The history is per player and lasts while this window is open.
+    sealed record Look(string? Bg, string? Buttons, List<StickerSpec> Stickers, int BgClear, int ButtonsClear, int CoverClear, bool ClearApart);
+
+    sealed class History
+    {
+        public string Now = "";                 // the look as it was last remembered
+        public List<Look> Back = new(), Forward = new();
+    }
+
+    const int MaxSteps = 50;
+    readonly Dictionary<string, History> _history = new();
+
+    static string LookJson(PlayerSpec p) =>
+        System.Text.Json.JsonSerializer.Serialize(new Look(p.Bg, p.Buttons, p.Stickers, p.BgClear, p.ButtonsClear, p.CoverClear, p.ClearApart));
+
+    static Look Copy(string json) => System.Text.Json.JsonSerializer.Deserialize<Look>(json)!;
+
+    // Called when changes settle (the save): every player whose look changed gets a step back to its last look
+    void Remember()
+    {
+        foreach (var p in _designs.Players)
+        {
+            string now = LookJson(p);
+            if (!_history.TryGetValue(p.Id, out var h)) { _history[p.Id] = new History { Now = now }; continue; }
+            if (now == h.Now) continue;
+            h.Back.Add(Copy(h.Now));
+            if (h.Back.Count > MaxSteps) h.Back.RemoveAt(0);
+            h.Forward.Clear();
+            h.Now = now;
+        }
+    }
+
+    void Step(bool back)
+    {
+        if (Current is not { GalleryId: null } p) return;
+        Remember();
+        if (!_history.TryGetValue(p.Id, out var h)) return;
+        var from = back ? h.Back : h.Forward;
+        if (from.Count == 0) return;
+        var look = from[^1];
+        from.RemoveAt(from.Count - 1);
+        (back ? h.Forward : h.Back).Add(Copy(h.Now));
+        p.Bg = look.Bg; p.Buttons = look.Buttons; p.Stickers = look.Stickers;
+        p.BgClear = look.BgClear; p.ButtonsClear = look.ButtonsClear; p.CoverClear = look.CoverClear; p.ClearApart = look.ClearApart;
+        h.Now = LookJson(p);
+        _selected = -1;
+        _main.ApplyDesignColors();
+        Flush();
+        RefreshAll();
+    }
+
+    void RefreshUndo()
+    {
+        var h = Current is { GalleryId: null } p && _history.TryGetValue(p.Id, out var x) ? x : null;
+        UndoButton.IsEnabled = h?.Back.Count > 0;
+        RedoButton.IsEnabled = h?.Forward.Count > 0;
     }
 
     // Editing the default player makes a new saved player first

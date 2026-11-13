@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 
 namespace TaskbarPlayerProto;
@@ -337,40 +338,98 @@ static class GalleryClient
 
     public static async Task<string> PublishPlayer(PlayerSpec p, string name, byte[] preview, bool isPrivate, Action<int> progress, string? replaces = null)
     {
-        // each picture once, even when the player shows it twice; only these go to the server
-        var files = p.Stickers.Select(s => s.File).Distinct().ToList();
-        var described = new List<GalleryFile>();
-        foreach (string file in files) described.Add(await Describe(Designs.ImagePath(file)));
+        // each picture once, even when the player shows it twice; only these go to the server. Hidden pictures stay
+        // on this PC: who saves the design never gets them
+        var shown = p.Stickers.Where(s => !s.Hidden).ToList();
+        var files = shown.Select(s => s.File).Distinct().ToList();
+        var paths = files.Select(Designs.ImagePath).ToList();
+        // the cover picture goes up as small as it is ever shown, so the gallery can show it before anyone saves
+        string? coverPath = p.ShownCover is { } cover ? await Task.Run(() => SmallCover(cover)) : null;
+        if (coverPath != null) paths.Add(coverPath);
+        try
+        {
+            var described = new List<GalleryFile>();
+            foreach (string path in paths) described.Add(await Describe(path));
 
-        var body = new
-        {
-            type = "player",
-            replaces,
-            name,
-            visibility = isPrivate ? "private" : "public",
-            images = described,
-            preview = new GalleryFile { Size = preview.Length, Ext = ExtOf(preview) ?? "png", Sha256 = Convert.ToHexStringLower(SHA256.HashData(preview)) },
-            spec = new
+            var body = new
             {
-                bg = p.Bg,
-                buttons = p.Buttons,
-                bgClear = p.BgClear,
-                buttonsClear = p.ButtonsClear,
-                coverClear = p.CoverClear,
-                clearApart = p.ClearApart,
-                stickers = p.Stickers.Select(s => new { image = files.IndexOf(s.File), x = s.X, y = s.Y, w = s.W, h = s.H, angle = s.Angle }),
-            },
-        };
-        string id = await Create(body);
-        for (int i = 0; i < files.Count; i++)
-        {
-            progress(100 * i / (files.Count + 1));
-            await using var stream = File.OpenRead(Designs.ImagePath(files[i]));
-            await Put(id, "images/" + i, stream, described[i].Size);
+                type = "player",
+                replaces,
+                name,
+                visibility = isPrivate ? "private" : "public",
+                images = described,
+                preview = new GalleryFile { Size = preview.Length, Ext = ExtOf(preview) ?? "png", Sha256 = Convert.ToHexStringLower(SHA256.HashData(preview)) },
+                spec = new
+                {
+                    bg = p.Bg,
+                    buttons = p.Buttons,
+                    bgClear = p.BgClear,
+                    buttonsClear = p.ButtonsClear,
+                    coverClear = p.CoverClear,
+                    clearApart = p.ClearApart,
+                    stickers = shown.Select(s => new { image = files.IndexOf(s.File), x = s.X, y = s.Y, w = s.W, h = s.H, angle = s.Angle }),
+                    cover = coverPath == null ? (int?)null : paths.Count - 1,
+                },
+            };
+            string id = await Create(body);
+            for (int i = 0; i < paths.Count; i++)
+            {
+                progress(100 * i / (paths.Count + 1));
+                await using var stream = File.OpenRead(paths[i]);
+                await Put(id, "images/" + i, stream, described[i].Size);
+            }
+            progress(100 * paths.Count / (paths.Count + 1));
+            await using (var stream = new MemoryStream(preview)) await Put(id, "preview", stream, preview.Length);
+            return await Finish(id);
         }
-        progress(100 * files.Count / (files.Count + 1));
-        await using (var stream = new MemoryStream(preview)) await Put(id, "preview", stream, preview.Length);
-        return await Finish(id);
+        finally
+        {
+            if (coverPath != null) try { File.Delete(coverPath); } catch { }
+        }
+    }
+
+    public const long MaxCoverUpload = 1024 * 1024;
+
+    // The cover picture at the size MMP shows it, as PNG (JPG for photos), in a temporary file
+    static string SmallCover(string file)
+    {
+        var picture = Designs.LoadCover(file) ?? throw new GalleryError("bad_image");
+        bool photo = Path.GetExtension(file).ToLowerInvariant() is ".jpg" or ".jpeg";
+        BitmapEncoder encoder = photo ? new JpegBitmapEncoder { QualityLevel = 90 } : new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(picture));
+        string path = Path.Combine(Path.GetTempPath(), "mmp-cover-" + Guid.NewGuid().ToString("N") + (photo ? ".jpg" : ".png"));
+        using (var stream = File.Create(path)) encoder.Save(stream);
+        if (new FileInfo(path).Length > MaxCoverUpload) { File.Delete(path); throw new GalleryError("bad_image"); }
+        return path;
+    }
+
+    // A design's cover picture for its gallery card: small, checked against the hash the server listed
+    public static async Task<BitmapSource?> CoverPicture(GalleryItem item, int index)
+    {
+        try
+        {
+            var file = item.Images[index];
+            if (file.Ext is not ("png" or "jpg") || file.Size <= 0 || file.Size > MaxCoverUpload) return null;
+            using var limit = new CancellationTokenSource(AnswerTime);
+            using var request = Request(HttpMethod.Get, $"/v1/items/{item.Id}/images/{index}");
+            using var response = await Send(request, limit.Token);
+            if (response.Content.Headers.ContentLength > file.Size) return null;
+            var bytes = await response.Content.ReadAsByteArrayAsync(limit.Token);
+            if (bytes.Length != file.Size || Convert.ToHexStringLower(SHA256.HashData(bytes)) != file.Sha256) return null;
+            return await Task.Run(() =>
+            {
+                using var stream = new MemoryStream(bytes);
+                var picture = new BitmapImage();
+                picture.BeginInit();
+                picture.CacheOption = BitmapCacheOption.OnLoad;
+                picture.DecodePixelWidth = Designs.CoverSide;
+                picture.StreamSource = stream;
+                picture.EndInit();
+                picture.Freeze();
+                return (BitmapSource)picture;
+            });
+        }
+        catch { return null; }
     }
 
     public static async Task<string> PublishEq(SavedEq s, string name, bool isPrivate, string? replaces = null)

@@ -16,6 +16,7 @@ sealed class StickerSpec
     public double W { get; set; }
     public double H { get; set; }
     public double Angle { get; set; }
+    public bool Hidden { get; set; }        // eye closed: not drawn, not published, its place kept
 }
 
 // A saved player: two colours (null = chameleon, taken from the cover) and its pictures, bottom to top.
@@ -26,6 +27,11 @@ sealed class PlayerSpec
     public string? Bg { get; set; }
     public string? Buttons { get; set; }
     public List<StickerSpec> Stickers { get; set; } = new();
+
+    // a picture of its own in place of the song's cover (PNG / JPG, filling the cover); hidden: the song's cover shows
+    public string? Cover { get; set; }
+    public bool CoverHidden { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore] public string? ShownCover => CoverHidden ? null : Cover;
 
     // transparency in percent (0 = solid, 100 = cannot be seen); the background one also covers the pictures and the title
     // card, the buttons one the time, the lyrics and the song's name
@@ -61,6 +67,9 @@ sealed class Designs
     public const int MaxPlayers = 10;
     public const int MaxStickers = 10;
     public const long MaxFileBytes = 25 * 1024 * 1024;
+    public const long MaxCoverBytes = 5 * 1024 * 1024;
+    public const int CoverSide = 256;           // the cover is small: decoded at most this many pixels across
+    public const int CoverGifSide = 128;        // an animated one keeps every frame: smaller still (shown at most ~130 px)
     // up to 100 % see-through; even then the player keeps a trace too faint to see, so it can still be clicked
     public const int MaxClear = 100;
     public const int MaxButtonsClear = 90;      // the buttons always stay a little visible
@@ -98,6 +107,7 @@ sealed class Designs
                     p.ButtonsClear = Math.Clamp(p.ButtonsClear, 0, MaxButtonsClear);
                     p.CoverClear = Math.Clamp(p.CoverClear, 0, MaxClear);
                     p.Stickers = (p.Stickers ?? new()).Where(s => s != null && IsImageName(s.File) && File.Exists(ImagePath(s.File))).Take(MaxStickers).ToList();
+                    if (!IsImageName(p.Cover) || !File.Exists(ImagePath(p.Cover!))) { p.Cover = null; p.CoverHidden = false; }
                 }
                 if (d.Current == null) d.Active = null;
                 return d;
@@ -154,13 +164,38 @@ sealed class Designs
         return name;
     }
 
+    // A cover picture, at most CoverSide pixels across (frozen, for any thread); null if it can't be read
+    public static System.Windows.Media.Imaging.BitmapSource? LoadCover(string file)
+    {
+        try
+        {
+            using var stream = File.OpenRead(ImagePath(file));
+            var probe = System.Windows.Media.Imaging.BitmapFrame.Create(stream, System.Windows.Media.Imaging.BitmapCreateOptions.DelayCreation,
+                System.Windows.Media.Imaging.BitmapCacheOption.None);
+            bool wide = probe.PixelWidth >= probe.PixelHeight;
+            stream.Position = 0;
+            var bmp = new System.Windows.Media.Imaging.BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            // the shorter side is what fills the square, so that one is kept at CoverSide
+            if (wide) bmp.DecodePixelHeight = Math.Min(CoverSide, probe.PixelHeight);
+            else bmp.DecodePixelWidth = Math.Min(CoverSide, probe.PixelWidth);
+            bmp.StreamSource = stream;
+            bmp.EndInit();
+            bmp.Freeze();
+            return bmp;
+        }
+        catch { return null; }
+    }
+
     // Deletes pictures that no player uses any more (keep: also used, e.g. by the undo history)
     public void CleanImages(IEnumerable<string>? keep = null)
     {
         try
         {
             if (_keepImages || !Directory.Exists(ImagesDir)) return;
-            var used = Players.SelectMany(p => p.Stickers).Select(s => s.File).Concat(keep ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var used = Players.SelectMany(p => p.Stickers).Select(s => s.File).Concat(Players.Select(p => p.Cover ?? ""))
+                .Concat(keep ?? []).ToHashSet(StringComparer.OrdinalIgnoreCase);
             foreach (var f in Directory.GetFiles(ImagesDir))
                 // a picture copied a moment ago may still be loading before it joins a player
                 if (!used.Contains(Path.GetFileName(f)) && DateTime.UtcNow - File.GetCreationTimeUtc(f) > TimeSpan.FromMinutes(1))

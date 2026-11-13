@@ -195,8 +195,9 @@ sealed class StickerAnimator
 
     public void Run(bool on)
     {
-        if (on && HasAnimated) { if (!_timer.IsEnabled) { Tick(); _timer.Start(); } }
-        else if (_timer.IsEnabled) _timer.Stop();
+        // the clock only runs while the pictures can be seen: shown again, they go on from the same frame
+        if (on && HasAnimated) { if (!_timer.IsEnabled) { _clock.Start(); Tick(); _timer.Start(); } }
+        else if (_timer.IsEnabled) { _timer.Stop(); _clock.Stop(); }
     }
 
     void Tick()

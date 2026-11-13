@@ -138,6 +138,22 @@ public partial class ReportsWindow : Window
         await Load();
     }
 
+    static System.Windows.Media.Imaging.BitmapSource? CoverFrom(string path)
+    {
+        try
+        {
+            var picture = new System.Windows.Media.Imaging.BitmapImage();
+            picture.BeginInit();
+            picture.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            picture.DecodePixelWidth = Designs.CoverSide;
+            picture.UriSource = new Uri(path);
+            picture.EndInit();
+            picture.Freeze();
+            return picture;
+        }
+        catch { return null; }
+    }
+
     // What was really uploaded, not the preview its maker sent: a preview could hide a different picture
     async Task ShowRealFiles(GalleryItem item, PlayerPreview preview, int generation)
     {
@@ -148,6 +164,9 @@ public partial class ReportsWindow : Window
             {
                 var png = await GalleryPreview.FromFiles(item, paths);
                 if (generation == _generation) preview.Picture.Source = GalleryPreview.Read(png);
+                if (generation == _generation && PlayerPreview.CoverIndex(item) is int cover && cover < paths.Count
+                    && await Task.Run(() => CoverFrom(paths[cover])) is { } picture)
+                    preview.SetCover(picture);
             }
             finally { GalleryClient.RemoveFolder(folder); }
         }

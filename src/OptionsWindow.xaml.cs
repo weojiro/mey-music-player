@@ -83,7 +83,6 @@ public partial class OptionsWindow : Window
         ButtonsText.Text = T("buttons");
         ImagesText.Text = T("images");
         AddImageButton.Content = "+  " + T("addImage");
-        RemoveButton.Content = T("remove");
         ImageHintText.Text = T("imageHint");
         ResetButton.Content = T("reset");
         ConfirmCancel.Content = T("cancel");
@@ -98,8 +97,10 @@ public partial class OptionsWindow : Window
             ZoomButtons.Children.Add(b);
         }
         // 3x by default, smaller when the window would not fit on the screen
-        double room = SystemParameters.WorkArea.Width - 140;
-        SetZoom(382 * 3 + 48 <= room ? 3 : 382 * 2 + 48 <= room ? 2 : 1);
+        // (the window is about 795 tall at 1x and each step adds 40: a 1080p screen at 125 % gets 2x and no scroll)
+        double room = SystemParameters.WorkArea.Width - 140, tall = SystemParameters.WorkArea.Height - 20;
+        bool Fits(int z) => 382 * z + 48 <= room && 795 + (z - 1) * 40 <= tall;
+        SetZoom(Fits(3) ? 3 : Fits(2) ? 2 : 1);
 
         foreach (var el in new UIElement[] { _frame, _turnLine, _sizeHandle, _turnHandle }) PvOverlay.Children.Add(el);
         _sizeHandle.MouseLeftButtonDown += (_, e) => StartDrag(DragKind.Resize, e);
@@ -122,7 +123,11 @@ public partial class OptionsWindow : Window
         GalleryButton.Click += (_, _) => _main.OpenGallery("player");
         LockedIcon.FontFamily = _icons;
         AddImageButton.Click += (_, _) => AddImage();
-        RemoveButton.Click += (_, _) => RemoveSelected();
+        CoverButton.Content = "+  " + T("coverPicture");
+        CoverButton.Click += (_, _) => PickCover();
+        CoverEye.FontFamily = CoverRemove.FontFamily = _icons;
+        CoverEye.Click += (_, _) => { if (Current is { } p) { p.CoverHidden = !p.CoverHidden; CoverEdited(); } };
+        CoverRemove.Click += (_, _) => { if (Current is { } p) { p.Cover = null; p.CoverHidden = false; CoverEdited(); } };
         ResetButton.Click += (_, _) => Confirm(T("resetAsk"), T("reset"), ResetPlayer);
         ConfirmCancel.Click += (_, _) => ConfirmLayer.Visibility = Visibility.Collapsed;
         ConfirmYes.Click += (_, _) => { ConfirmLayer.Visibility = Visibility.Collapsed; _confirmAction?.Invoke(); };
@@ -148,6 +153,11 @@ public partial class OptionsWindow : Window
 
         SetupPlacement();
         SetupClear();
+        LookTab.Content = T("appearance");
+        PlaceTab.Content = T("placement");
+        LookTab.Click += (_, _) => ShowTab(place: false);
+        PlaceTab.Click += (_, _) => ShowTab(place: true);
+        ShowTab(place: false);
         Remember();
         RefreshAll();
     }
@@ -156,7 +166,8 @@ public partial class OptionsWindow : Window
 
     PlayerSpec? Current => _designs.Current;
 
-    StickerSpec? SelectedSpec => Current is { } p && _selected >= 0 && _selected < p.Stickers.Count ? p.Stickers[_selected] : null;
+    // a hidden picture is never the selected one: it can't be moved or removed unseen (its row still drags to reorder)
+    StickerSpec? SelectedSpec => Current is { } p && _selected >= 0 && _selected < p.Stickers.Count && !p.Stickers[_selected].Hidden ? p.Stickers[_selected] : null;
 
     internal static void DarkTitleBar(Window window)
     {
@@ -181,6 +192,7 @@ public partial class OptionsWindow : Window
         RefreshClear();
         RefreshButtons();
         RefreshUndo();
+        RefreshCover();
         RebuildPreviewStickers();
     }
 
@@ -265,7 +277,7 @@ public partial class OptionsWindow : Window
         var p = Current;
         bool locked = p?.GalleryId != null;
         AddImageButton.IsEnabled = !locked && (p == null ? _designs.Players.Count < Designs.MaxPlayers : p.Stickers.Count < Designs.MaxStickers);
-        RemoveButton.IsEnabled = !locked && SelectedSpec != null;
+        CoverButton.IsEnabled = CoverCard.IsEnabled = !locked;
         ResetButton.IsEnabled = !locked && p != null;
         // from the gallery: the look stays the maker's; place and size are below and stay free
         BgSwatches.IsEnabled = ButtonSwatches.IsEnabled = ClearAllBox.IsEnabled = ClearSliders.IsEnabled = LayerCard.IsEnabled = !locked;
@@ -281,6 +293,16 @@ public partial class OptionsWindow : Window
         PreviewScale.ScaleX = PreviewScale.ScaleY = z;
         foreach (Button b in ZoomButtons.Children) Paint(b, (int)b.Tag == (int)z);
         UpdateOverlay();
+    }
+
+    // the look (colours, transparency, pictures) or the placement under the preview, so the window stays short
+    void ShowTab(bool place)
+    {
+        // Hidden, not Collapsed: the other tab keeps its room and the window doesn't jump
+        LookPanel.Visibility = place ? Visibility.Hidden : Visibility.Visible;
+        PlacePanel.Visibility = place ? Visibility.Visible : Visibility.Hidden;
+        Paint(LookTab, !place);
+        Paint(PlaceTab, place);
     }
 
     static void Paint(Button b, bool on)
@@ -319,7 +341,7 @@ public partial class OptionsWindow : Window
         _saveTimer.Stop();
         Remember();
         _designs.Save();
-        _designs.CleanImages(_history.Values.SelectMany(h => h.Back.Concat(h.Forward)).SelectMany(l => l.Stickers).Select(s => s.File));
+        _designs.CleanImages(_history.Values.SelectMany(h => h.Back.Concat(h.Forward)).SelectMany(l => l.Stickers.Select(s => s.File).Append(l.Cover ?? "")));
         _main.DesignChanged();
         RefreshUndo();
     }
@@ -327,7 +349,8 @@ public partial class OptionsWindow : Window
     // ---------- undo / redo ----------
 
     // A player's look (not its name or place). The history is per player and lasts while this window is open.
-    sealed record Look(string? Bg, string? Buttons, List<StickerSpec> Stickers, int BgClear, int ButtonsClear, int CoverClear, bool ClearApart);
+    sealed record Look(string? Bg, string? Buttons, List<StickerSpec> Stickers, int BgClear, int ButtonsClear, int CoverClear, bool ClearApart,
+        string? Cover, bool CoverHidden);
 
     sealed class History
     {
@@ -339,7 +362,7 @@ public partial class OptionsWindow : Window
     readonly Dictionary<string, History> _history = new();
 
     static string LookJson(PlayerSpec p) =>
-        System.Text.Json.JsonSerializer.Serialize(new Look(p.Bg, p.Buttons, p.Stickers, p.BgClear, p.ButtonsClear, p.CoverClear, p.ClearApart));
+        System.Text.Json.JsonSerializer.Serialize(new Look(p.Bg, p.Buttons, p.Stickers, p.BgClear, p.ButtonsClear, p.CoverClear, p.ClearApart, p.Cover, p.CoverHidden));
 
     static Look Copy(string json) => System.Text.Json.JsonSerializer.Deserialize<Look>(json)!;
 
@@ -370,6 +393,7 @@ public partial class OptionsWindow : Window
         (back ? h.Forward : h.Back).Add(Copy(h.Now));
         p.Bg = look.Bg; p.Buttons = look.Buttons; p.Stickers = look.Stickers;
         p.BgClear = look.BgClear; p.ButtonsClear = look.ButtonsClear; p.CoverClear = look.CoverClear; p.ClearApart = look.ClearApart;
+        p.Cover = look.Cover; p.CoverHidden = look.CoverHidden;
         h.Now = LookJson(p);
         _selected = -1;
         _main.ApplyDesignColors();
@@ -488,6 +512,8 @@ public partial class OptionsWindow : Window
         p.Bg = Designs.Hex(DefaultBg);              // the player's look when nothing plays
         p.Buttons = "#FFFFFF";
         p.Stickers.Clear();
+        p.Cover = null;
+        p.CoverHidden = false;
         p.BgClear = p.ButtonsClear = p.CoverClear = 0;
         p.ClearApart = false;
         _selected = -1;
@@ -602,7 +628,12 @@ public partial class OptionsWindow : Window
         else if (fill.R + fill.G + fill.B < 90) { dot.Stroke = new SolidColorBrush(Color.FromRgb(0x4A, 0x4A, 0x4A)); dot.StrokeThickness = 1; }   // dark colours on the dark card
         g.Children.Add(dot);
         if (plus) g.Children.Add(new TextBlock { Text = "+", FontSize = 15, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, -2, 0, 0) });
-        g.MouseLeftButtonUp += (_, _) => click();
+        // pressed and released on it, like a button: the release of a double click in a file dialog that just closed
+        // above it must not pick a colour
+        bool pressed = false;
+        g.MouseLeftButtonDown += (_, _) => pressed = true;
+        g.MouseLeave += (_, _) => pressed = false;
+        g.MouseLeftButtonUp += (_, _) => { if (pressed) click(); pressed = false; };
         return g;
     }
 
@@ -788,6 +819,61 @@ public partial class OptionsWindow : Window
         QueueSave();
     }
 
+    static bool IsInside<T>(object source) where T : DependencyObject
+    {
+        for (var d = source as DependencyObject; d != null; d = d is Visual ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
+            if (d is T) return true;
+        return false;
+    }
+
+    // ---------- cover picture ----------
+
+    async void PickCover()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = $"{T("coverPicture")} (PNG, JPG, GIF)|*.png;*.jpg;*.jpeg;*.gif" };
+        if (dialog.ShowDialog(this) != true) return;
+        try
+        {
+            if (new FileInfo(dialog.FileName).Length > Designs.MaxCoverBytes) { ShowMessage(T("badCover")); return; }
+        }
+        catch { ShowMessage(T("badCover")); return; }
+        var p = EnsurePlayer();
+        if (p == null) return;
+        string file;
+        try { file = Designs.Import(dialog.FileName); }
+        catch { ShowMessage(T("badCover")); return; }
+        bool ok = file.EndsWith(".gif", StringComparison.OrdinalIgnoreCase)
+            ? await Stickers.LoadAsync(Designs.ImagePath(file), Designs.CoverGifSide, 3_000_000) != null
+            : await Task.Run(() => Designs.LoadCover(file)) != null;
+        if (!ok)
+        {
+            try { File.Delete(Designs.ImagePath(file)); } catch { }
+            ShowMessage(T("badCover"));
+            return;
+        }
+        p.Cover = file;
+        p.CoverHidden = false;
+        CoverEdited();
+    }
+
+    void CoverEdited()
+    {
+        RefreshCover();
+        Flush();                // the taskbar's cover changes at once
+    }
+
+    void RefreshCover()
+    {
+        var p = Current;
+        CoverCard.Visibility = p?.Cover != null ? Visibility.Visible : Visibility.Collapsed;
+        if (p?.Cover == null) return;
+        var pic = Designs.LoadCover(p.Cover);
+        CoverThumb.Background = pic == null ? null : new ImageBrush(pic) { Stretch = Stretch.UniformToFill };
+        CoverThumb.Opacity = CoverName.Opacity = p.CoverHidden ? 0.4 : 1;
+        CoverName.Text = T("coverPicture");
+        CoverEye.Content = p.CoverHidden ? "" : "";
+    }
+
     async Task<StickerFrames?> LoadPreview(string file)
     {
         if (_pvCache.TryGetValue(file, out var f)) return f;
@@ -803,9 +889,9 @@ public partial class OptionsWindow : Window
         var loaded = new List<(StickerSpec spec, StickerFrames frames)>();
         foreach (var s in specs)
         {
-            var f = await LoadPreview(s.File);
+            var f = await LoadPreview(s.File);      // hidden ones too: their row shows them
             if (build != _previewBuild) return;
-            if (f != null) loaded.Add((s, f));
+            if (f != null && !s.Hidden) loaded.Add((s, f));
         }
         _pvAnim.Clear();
         _pvImages.Clear();
@@ -838,7 +924,7 @@ public partial class OptionsWindow : Window
     {
         if (_selected < 0 || e.OriginalSource is not DependencyObject d) return;
         for (; d != null; d = d is Visual ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d))
-            if (d is Image { Tag: StickerSpec } || d == _sizeHandle || d == _turnHandle || d == LayerCard || d == RemoveButton) return;
+            if (d is Image { Tag: StickerSpec } || d == _sizeHandle || d == _turnHandle || d == LayerCard) return;
         Select(-1);
     }
 
@@ -880,15 +966,43 @@ public partial class OptionsWindow : Window
             var box = new Border { Width = 46, Height = 28, CornerRadius = new CornerRadius(5), Background = new SolidColorBrush(Color.FromRgb(0x1A, 0x1A, 0x1A)), Margin = new Thickness(0, 0, 12, 0), Child = thumb };
             Grid.SetColumn(box, 1);
             g.Children.Add(box);
+            // the eye: hides the picture and keeps its place, so it comes back exactly where it was
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var eye = new Button { Content = s.Hidden ? "" : "", FontFamily = _icons, Style = (Style)FindResource("Btn"), Background = Brushes.Transparent, Padding = new Thickness(10, 0, 10, 0), Height = 30 };
+            eye.Click += (_, _) =>
+            {
+                s.Hidden = !s.Hidden;
+                RebuildPreviewStickers();
+                RefreshButtons();
+                QueueSave();
+            };
+            Grid.SetColumn(eye, 3);
+            g.Children.Add(eye);
+            // x: removes the picture (Delete does the same for the selected one)
+            g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var remove = new Button { Content = "", FontFamily = _icons, Style = (Style)FindResource("Btn"), Background = Brushes.Transparent, Foreground = new SolidColorBrush(Color.FromRgb(0xF2, 0x8B, 0x82)), Padding = new Thickness(10, 0, 10, 0), Height = 30 };
+            remove.Click += (_, _) =>
+            {
+                if (Current is not { } p) return;
+                var picked = SelectedSpec;
+                p.Stickers.Remove(s);
+                _selected = picked == null || ReferenceEquals(picked, s) ? -1 : p.Stickers.IndexOf(picked);
+                RebuildPreviewStickers();
+                RefreshButtons();
+                QueueSave();
+            };
+            Grid.SetColumn(remove, 4);
+            g.Children.Add(remove);
             var name = new TextBlock { Text = s.Name ?? string.Format(T("imageN"), i + 1), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 280 };
             Grid.SetColumn(name, 2);
             g.Children.Add(name);
+            if (s.Hidden) box.Opacity = name.Opacity = 0.4;
             row.Child = g;
             row.MouseEnter += (_, _) => { if (!ReferenceEquals(row.Tag, SelectedSpec)) row.Background = hover; };
             row.MouseLeave += (_, _) => { if (!ReferenceEquals(row.Tag, SelectedSpec)) row.Background = Brushes.Transparent; };
             row.MouseLeftButtonDown += (_, e) =>
             {
-                if (Current is not { } p) return;
+                if (Current is not { } p || IsInside<Button>(e.OriginalSource)) return;
                 _layerDragY = e.GetPosition(LayerList).Y;
                 _layerMoved = false;
                 Select(p.Stickers.IndexOf(s));

@@ -91,154 +91,181 @@
                 </StackPanel>
             </Border>
 
-            <!-- name of the player being edited -->
-            <Grid Margin="0,18,0,0" x:Name="NameRow">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Style="{StaticResource Section}" VerticalAlignment="Center" Margin="0" x:Name="NameText"/>
-                <TextBox Grid.Column="1" MaxLength="32" MaxWidth="320" HorizontalAlignment="Left" MinWidth="240" Style="{StaticResource Field}" x:Name="NameBox"/>
-                <StackPanel Grid.Column="2" Margin="0,0,8,0" Orientation="Horizontal">
-                    <Button Content="&#xE72B;" Margin="0,0,6,0" Padding="10,0" Style="{StaticResource Btn}" x:Name="UndoButton"/>
-                    <Button Content="&#xE72A;" Padding="10,0" Style="{StaticResource Btn}" x:Name="RedoButton"/>
-                </StackPanel>
-                <Button Foreground="#F28B82" Grid.Column="3" Style="{StaticResource Btn}" x:Name="DeletePlayerButton"/>
-            </Grid>
+            <!-- the rest in two tabs: the look (name, colours, transparency | pictures) and the placement -->
+            <StackPanel Margin="0,18,0,0" Orientation="Horizontal" x:Name="Tabs">
+                <Button Margin="0,0,8,0" Style="{StaticResource Chip}" x:Name="LookTab"/>
+                <Button Style="{StaticResource Chip}" x:Name="PlaceTab"/>
+            </StackPanel>
+            <Border Background="{StaticResource Line}" Height="1" Margin="0,14,0,0"/>
 
-            <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
+            <!-- both tabs in one cell: the hidden one still takes its room, so the window keeps its size -->
 
             <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                    <RowDefinition/>
-                </Grid.RowDefinitions>
-                <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="BgText"/>
-                <WrapPanel Grid.Column="1" x:Name="BgSwatches"/>
-                <TextBlock Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="ButtonsText"/>
-                <WrapPanel Grid.Column="1" Grid.Row="1" Margin="0,12,0,0" x:Name="ButtonSwatches"/>
 
-                <!-- transparency: one slider for all, or one each for the background, the buttons and the cover -->
-                <TextBlock Grid.Row="2" Margin="0,16,0,0" Padding="0,2,0,0" Style="{StaticResource Section}" VerticalAlignment="Top" x:Name="ClearText"/>
-                <StackPanel Grid.Column="1" Grid.Row="2" Margin="0,16,0,0">
-                    <CheckBox Style="{StaticResource Switch}" x:Name="ClearAllBox"/>
-                    <Grid Margin="0,10,0,0" x:Name="ClearSliders">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="300"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <Slider Grid.Column="1" Style="{StaticResource Range}" x:Name="ClearAllSlider"/>
-                        <TextBlock Grid.Column="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearAllValue"/>
-                        <TextBlock Grid.Row="1" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearBgLabel"/>
-                        <Slider Grid.Column="1" Grid.Row="1" Style="{StaticResource Range}" x:Name="ClearBgSlider"/>
-                        <TextBlock Grid.Column="2" Grid.Row="1" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearBgValue"/>
-                        <TextBlock Grid.Row="2" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearButtonsLabel"/>
-                        <Slider Grid.Column="1" Grid.Row="2" Style="{StaticResource Range}" x:Name="ClearButtonsSlider"/>
-                        <TextBlock Grid.Column="2" Grid.Row="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearButtonsValue"/>
-                        <TextBlock Grid.Row="3" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearCoverLabel"/>
-                        <Slider Grid.Column="1" Grid.Row="3" Style="{StaticResource Range}" x:Name="ClearCoverSlider"/>
-                        <TextBlock Grid.Column="2" Grid.Row="3" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearCoverValue"/>
-                    </Grid>
-                </StackPanel>
-            </Grid>
+            <StackPanel x:Name="LookPanel">
+                <Grid Margin="0,18,0,0" x:Name="NameRow">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Section}" VerticalAlignment="Center" Margin="0" x:Name="NameText"/>
+                    <TextBox Grid.Column="1" MaxLength="32" MaxWidth="320" HorizontalAlignment="Left" MinWidth="240" Style="{StaticResource Field}" x:Name="NameBox"/>
+                    <StackPanel Grid.Column="2" Margin="0,0,8,0" Orientation="Horizontal">
+                        <Button Content="&#xE72B;" Margin="0,0,6,0" Padding="10,0" Style="{StaticResource Btn}" x:Name="UndoButton"/>
+                        <Button Content="&#xE72A;" Padding="10,0" Style="{StaticResource Btn}" x:Name="RedoButton"/>
+                    </StackPanel>
+                    <Button Foreground="#F28B82" Grid.Column="3" Style="{StaticResource Btn}" x:Name="DeletePlayerButton"/>
+                </Grid>
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="BgText"/>
+                            <WrapPanel Grid.Column="1" x:Name="BgSwatches"/>
+                            <TextBlock Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource Section}" VerticalAlignment="Center" x:Name="ButtonsText"/>
+                            <WrapPanel Grid.Column="1" Grid.Row="1" Margin="0,12,0,0" x:Name="ButtonSwatches"/>
 
-            <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
+                            <!-- transparency: one slider for all, or one each for the background, the buttons and the cover -->
+                            <TextBlock Grid.Row="2" Margin="0,16,0,0" Padding="0,2,0,0" Style="{StaticResource Section}" VerticalAlignment="Top" x:Name="ClearText"/>
+                            <StackPanel Grid.Column="1" Grid.Row="2" Margin="0,16,0,0">
+                                <CheckBox Style="{StaticResource Switch}" x:Name="ClearAllBox"/>
+                                <Grid Margin="0,10,0,0" x:Name="ClearSliders">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="300"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                        <RowDefinition/>
+                                    </Grid.RowDefinitions>
+                                    <Slider Grid.Column="1" Style="{StaticResource Range}" x:Name="ClearAllSlider"/>
+                                    <TextBlock Grid.Column="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearAllValue"/>
+                                    <TextBlock Grid.Row="1" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearBgLabel"/>
+                                    <Slider Grid.Column="1" Grid.Row="1" Style="{StaticResource Range}" x:Name="ClearBgSlider"/>
+                                    <TextBlock Grid.Column="2" Grid.Row="1" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearBgValue"/>
+                                    <TextBlock Grid.Row="2" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearButtonsLabel"/>
+                                    <Slider Grid.Column="1" Grid.Row="2" Style="{StaticResource Range}" x:Name="ClearButtonsSlider"/>
+                                    <TextBlock Grid.Column="2" Grid.Row="2" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearButtonsValue"/>
+                                    <TextBlock Grid.Row="3" Foreground="{StaticResource Dim}" Margin="0,0,12,0" VerticalAlignment="Center" x:Name="ClearCoverLabel"/>
+                                    <Slider Grid.Column="1" Grid.Row="3" Style="{StaticResource Range}" x:Name="ClearCoverSlider"/>
+                                    <TextBlock Grid.Column="2" Grid.Row="3" Margin="10,0,0,0" MinWidth="36" VerticalAlignment="Center" x:Name="ClearCoverValue"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                        <Button Foreground="#F28B82" HorizontalAlignment="Left" Margin="110,22,0,0" Style="{StaticResource Btn}" x:Name="ResetButton"/>
+                    </StackPanel>
+                    <Border Background="{StaticResource Line}" Grid.Column="1" Margin="28,0" Width="1"/>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Margin="0,0,0,10" Style="{StaticResource Section}" x:Name="ImagesText"/>
+                        <StackPanel>
+                            <WrapPanel>
+                                <Button Background="#E3E3E3" Foreground="#1F1F1F" Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="AddImageButton"/>
+                                <Button Style="{StaticResource Btn}" x:Name="CoverButton"/>
+                            </WrapPanel>
+                            <!-- the player's own cover picture: eye to hide it, x to remove it -->
+                            <Border Background="{StaticResource Card}" CornerRadius="10" HorizontalAlignment="Left" Margin="0,12,0,0" MinWidth="360" Padding="14,4,4,4" Visibility="Collapsed" x:Name="CoverCard">
+                                <Grid Height="38">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="5" Height="28" Margin="0,0,12,0" Width="28" x:Name="CoverThumb"/>
+                                    <TextBlock Grid.Column="1" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" x:Name="CoverName"/>
+                                    <Button Background="Transparent" Grid.Column="2" Padding="10,0" Style="{StaticResource Btn}" x:Name="CoverEye"/>
+                                    <Button Background="Transparent" Content="&#xE711;" Foreground="#F28B82" Grid.Column="3" Padding="10,0" Style="{StaticResource Btn}" x:Name="CoverRemove"/>
+                                </Grid>
+                            </Border>
+                            <!-- layers: the top row is the image in front; rows are dragged to reorder -->
+                            <Border Background="{StaticResource Card}" CornerRadius="10" HorizontalAlignment="Left" Margin="0,12,0,0" MinWidth="360" Padding="4" Visibility="Collapsed" x:Name="LayerCard">
+                                <ScrollViewer MaxHeight="198" VerticalScrollBarVisibility="Auto" x:Name="LayerScroll">
+                                    <StackPanel Background="Transparent" x:Name="LayerList"/>
+                                </ScrollViewer>
+                            </Border>
+                            <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" Visibility="Collapsed" x:Name="LayerHintText"/>
+                            <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" x:Name="ImageHintText"/>
+                            <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="MessageText"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Margin="0" Style="{StaticResource Section}" VerticalAlignment="Top" Padding="0,8,0,0" x:Name="ImagesText"/>
-                <StackPanel Grid.Column="1">
-                    <WrapPanel>
-                        <Button Background="#E3E3E3" Foreground="#1F1F1F" Margin="0,0,8,0" Style="{StaticResource Btn}" x:Name="AddImageButton"/>
-                        <Button Foreground="#F28B82" Style="{StaticResource Btn}" x:Name="RemoveButton"/>
-                    </WrapPanel>
-                    <!-- layers: the top row is the image in front; rows are dragged to reorder -->
-                    <Border Background="{StaticResource Card}" CornerRadius="10" HorizontalAlignment="Left" Margin="0,12,0,0" MinWidth="360" Padding="4" Visibility="Collapsed" x:Name="LayerCard">
-                        <StackPanel Background="Transparent" x:Name="LayerList"/>
-                    </Border>
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" Visibility="Collapsed" x:Name="LayerHintText"/>
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" x:Name="ImageHintText"/>
-                    <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="MessageText"/>
-                </StackPanel>
-            </Grid>
-
-            <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
-
-            <Button Foreground="#F28B82" HorizontalAlignment="Left" Style="{StaticResource Btn}" x:Name="ResetButton"/>
-
-            <Border Background="{StaticResource Line}" Height="1" Margin="0,18"/>
-
-            <!-- where the player sits: free move, always on top, the show / hide shortcut; the player size on the right -->
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="110"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="PlacementText"/>
-                <StackPanel Grid.Column="1" MaxWidth="480" HorizontalAlignment="Left">
-                    <CheckBox Style="{StaticResource Switch}" x:Name="FreeMoveBox"/>
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="FreeMoveHint"/>
-                    <CheckBox Margin="0,16,0,0" Style="{StaticResource Switch}" x:Name="OnTopBox"/>
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="OnTopHint"/>
-                    <!-- the two shortcuts: click one, then press the new keys -->
-                    <Grid Margin="0,16,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition/>
-                            <RowDefinition/>
-                        </Grid.RowDefinitions>
-                        <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" x:Name="HotkeyText"/>
-                        <Button Grid.Column="1" HorizontalAlignment="Left" MinWidth="150" Style="{StaticResource Btn}" x:Name="ShowKeyButton"/>
-                        <TextBlock Grid.Row="1" Margin="0,8,12,0" VerticalAlignment="Center" x:Name="CursorKeyText"/>
-                        <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" Margin="0,8,0,0" MinWidth="150" Style="{StaticResource Btn}" x:Name="CursorKeyButton"/>
-                    </Grid>
-                    <!-- shown while "show over games" is off: the mouse shortcut only works with it -->
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="CursorKeyNote"/>
-                    <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
-                    <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
-                </StackPanel>
-
-                <!-- player size (free move only): slider or a typed %, and back to 100 % -->
-                <Grid Grid.Column="2" Margin="48,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <StackPanel Margin="0,26,0,0" Visibility="Hidden" x:Name="PlacePanel">
+                <!-- where the player sits: free move, always on top, the show / hide shortcut; the player size on the right -->
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="110"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Margin="0,0,8,0" Padding="0,8,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="SizeText"/>
-                    <StackPanel Grid.Column="1" MaxWidth="320">
-                        <StackPanel x:Name="SizeControls">
-                            <StackPanel Orientation="Horizontal">
-                                <Slider Style="{StaticResource Range}" VerticalAlignment="Center" Width="220" x:Name="SizeSlider"/>
-                                <TextBox Margin="12,0,0,0" MaxLength="3" Style="{StaticResource Field}" TextAlignment="Center" VerticalAlignment="Center" Width="56" x:Name="SizeBox"/>
-                                <TextBlock Margin="6,0,0,0" Text="%" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource Btn}" x:Name="SizeResetButton"/>
-                        </StackPanel>
-                        <!-- shown while free move is off: the size only works with it -->
-                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="SizeNote"/>
+                    <TextBlock Margin="0,0,8,0" Padding="0,2,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="PlacementText"/>
+                    <StackPanel Grid.Column="1" MaxWidth="480" HorizontalAlignment="Left">
+                        <CheckBox Style="{StaticResource Switch}" x:Name="FreeMoveBox"/>
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="FreeMoveHint"/>
+                        <CheckBox Margin="0,30,0,0" Style="{StaticResource Switch}" x:Name="OnTopBox"/>
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="46,4,0,0" TextWrapping="Wrap" x:Name="OnTopHint"/>
+                        <!-- the two shortcuts: click one, then press the new keys -->
+                        <Grid Margin="0,30,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Margin="0,0,12,0" VerticalAlignment="Center" x:Name="HotkeyText"/>
+                            <Button Grid.Column="1" HorizontalAlignment="Left" MinWidth="150" Style="{StaticResource Btn}" x:Name="ShowKeyButton"/>
+                            <TextBlock Grid.Row="1" Margin="0,12,12,0" VerticalAlignment="Center" x:Name="CursorKeyText"/>
+                            <Button Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" Margin="0,12,0,0" MinWidth="150" Style="{StaticResource Btn}" x:Name="CursorKeyButton"/>
+                        </Grid>
+                        <!-- shown while "show over games" is off: the mouse shortcut only works with it -->
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="CursorKeyNote"/>
+                        <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,6,0,0" TextWrapping="Wrap" x:Name="HotkeyHint"/>
+                        <TextBlock FontSize="12" Foreground="#F28B82" Margin="0,4,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="HotkeyMessage"/>
                     </StackPanel>
+
+                    <!-- player size (free move only): slider or a typed %, and back to 100 % -->
+                    <Grid Grid.Column="2" Margin="48,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="110"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Margin="0,0,8,0" Padding="0,8,0,0" Style="{StaticResource Section}" TextWrapping="Wrap" VerticalAlignment="Top" x:Name="SizeText"/>
+                        <StackPanel Grid.Column="1" MaxWidth="320">
+                            <StackPanel x:Name="SizeControls">
+                                <StackPanel Orientation="Horizontal">
+                                    <Slider Style="{StaticResource Range}" VerticalAlignment="Center" Width="220" x:Name="SizeSlider"/>
+                                    <TextBox Margin="12,0,0,0" MaxLength="3" Style="{StaticResource Field}" TextAlignment="Center" VerticalAlignment="Center" Width="56" x:Name="SizeBox"/>
+                                    <TextBlock Margin="6,0,0,0" Text="%" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button HorizontalAlignment="Left" Margin="0,10,0,0" Style="{StaticResource Btn}" x:Name="SizeResetButton"/>
+                            </StackPanel>
+                            <!-- shown while free move is off: the size only works with it -->
+                            <TextBlock FontSize="12" Foreground="{StaticResource Dim}" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" x:Name="SizeNote"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
+            </StackPanel>
             </Grid>
         </StackPanel>
         </ScrollViewer>

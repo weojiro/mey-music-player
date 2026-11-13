@@ -494,7 +494,15 @@ public partial class GalleryWindow : Window
         var preview = PlayerPreview.FromItem(item);
         _previews.Add(preview);
         _ = LoadPicture(item, preview, _generation);
+        _ = LoadCover(item, preview, _generation);
         return preview;
+    }
+
+    async Task LoadCover(GalleryItem item, PlayerPreview preview, int generation)
+    {
+        if (PlayerPreview.CoverIndex(item) is not int index) return;
+        var picture = await GalleryClient.CoverPicture(item, index);
+        if (picture != null && generation == _generation) preview.SetCover(picture);
     }
 
     // Only the small preview comes down until someone presses Save
@@ -797,6 +805,7 @@ public partial class GalleryWindow : Window
             double Pos(string name, double min, double max) => k.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? Math.Clamp(v.GetDouble(), min, max) : 0;
             spec.Stickers.Add(new StickerSpec { File = files[index], X = Pos("x", -10000, 10000), Y = Pos("y", -10000, 10000), W = Pos("w", 0, 10000), H = Pos("h", 0, 10000), Angle = Pos("angle", -3600, 3600) });
         }
+        if (PlayerPreview.CoverIndex(item) is int cover && cover < files.Count) spec.Cover = files[cover];
         return spec;
     }
 
@@ -845,6 +854,8 @@ public partial class GalleryWindow : Window
         {
             var png = await GalleryPreview.MakeStill(p);
             if (generation == _generation) preview.Picture.Source = GalleryPreview.Read(png);
+            if (p.ShownCover is { } cover && await Task.Run(() => Designs.LoadCover(cover)) is { } picture && generation == _generation)
+                preview.SetCover(picture);
         }
         catch (Exception e) { ErrorLog.Write("gallery preview", e); }
     }

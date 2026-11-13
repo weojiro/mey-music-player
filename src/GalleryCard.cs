@@ -220,14 +220,28 @@ sealed class PlayerPreview : Viewbox
             Background = new SolidColorBrush(Color.FromArgb((byte)(255 * (100 - Math.Clamp(bgClear, 0, 100)) / 100), back.R, back.G, back.B)),
             Child = new Grid { Children = { pictureHost, controls } },
         };
-        var cover = new Border
+        _cover = new Border
         {
             Width = 40, Height = 40, HorizontalAlignment = HorizontalAlignment.Right, CornerRadius = new CornerRadius(8), ClipToBounds = true,
             Opacity = (100 - Math.Clamp(coverClear, 0, 100)) / 100.0, Child = Logo(),
         };
-        Child = new Grid { Width = 382, Height = 40, Children = { panel, cover } };
+        Child = new Grid { Width = 382, Height = 40, Children = { panel, _cover } };
         Draw();
     }
+
+    readonly Border _cover;
+
+    // the design's own cover picture in place of MMP's logo
+    public void SetCover(ImageSource picture)
+    {
+        _cover.Child = null;
+        _cover.Background = new ImageBrush(picture) { Stretch = Stretch.UniformToFill };
+    }
+
+    // the image number of the design's cover picture, if it has one
+    public static int? CoverIndex(GalleryItem item) =>
+        item.Spec.TryGetProperty("cover", out var v) && v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out int n)
+            && n >= 0 && n < item.Images.Count ? n : null;
 
     // MMP's logo as the cover: a cream square, a black "m" and orange sound waves
     internal static FrameworkElement Logo()
@@ -310,7 +324,7 @@ static class GalleryPreview
     static async Task<List<(StickerSpec Spec, StickerFrames Frames)>> Load(PlayerSpec p)
     {
         var loaded = new List<(StickerSpec Spec, StickerFrames Frames)>();
-        foreach (var s in p.Stickers)
+        foreach (var s in p.Stickers.Where(s => !s.Hidden))       // hidden pictures are not published
             if (await Stickers.LoadAsync(Designs.ImagePath(s.File), 700, 3_000_000) is { } frames)
                 loaded.Add((s, frames));
         return loaded;

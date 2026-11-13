@@ -83,7 +83,7 @@ static class EqEngine
     // put back once it runs again (Windows takes a running program): helper (MMP --restore-routes, no window) waits
     // for it, unless MMP is closing because Windows is.
     static bool _stopped;
-    public static void Stop(bool leaveHelper = true)
+    public static void Stop(bool leaveHelper = true, bool keepRoutes = false)
     {
         if (_stopped) return;           // Windows closing calls it, then the app's exit again
         _stopped = true;
@@ -93,10 +93,27 @@ static class EqEngine
         _pumpThread?.Join(500);
         lock (Gate)
         {
+            if (keepRoutes) { StopOutput(); DropSources(); return; }
             StopAll();
             if (leaveHelper && _routes.Count > 0 && Environment.ProcessPath is { } exe)
                 try { Process.Start(new ProcessStartInfo(exe, "--restore-routes") { UseShellExecute = false }); } catch { }
         }
+    }
+
+    // Windows is closing. With the equalizer on and MMP starting with Windows, the chosen apps stay on the cable: after
+    // sign-in they play through the equalizer from their first sound, without being restarted. Otherwise they go back to
+    // their own device now, and one that is closed already is put back at the next sign-in (the helper, started once).
+    public static void WindowsClosing(bool mmpStartsWithWindows)
+    {
+        bool keep = _settings.On && mmpStartsWithWindows;
+        Stop(leaveHelper: false, keepRoutes: keep);
+        if (keep || _routes.Count == 0 || Environment.ProcessPath is not { } exe) return;
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\RunOnce");
+            key.SetValue("MMP restore sound", $"\"{exe}\" --restore-routes");
+        }
+        catch { }
     }
 
     // MMP --restore-routes: puts each closed app back on its own device as soon as it runs; ends when all are back,
@@ -231,6 +248,9 @@ static class EqEngine
         if (_outputId != null && output?.ID != _outputId) DropSources();       // another device: maybe another rate
         bool on = (s.On || Streaming) && cable != null && output != null && s.Apps.Count > 0 && AppRouting.Available;
         var apps = new HashSet<string>(s.Apps, StringComparer.OrdinalIgnoreCase);
+        // chosen and switched on, but no output for a moment (sign-in, a headset reconnecting): the apps stay on the
+        // cable instead of going back and forth
+        bool Chosen(string name) => (s.On || Streaming) && cable != null && apps.Contains(name);
 
         // every app that has sound on any device
         var playing = new Dictionary<int, (string Name, string File)>();
@@ -271,7 +291,7 @@ static class EqEngine
                 if (!AppRouting.Set(pid, cable!.ID)) continue;
                 _routed[pid] = file;
             }
-            else if (!want && _routes.ContainsKey(file) && !_routed.ContainsKey(pid) && cable != null && AppRouting.Is(AppRouting.Get(pid), cable.ID))
+            else if (!want && !Chosen(name) && _routes.ContainsKey(file) && !_routed.ContainsKey(pid) && cable != null && AppRouting.Is(AppRouting.Get(pid), cable.ID))
                 Unroute(pid, file);     // left on the cable by MMP (a crash, or switched off while closed)
             if (want && !_sources.ContainsKey(pid) && ProcessLoopback.Supported)
             {
@@ -280,11 +300,13 @@ static class EqEngine
             }
         }
 
+        if (cable != null && AppRouting.Available) RouteEarly(on, s.On || Streaming, apps, cable, playing);
+
         // apps that stopped, or aren't wanted any more
         foreach (var (pid, file) in _routed.ToList())
         {
             bool alive = playing.TryGetValue(pid, out var app);
-            if (alive && on && apps.Contains(app.Name)) continue;
+            if (alive && Chosen(app.Name)) continue;
             _routed.Remove(pid);
             if (alive) Unroute(pid, file);
             if (_sources.Remove(pid, out var src))
@@ -347,6 +369,50 @@ static class EqEngine
         int pos = Volatile.Read(ref _scopePos);
         for (int i = 0; i < dest.Length; i++) dest[i] = _scope[(pos - dest.Length + i) & (_scope.Length - 1)];
         return true;
+    }
+
+    // Apps that run but haven't played yet. Windows keeps the device per program file, so it is set as soon as the
+    // program runs, before it opens its sound: it plays on the right device from its first sound, whether that is the
+    // cable (equalizer on) or its own device (off, or left on the cable by a Windows shut down with the equalizer on).
+    // A stream that is already playing is moved by Windows, which some apps on some Windows versions don't follow
+    // until they are restarted; this way they never need to be.
+    static readonly Dictionary<int, bool> _early = new();     // pid -> what was done for it: on the cable or not
+
+    static void RouteEarly(bool on, bool active, HashSet<string> apps, MMDevice cable, Dictionary<int, (string Name, string File)> playing)
+    {
+        var names = new HashSet<string>(apps, StringComparer.OrdinalIgnoreCase);
+        foreach (var f in _routes.Keys) names.Add(Path.GetFileNameWithoutExtension(f));
+        var seen = new HashSet<int>();
+        foreach (var name in names)
+        {
+            bool want = on && apps.Contains(name);
+            // taken off only when really not wanted, not while the sound devices are still coming up after sign-in
+            if (!want && active && apps.Contains(name)) continue;
+            foreach (var p in Process.GetProcessesByName(name))
+            {
+                using (p)
+                {
+                    seen.Add(p.Id);
+                    // a playing one is the session code's; a checked one only again when the answer changes
+                    if (playing.ContainsKey(p.Id) || (_early.TryGetValue(p.Id, out bool done) && done == want)) continue;
+                    string file;
+                    try { file = p.MainModule?.FileName ?? ""; } catch { file = ""; }
+                    string? now = file.Length > 0 ? AppRouting.Get(p.Id) : null;
+                    if (now == null) { _early[p.Id] = want; continue; }
+                    bool onCable = AppRouting.Is(now, cable.ID);
+                    if (want && !onCable)
+                    {
+                        if (!_routes.ContainsKey(file)) { _routes[file] = now; SaveRoutes(); }
+                        if (!AppRouting.Set(p.Id, cable.ID)) continue;
+                    }
+                    else if (!want && onCable && _routes.ContainsKey(file)
+                             && !_routed.Values.Any(r => r.Equals(file, StringComparison.OrdinalIgnoreCase)))
+                        Unroute(p.Id, file);
+                    _early[p.Id] = want;
+                }
+            }
+        }
+        foreach (var pid in _early.Keys.Where(k => !seen.Contains(k)).ToList()) _early.Remove(pid);
     }
 
     // back to the device it used before; the saved device is forgotten only when no other process of the same program

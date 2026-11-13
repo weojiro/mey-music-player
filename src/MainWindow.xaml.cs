@@ -3107,7 +3107,7 @@ public partial class MainWindow : Window
         catch { }
     }
 
-    static bool IsStartupEnabled()
+    internal static bool IsStartupEnabled()
     {
         using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RunKey);
         return key?.GetValue(RunName) != null;

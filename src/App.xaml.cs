@@ -53,7 +53,12 @@ public partial class App : Application
         SliderFeel.Register();
         Task.Run(DeleteOldExe);
         RefreshLauncher();
-        SessionEnding += (_, _) => EqEngine.Stop(leaveHelper: false);     // Windows is closing: nothing to wait for
+        SessionEnding += (_, _) =>
+        {
+            bool startsWithWindows = false;
+            try { startsWithWindows = TaskbarPlayerProto.MainWindow.IsStartupEnabled(); } catch { }
+            EqEngine.WindowsClosing(startsWithWindows);
+        };
         Task.Run(() =>
         {
             Equalizer.ApoCleanup();
